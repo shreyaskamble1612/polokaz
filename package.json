@@ -1,0 +1,33 @@
+{
+  "name": "@polokaz/web",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "db:seed": "tsx scripts/seed.ts",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "check-types": "turbo run check-types"
+  },
+  "devDependencies": {
+    "@polokaz/db": "workspace:*",
+    "@types/node": "^24.10.1",
+    "bcryptjs": "^3.0.3",
+    "better-auth": "^1.4.4",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.2.3",
+    "prettier": "^3.6.2",
+    "tsx": "^4.21.0",
+    "turbo": "^2.6.1",
+    "typescript": "5.9.2"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18"
+  }
+}

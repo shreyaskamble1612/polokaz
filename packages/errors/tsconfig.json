@@ -1,0 +1,7 @@
+{
+  "extends": "@polokaz/tsconfig/node22.json",
+  "include": ["src"],
+  "typedocOptions": {
+    "entryPoints": ["./src"]
+  }
+}
