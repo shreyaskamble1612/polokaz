@@ -31,11 +31,8 @@ const instance = betterAuth({
         status: number;
       };
 
-      if (!referralId) {
-        throw new APIError("INTERNAL_SERVER_ERROR", {
-          message: "Internal server error",
-        });
-      }
+      // If no referral was provided, continue normally (referral is optional)
+      if (!referralId) return;
 
       try {
         await consumeReferral(
@@ -44,7 +41,7 @@ const instance = betterAuth({
           trackdeskClickId,
         );
       } catch (e) {
-        console.warn(`There was an error consumming the referral code: ${e}`);
+        console.warn(`There was an error consuming the referral code: ${e}`);
       }
 
       return;
@@ -56,11 +53,8 @@ const instance = betterAuth({
 
       const { referralId } = ctx.body as { referralId?: string };
 
-      if (!referralId) {
-        throw new APIError("BAD_REQUEST", {
-          message: "Referral code not provided",
-        });
-      }
+      // If no referral was provided, skip referral validation (it's optional)
+      if (!referralId) return;
 
       const referral = await getReferral(referralId);
 
@@ -70,7 +64,8 @@ const instance = betterAuth({
         });
       }
 
-      if (referral.expiresAt.getDate() >= Date.now()) {
+      // Check expiry correctly using timestamps
+      if (referral.expiresAt.getTime() < Date.now()) {
         throw new APIError("UNPROCESSABLE_ENTITY", {
           message: "Referral link expired. Ask for new one",
         });
@@ -78,7 +73,7 @@ const instance = betterAuth({
 
       if (referral.maxUses && referral.maxUses <= referral.referralUse.length) {
         throw new APIError("UNPROCESSABLE_ENTITY", {
-          message: "Referral link has be used too many times",
+          message: "Referral link has been used too many times",
         });
       }
 

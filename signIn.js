@@ -1,0 +1,1 @@
+(async()=>{try{const res=await fetch("http://127.0.0.1:3001/api/auth/sign-in/email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:"test+2@example.com",password:"Password123!"})}); const text=await res.text(); console.log("STATUS:"+res.status); console.log(text);}catch(e){console.error(e)}})();

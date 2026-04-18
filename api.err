@@ -1,0 +1,642 @@
+SyntaxError: Expected property name or '}' in JSON at position 1
+    at JSON.parse (<anonymous>)
+    at parse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\types\json.js:74:19)
+    at C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\read.js:163:18
+    at AsyncResource.runInAsyncScope (node:async_hooks:206:9)
+    at invokeCallback (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:238:16)
+    at done (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:227:7)
+    at IncomingMessage.onEnd (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:287:7)
+    at IncomingMessage.emit (node:events:519:28)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+20:03:27.548 ERR api SyntaxError: Expected property name or '}' in JSON at position 1
+    at JSON.parse (<anonymous>)
+    at parse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\types\json.js:74:19)
+    at C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\read.js:163:18
+    at AsyncResource.runInAsyncScope (node:async_hooks:206:9)
+    at invokeCallback (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:238:16)
+    at done (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:227:7)
+    at IncomingMessage.onEnd (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:287:7)
+    at IncomingMessage.emit (node:events:519:28)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+SyntaxError: Unexpected token ''', "'{email:te"... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at createStrictSyntaxError (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\types\json.js:116:10)
+    at parse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\types\json.js:68:15)
+    at C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\read.js:163:18
+    at AsyncResource.runInAsyncScope (node:async_hooks:206:9)
+    at invokeCallback (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:238:16)
+    at done (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:227:7)
+    at IncomingMessage.onEnd (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:287:7)
+    at IncomingMessage.emit (node:events:519:28)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+20:03:58.349 ERR api SyntaxError: Unexpected token ''', "'{email:te"... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at createStrictSyntaxError (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\types\json.js:116:10)
+    at parse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\types\json.js:68:15)
+    at C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\read.js:163:18
+    at AsyncResource.runInAsyncScope (node:async_hooks:206:9)
+    at invokeCallback (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:238:16)
+    at done (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:227:7)
+    at IncomingMessage.onEnd (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:287:7)
+    at IncomingMessage.emit (node:events:519:28)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+[2m2026-04-18T20:04:58.828Z[0m [31mERROR[0m [1m[Better Auth]:[0m Error DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: test+1@example.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2356:8)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'test+1@example.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+# SERVER_ERROR:  DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: test+1@example.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2356:8)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'test+1@example.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+[2m2026-04-18T20:05:53.527Z[0m [31mERROR[0m [1m[Better Auth]:[0m Error DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: test+1@example.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2356:8)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'test+1@example.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+# SERVER_ERROR:  DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: test+1@example.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2356:8)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'test+1@example.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+[2m2026-04-18T20:06:26.116Z[0m [31mERROR[0m [1m[Better Auth]:[0m Error DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: test+1@example.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2356:8)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'test+1@example.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+# SERVER_ERROR:  DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: test+1@example.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2356:8)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'test+1@example.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+[2m2026-04-18T20:09:56.179Z[0m [31mERROR[0m [1m[Better Auth]:[0m Error DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: test+2@example.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2356:8)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'test+2@example.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+# SERVER_ERROR:  DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: test+2@example.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2356:8)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'test+2@example.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+[2m2026-04-18T20:18:08.749Z[0m [31mERROR[0m [1m[Better Auth]:[0m Error DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: polokaz@polokaz.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2137:15)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'polokaz@polokaz.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+# SERVER_ERROR:  DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: polokaz@polokaz.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2137:15)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'polokaz@polokaz.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+[2m2026-04-18T20:18:23.794Z[0m [31mERROR[0m [1m[Better Auth]:[0m INTERNAL_SERVER_ERROR DrizzleQueryError: Failed query: select "id", "expires_at", "token", "created_at", "updated_at", "ip_address", "user_agent", "user_id", "impersonated_by" from "session" where "session"."token" = $1
+params: RkHICnLi7LcyNkevhde2OumrHfC7tISP
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findSession (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:423:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\session-hq_qEU9r.mjs:169:19)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "expires_at", "token", "created_at", "updated_at", "ip_address", "user_agent", "user_id", "impersonated_by" from "session" where "session"."token" = $1',
+  params: [ 'RkHICnLi7LcyNkevhde2OumrHfC7tISP' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+[2m2026-04-18T20:18:25.858Z[0m [31mERROR[0m [1m[Better Auth]:[0m INTERNAL_SERVER_ERROR DrizzleQueryError: Failed query: select "id", "expires_at", "token", "created_at", "updated_at", "ip_address", "user_agent", "user_id", "impersonated_by" from "session" where "session"."token" = $1
+params: RkHICnLi7LcyNkevhde2OumrHfC7tISP
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findSession (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:423:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\session-hq_qEU9r.mjs:169:19)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "expires_at", "token", "created_at", "updated_at", "ip_address", "user_agent", "user_id", "impersonated_by" from "session" where "session"."token" = $1',
+  params: [ 'RkHICnLi7LcyNkevhde2OumrHfC7tISP' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+[2m2026-04-18T20:18:42.398Z[0m [31mERROR[0m [1m[Better Auth]:[0m Error DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: shree@shree.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2137:15)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'shree@shree.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+# SERVER_ERROR:  DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: shree@shree.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2137:15)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'shree@shree.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+[2m2026-04-18T20:20:42.342Z[0m [31mERROR[0m [1m[Better Auth]:[0m Error DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: test+2@example.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2137:15)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'test+2@example.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+# SERVER_ERROR:  DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: test+2@example.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2137:15)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'test+2@example.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+SyntaxError: Expected property name or '}' in JSON at position 1
+    at JSON.parse (<anonymous>)
+    at parse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\types\json.js:74:19)
+    at C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\read.js:163:18
+    at AsyncResource.runInAsyncScope (node:async_hooks:206:9)
+    at invokeCallback (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:238:16)
+    at done (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:227:7)
+    at IncomingMessage.onEnd (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:287:7)
+    at IncomingMessage.emit (node:events:519:28)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+20:21:35.238 ERR api SyntaxError: Expected property name or '}' in JSON at position 1
+    at JSON.parse (<anonymous>)
+    at parse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\types\json.js:74:19)
+    at C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\body-parser@2.2.1\node_modules\body-parser\lib\read.js:163:18
+    at AsyncResource.runInAsyncScope (node:async_hooks:206:9)
+    at invokeCallback (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:238:16)
+    at done (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:227:7)
+    at IncomingMessage.onEnd (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\raw-body@3.0.2\node_modules\raw-body\index.js:287:7)
+    at IncomingMessage.emit (node:events:519:28)
+    at endReadableNT (node:internal/streams/readable:1696:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+[2m2026-04-18T20:22:22.560Z[0m [31mERROR[0m [1m[Better Auth]:[0m Error DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: test+2@example.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2137:15)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'test+2@example.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}
+# SERVER_ERROR:  DrizzleQueryError: Failed query: select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1
+params: test+2@example.com
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapters\drizzle-adapter\index.mjs:169:17)
+    at Object.findOne (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\adapter-factory-CXEYdBBi.mjs:617:16)
+    at Object.findUserByEmail (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\get-migration-o_lo2MLQ.mjs:613:19)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2137:15)
+    at internalHandler (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\endpoint.ts:474:20)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-auth@1.4.4_next@16.0.7_react-dom@19.2.0_react@19.2.0__react@19.2.0__react-dom@19.2.0_react@19.2.0__react@19.2.0\node_modules\better-auth\dist\api-wsWZUpFT.mjs:2955:21)
+    at processRequest (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\better-call@1.1.3_zod@4.1.13\node_modules\better-call\src\router.ts:213:22) {
+  query: 'select "id", "name", "email", "email_verified", "image", "created_at", "updated_at", "role", "banned", "ban_reason", "ban_expires", "referral_id", "birthdate", "country_name" from "user" where "user"."email" = $1',
+  params: [ 'test+2@example.com' ],
+  cause: PostgresError: database "postgres%22" does not exist
+      at ErrorResponse (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:794:26)
+      at handle (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:480:6)
+      at Socket.data (C:\Users\HP\Desktop\Freelancing\polokaz-master\node_modules\.pnpm\postgres@3.4.7\node_modules\postgres\cjs\src\connection.js:315:9)
+      at Socket.emit (node:events:519:28)
+      at addChunk (node:internal/streams/readable:559:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+      at Readable.push (node:internal/streams/readable:390:5)
+      at TCP.onStreamRead (node:internal/stream_base_commons:191:23)
+      at TCP.callbackTrampoline (node:internal/async_hooks:130:17) {
+    code: '3D000',
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres',
+    severity_local: 'FATAL',
+    severity: 'FATAL'
+  }
+}

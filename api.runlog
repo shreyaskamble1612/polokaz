@@ -1,0 +1,18 @@
+
+> @polokaz/api@1.0.0 dev C:\Users\HP\Desktop\Freelancing\polokaz-master\apps\api
+> tsx watch src/index.ts
+
+18:45:48.429 INF logtape·meta LogTape loggers are configured.  Note that LogTape itself uses the meta logger, which has category [ 'logtape', 'meta', [length]: 2 ].  The meta logger purposes to log internal errors such as sink exceptions.  If you are seeing this message, the meta logger is automatically configured.  It's recommended to configure the meta logger with a separate sink so that you can easily notice if logging itself fails or is misconfigured.  To turn off this message, configure the meta logger with higher log levels than 'info'.  See also <https://logtape.org/manual/categories#meta-logger>.
+18:45:48.439 INF api Server is running on http://127.0.0.1:3001/
+1:31:13 AM [tsx] change in ./..\..\packages\auth\src\server.ts Rerunning...
+c20:01:17.983 INF logtape·meta LogTape loggers are configured.  Note that LogTape itself uses the meta logger, which has category [ 'logtape', 'meta', [length]: 2 ].  The meta logger purposes to log internal errors such as sink exceptions.  If you are seeing this message, the meta logger is automatically configured.  It's recommended to configure the meta logger with a separate sink so that you can easily notice if logging itself fails or is misconfigured.  To turn off this message, configure the meta logger with higher log levels than 'info'.  See also <https://logtape.org/manual/categories#meta-logger>.
+20:01:18.018 INF api Server is running on http://127.0.0.1:3001/
+1:32:18 AM [tsx] change in ./..\..\packages\auth\src\server.ts Restarting...
+c20:02:20.281 INF logtape·meta LogTape loggers are configured.  Note that LogTape itself uses the meta logger, which has category [ 'logtape', 'meta', [length]: 2 ].  The meta logger purposes to log internal errors such as sink exceptions.  If you are seeing this message, the meta logger is automatically configured.  It's recommended to configure the meta logger with a separate sink so that you can easily notice if logging itself fails or is misconfigured.  To turn off this message, configure the meta logger with higher log levels than 'info'.  See also <https://logtape.org/manual/categories#meta-logger>.
+20:02:20.293 INF api Server is running on http://127.0.0.1:3001/
+1:52:49 AM [tsx] change in ./src\index.ts Rerunning...
+c20:22:53.120 INF logtape·meta LogTape loggers are configured.  Note that LogTape itself uses the meta logger, which has category [ 'logtape', 'meta', [length]: 2 ].  The meta logger purposes to log internal errors such as sink exceptions.  If you are seeing this message, the meta logger is automatically configured.  It's recommended to configure the meta logger with a separate sink so that you can easily notice if logging itself fails or is misconfigured.  To turn off this message, configure the meta logger with higher log levels than 'info'.  See also <https://logtape.org/manual/categories#meta-logger>.
+20:22:53.180 INF api Server is running on http://127.0.0.1:3001/
+1:53:10 AM [tsx] change in ./src\index.ts Rerunning...
+c20:23:12.938 INF logtape·meta LogTape loggers are configured.  Note that LogTape itself uses the meta logger, which has category [ 'logtape', 'meta', [length]: 2 ].  The meta logger purposes to log internal errors such as sink exceptions.  If you are seeing this message, the meta logger is automatically configured.  It's recommended to configure the meta logger with a separate sink so that you can easily notice if logging itself fails or is misconfigured.  To turn off this message, configure the meta logger with higher log levels than 'info'.  See also <https://logtape.org/manual/categories#meta-logger>.
+20:23:12.964 INF api Server is running on http://127.0.0.1:3001/
