@@ -43,7 +43,7 @@ const FALLBACK_COUPONS: CouponDisplay[] = Array.from({ length: 6 }).map((_, i) =
   merchant: "Abc Merchant",
   imageUrl: "https://placehold.co/214x218",
 }));
-
+//partial data to show something while real data is loading. Can be removed once API is integrated and stable
 function mapDealToCoupon(d: Deal): CouponDisplay {
   return {
     id: d.id,
