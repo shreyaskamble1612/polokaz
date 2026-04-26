@@ -1,400 +1,724 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MagnifyingGlassIcon, ChevronDownIcon } from "@radix-ui/react-icons";
-import { DealCard } from "@/components/customer/deal-card";
-import { CategoryCard } from "@/components/customer/category-card";
-import { getDummyDeals, type Deal } from "@/lib/api/deals";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { authClient } from "@polokaz/auth/client";
+import { getDummyDeals } from "@/lib/api/deals";
+import {
+  ChevronDown,
+  ChevronRight,
+  Facebook,
+  Instagram,
+  Mail,
+  MapPin,
+  Menu,
+  Phone,
+  Search,
+  Share2,
+  Star,
+  TicketPercent,
+  UserPlus,
+  Wallet,
+} from "lucide-react";
+import Link from "next/link";
+
+type UserProfile = {
+  name: string;
+  email: string;
+  image?: string | null;
+};
 
 const CATEGORIES = [
   {
     id: "food",
-    title: "Food & Drink",
-    description:
-      "Indulge in wholesome and flavorful options made with sustainable and organic produce.",
+    title: "Food & Drinks",
+    subtitle: "7 Deals",
+    image:
+      "https://images.unsplash.com/photo-1561758033-d89a9ad46330?auto=format&fit=crop&w=900&q=80",
   },
   {
     id: "health",
-    title: "Health & Wellness",
-    description:
-      "Access resources for stress management, mindfulness, and achieving your personal health goals.",
+    title: "Wellness",
+    subtitle: "5 Deals",
+    image:
+      "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=900&q=80",
   },
   {
     id: "beauty",
-    title: "Beauty & Personal Care",
-    description:
-      "Enhance your natural glow with skincare, makeup, and grooming essentials.",
+    title: "Beauty & Fitness",
+    subtitle: "8 Deals",
+    image:
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80",
   },
   {
     id: "retail",
-    title: "Retail & Shopping",
-    description:
-      "Shop a wide range of products from trusted stores and local boutiques.",
+    title: "Hotels & Trips",
+    subtitle: "6 Deals",
+    image:
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "retail-2",
+    title: "Education",
+    subtitle: "3 Deals",
+    image:
+      "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=900&q=80",
   },
 ];
 
+const MERCHANTS = [
+  {
+    id: "m1",
+    name: "Burger Republic",
+    rating: "4.8",
+    image:
+      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80",
+    offers: "25",
+    redeemed: "1.4 K",
+  },
+  {
+    id: "m2",
+    name: "Urban Threads",
+    rating: "4.7",
+    image:
+      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=900&q=80",
+    offers: "18",
+    redeemed: "980",
+  },
+  {
+    id: "m3",
+    name: "Glowup Studio",
+    rating: "4.9",
+    image:
+      "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=900&q=80",
+    offers: "21",
+    redeemed: "1.2 K",
+  },
+  {
+    id: "m4",
+    name: "Sunset Cafe",
+    rating: "4.6",
+    image:
+      "https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=900&q=80",
+    offers: "12",
+    redeemed: "740",
+  },
+];
+
+const LOCATION_OPTIONS = ["Select location", "New York", "Las Vegas", "Chicago"];
+function formatDate(dateString: string | null) {
+  if (!dateString) return "N/A";
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function getCategoryLabel(category: string | null) {
+  if (!category) return "General";
+
+  const map: Record<string, string> = {
+    food: "Food & Shopping",
+    health: "Health & Wellness",
+    beauty: "Beauty & Fitness",
+    retail: "Travel & Shopping",
+  };
+
+  return map[category] ?? category;
+}
+
+function getDealAccent(index: number) {
+  return index % 2 === 0
+    ? {
+        badge: "bg-[#0f7af7]",
+        button: "bg-[#0f7af7] hover:bg-[#0b67d2]",
+        border: "border-[#b8d9ff]",
+      }
+    : {
+        badge: "bg-[#ef8a23]",
+        button: "bg-[#ef8a23] hover:bg-[#d97611]",
+        border: "border-[#ffd7b0]",
+      };
+}
+
 export default function Page() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [filteredDeals, setFilteredDeals] = useState<Deal[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState("Select location");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [user, setUser] = useState<UserProfile>({
+    name: "My Account",
+    email: "account@polokaz.com",
+    image: null,
+  });
+  const deals = getDummyDeals();
 
-  // Load dummy deals on mount
   useEffect(() => {
-    const dummyDeals = getDummyDeals();
-    setDeals(dummyDeals);
-    setFilteredDeals(dummyDeals);
+    async function loadSession() {
+      try {
+        const session = await authClient.getSession();
+        if (session.data?.user) {
+          setUser({
+            name: session.data.user.name,
+            email: session.data.user.email,
+            image: session.data.user.image,
+          });
+        }
+      } catch {
+        // Keep fallback profile when session is unavailable on first paint.
+      }
+    }
+
+    loadSession();
   }, []);
 
-  // Filter deals based on search and category
-  useEffect(() => {
-    let filtered = deals;
+  const filteredDeals = deals.filter((deal) => {
+    const matchesSearch =
+      !searchQuery ||
+      deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      deal.merchantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      deal.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (deal) =>
-          deal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          deal.merchantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          deal.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
-    }
+    const matchesCategory =
+      selectedCategory === "All" || deal.category === selectedCategory;
 
-    if (selectedCategory) {
-      filtered = filtered.filter((deal) => deal.category === selectedCategory);
-    }
-
-    setFilteredDeals(filtered);
-  }, [searchQuery, selectedCategory, deals]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Search is handled by useEffect
-  };
-
-  const handleCategoryExplore = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-    // Scroll to coupons section
-    document
-      .getElementById("trending-coupons")
-      ?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleGetDeal = (dealId: string) => {
-    // TODO: Add to wallet or navigate to deal details
-    alert(`Adding deal ${dealId} to wallet!`);
-  };
+    return matchesSearch && matchesCategory;
+  });
 
   return (
-    <main className="min-h-screen bg-white text-gray-900">
-      {/* Top Nav */}
-      <header className="w-full border-b border-gray-100">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
-            <img
-              src="/logo.png"
-              alt="Polokaz logo"
-              className="h-12 w-auto mr-20"
-            />
+    <main className="min-h-screen bg-[#f7f9fc] text-[#182433]">
+      <header className="sticky top-0 z-20 border-b border-[#e6edf7] bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0f7af7] text-white shadow-[0_10px_24px_rgba(15,122,247,0.24)]">
+              <TicketPercent className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#0f7af7]">
+                Polokaz
+              </p>
+              <p className="text-xs text-[#728197]">Deals around you</p>
+            </div>
           </div>
 
-          <nav className="hidden items-center gap-10 text-[20px] font-inter md:flex">
-            <a className="font-medium text-[#0378ED]" href="#">
+          <nav className="hidden items-center gap-8 text-sm font-medium text-[#43526a] md:flex">
+            <a href="#" className="text-[#0f7af7]">
               Home
             </a>
-            <a className="font-light text-black" href="#">
-              Coupons
-            </a>
-            <a className="font-light text-black" href="#">
-              Events
-            </a>
-            <a className="font-light text-black" href="#">
-              Dashboard
-            </a>
+            <a href="#">Coupons</a>
+            <a href="#">Dashboard</a>
+            <a href="#">Events</a>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src="/avatar.png" />
-              <AvatarFallback>RM</AvatarFallback>
-            </Avatar>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="hidden items-center gap-3 rounded-full bg-[#eef3fb] px-3 py-2 text-left transition hover:bg-[#e7eef9] md:flex"
+              >
+                <Avatar className="h-10 w-10 border border-[#d9e5f7]">
+                  <AvatarImage src={user.image ?? ""} alt={user.name} />
+                  <AvatarFallback>
+                    {user.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-[15px] font-medium text-[#314560]">
+                  {user.name}
+                </span>
+                <ChevronDown className="h-4 w-4 text-[#73849a]" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              sideOffset={10}
+              className="w-64 rounded-2xl border-[#dfe8f5] p-2 shadow-[0_20px_50px_rgba(25,42,70,0.12)]"
+            >
+              <DropdownMenuLabel className="px-3 py-2">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10 border border-[#d9e5f7]">
+                    <AvatarImage src={user.image ?? ""} alt={user.name} />
+                    <AvatarFallback>
+                      {user.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[#22334d]">
+                      {user.name}
+                    </p>
+                    <p className="truncate text-xs font-normal text-[#7d8ea5]">
+                      {user.email}
+                    </p>
+                  </div>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-[#e8eef7]" />
+              <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
+                <Link href="/customer/dashboard">Dashboard</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
+                <Link href="/customer/coupons">My Coupons</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
+                <Link href="/referral">Referral Program</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-[#e8eef7]" />
+              <DropdownMenuItem className="rounded-xl px-3 py-2 text-[#c2410c] focus:bg-[#fff2e8] focus:text-[#c2410c]">
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d8e5f7] text-[#23405f] md:hidden"
+            aria-label="Open navigation"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="w-full">
-        <div className="mx-auto max-w-6xl px-4 pt-10">
-          <div className="grid overflow-hidden rounded-2xl shadow-sm md:h-[420px] md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-            {/* Image side */}
-            <div className="h-[260px] md:h-auto">
-              <img
-                src="/customer/hero.png"
-                alt="Hero"
-                className="h-full w-full object-cover"
-              />
-            </div>
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <section className="overflow-hidden rounded-[28px] bg-[#071320] shadow-[0_30px_80px_rgba(7,19,32,0.18)]">
+          <div className="relative min-h-[480px]">
+            <img
+              src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1600&q=80"
+              alt="Featured food deals"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(4,11,24,0.9)_0%,rgba(4,11,24,0.72)_35%,rgba(4,11,24,0.32)_100%)]" />
 
-            {/* Blue panel */}
-            <div className="flex flex-col items-center justify-center bg-[#0378ED] px-8 py-10 text-center text-white">
-              <p className="mb-6 font-roboto text-2xl leading-tight md:text-[36px]">
-                Grab the best Deals on restaurants around you
-              </p>
-              <button className="relative inline-flex items-center justify-center rounded-[20px] border-2 border-[#0378ED] bg-white px-10 py-3 font-roboto text-xl font-bold text-[#0378ED] md:text-2xl">
-                <span className="absolute inset-0 rounded-[20px] border border-[#0378ED]" />
-                Read More
-              </button>
+            <div className="relative flex min-h-[480px] flex-col justify-between p-6 sm:p-8 lg:p-10">
+              <div className="flex justify-end">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/14 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white backdrop-blur">
+                  <span className="text-lg">USA</span>
+                  <span className="h-8 w-px bg-white/25" />
+                  <span>Featured Picks</span>
+                </div>
+              </div>
+
+              <div className="max-w-xl">
+                <h1 className="text-4xl font-black italic leading-[0.98] text-white sm:text-5xl lg:text-[4.2rem]">
+                  Grab the
+                  <span className="block text-[#0f7af7]">Best Deals</span>
+                  <span className="block">Around You!</span>
+                </h1>
+                <p className="mt-5 max-w-lg text-sm leading-7 text-white/80 sm:text-base">
+                  Discover exclusive coupons, restaurant offers and local city
+                  specials tailored just for you. Save more, every single day.
+                </p>
+                <button
+                  type="button"
+                  className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#0f7af7] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_30px_rgba(15,122,247,0.35)] transition hover:bg-[#0b67d2]"
+                >
+                  View Deals
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
+        </section>
 
-          {/* Search + Location */}
-          <form
-            onSubmit={handleSearch}
-            className="mt-8 flex flex-col gap-4 lg:flex-row"
-          >
-            <div className="flex flex-1 items-center gap-3 rounded-xl border border-[#E3E3E3] bg-white px-4 py-2">
-              <MagnifyingGlassIcon className="h-6 w-6 text-[#ABABAB]" />
+        <section className="-mt-8 relative z-10 px-1">
+          <div className="grid gap-3 rounded-[24px] border border-[#e8eef7] bg-white p-3 shadow-[0_24px_50px_rgba(15,42,76,0.08)] md:grid-cols-[1.5fr_1fr_auto]">
+            <label className="flex items-center gap-3 rounded-2xl border border-[#e9eef6] px-4 py-3">
+              <Search className="h-4 w-4 text-[#92a2b7]" />
               <input
                 type="text"
-                placeholder="Search here"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 font-inter text-[20px] text-gray-900 placeholder:text-[#ABABAB] outline-none bg-transparent"
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search restaurants, coupons, categories..."
+                className="w-full bg-transparent text-sm text-[#23324a] outline-none placeholder:text-[#9aabc0]"
               />
-            </div>
-            <div className="flex w-full items-center gap-3 rounded-xl border border-[#E3E3E3] bg-white px-4 py-2 lg:w-[380px]">
-              <input
-                type="text"
-                placeholder="Select location"
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="flex-1 font-inter text-[20px] text-gray-900 placeholder:text-[#ABABAB] outline-none bg-transparent"
-              />
-              <ChevronDownIcon className="h-5 w-5 text-[#5F6368]" />
-            </div>
-          </form>
-        </div>
-      </section>
+            </label>
 
-      {/* Trending Categories */}
-      <section className="mx-auto max-w-6xl px-4 pt-14">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-inter text-[24px]">Our Trending Categories</h2>
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className="font-inter text-[16px] text-[#0378ED] hover:underline"
-          >
-            {selectedCategory ? "Clear filter" : "View all"}
-          </button>
-        </div>
-
-        <div className="relative">
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            {CATEGORIES.map((category) => (
-              <CategoryCard
-                key={category.id}
-                title={category.title}
-                description={category.description}
-                onExplore={() => handleCategoryExplore(category.id)}
-              />
-            ))}
-          </div>
-
-          {/* Right arrow bubble */}
-          <button className="absolute -right-6 top-1/2 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#E4FFE9] bg-white shadow xl:flex">
-            <span className="h-6 w-3 bg-[#666666]" />
-          </button>
-        </div>
-      </section>
-
-      {/* Trending Coupons */}
-      <section id="trending-coupons" className="mx-auto max-w-6xl px-4 pt-16">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-inter text-[24px]">
-            Our Trending Coupons
-            {selectedCategory && (
-              <span className="ml-2 text-[16px] text-[#7A7A7A]">
-                ({filteredDeals.length} results)
-              </span>
-            )}
-          </h2>
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className="font-inter text-[16px] text-[#0378ED] hover:underline"
-          >
-            View all
-          </button>
-        </div>
-
-        {filteredDeals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="font-inter text-[20px] text-[#7A7A7A]">
-              No deals found matching your search.
-            </p>
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedCategory(null);
-              }}
-              className="mt-4 font-inter text-[16px] text-[#0378ED] hover:underline"
+            <select
+              value={selectedLocation}
+              onChange={(event) => setSelectedLocation(event.target.value)}
+              className="rounded-2xl border border-[#e9eef6] px-4 py-3 text-sm text-[#6a7d94] outline-none"
             >
-              Clear filters
+              {LOCATION_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              className="rounded-2xl bg-[#0f7af7] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0b67d2]"
+            >
+              Search
             </button>
           </div>
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-2">
-            {filteredDeals.map((deal) => (
-              <DealCard key={deal.id} deal={deal} onGetNow={handleGetDeal} />
+        </section>
+
+        <section className="pt-10">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[#22334d]">
+              Our Trending Categories
+            </h2>
+            <button
+              type="button"
+              className="text-sm font-semibold text-[#0f7af7]"
+            >
+              View all
+            </button>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {CATEGORIES.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => setSelectedCategory(category.id)}
+                className="group overflow-hidden rounded-[20px] bg-white text-left shadow-[0_16px_40px_rgba(26,50,93,0.08)] transition hover:-translate-y-1"
+              >
+                <div className="relative h-36">
+                  <img
+                    src={category.image}
+                    alt={category.title}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,16,33,0)_0%,rgba(5,16,33,0.85)_100%)]" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                    <p className="text-base font-semibold">{category.title}</p>
+                    <p className="text-xs text-white/80">{category.subtitle}</p>
+                  </div>
+                </div>
+              </button>
             ))}
           </div>
-        )}
-      </section>
+        </section>
 
-      {/* Referral Programs section */}
-      <section className="mt-20 bg-[#0378ED] text-white">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 px-4 py-16 lg:grid-cols-2">
-          <div>
-            <h2 className="mb-6 font-roboto text-[40px] font-medium leading-tight md:text-[72px]">
-              Referral Programs
+        <section className="pt-12">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[#22334d]">
+              Our Trending Coupons
             </h2>
-
-            <div className="space-y-6">
-              <div className="flex items-center gap-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white">
-                  <div className="h-3 w-4 bg-[#0378ED]" />
-                </div>
-                <p className="font-roboto text-[24px] leading-[60px]">
-                  Extensive components library
-                </p>
-              </div>
-
-              <div className="flex items-center gap-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white">
-                  <div className="h-3 w-4 bg-[#0378ED]" />
-                </div>
-                <p className="font-roboto text-[24px] leading-[60px]">
-                  Over 30 customizable screens
-                </p>
-              </div>
-
-              <div className="flex items-center gap-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white">
-                  <div className="h-3 w-4 bg-[#0378ED]" />
-                </div>
-                <p className="font-roboto text-[24px] leading-[60px]">
-                  Complete flows for referral codes and links.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-10">
-              <button className="relative inline-flex items-center justify-center rounded-[20px] border-2 border-[#0378ED] bg-white px-10 py-3 font-roboto text-xl font-bold text-[#0378ED] md:text-2xl">
-                <span className="absolute inset-0 rounded-[20px] border border-[#0378ED]" />
-                Invite a friend
-              </button>
-            </div>
-          </div>
-
-          {/* Right side illustration placeholder */}
-          <div className="flex items-center justify-center">
-            <div className="flex h-[320px] w-full max-w-[640px] items-center justify-center rounded-2xl border border-white/30 bg-white/10">
-              <span className="font-roboto text-lg text-white/70">
-                Referral program illustration / chart placeholder
-              </span>
-            </div>
-          </div>
-
-          <div className="lg:col-span-2 mt-4 flex items-center justify-end">
-            <button className="font-roboto text-[24px] font-bold underline">
-              Know more &gt;&gt;
+            <button
+              type="button"
+              onClick={() => setSelectedCategory("All")}
+              className="text-sm font-semibold text-[#0f7af7]"
+            >
+              View all
             </button>
           </div>
-        </div>
-      </section>
 
-      {/* Top Merchant Partners heading */}
-      <section className="mx-auto max-w-6xl px-4 pt-16">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-inter text-[24px]">Our Top Merchant Partners</h2>
-          <button className="font-inter text-[16px] text-[#0378ED]">
-            View all
-          </button>
-        </div>
-        {/* TODO: add merchant partner grid/carousel here */}
-      </section>
+          <div className="grid gap-5 xl:grid-cols-2">
+            {filteredDeals.map((deal, index) => {
+              const accent = getDealAccent(index);
 
-      {/* Footer */}
-      <footer className="mt-16 bg-[#0378ED] text-white">
-        <div className="mx-auto max-w-6xl px-4 py-12">
-          <div className="mb-10 h-[2px] w-full bg-white" />
+              return (
+                <article
+                  key={deal.id}
+                  className={`overflow-hidden rounded-[22px] border bg-white shadow-[0_16px_40px_rgba(24,42,70,0.08)] ${accent.border}`}
+                >
+                  <div className="flex flex-col sm:flex-row">
+                    <div className="relative h-52 sm:h-auto sm:w-[32%]">
+                      <img
+                        src={
+                          deal.thumbnailUrl ||
+                          deal.images?.[0] ||
+                          "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80"
+                        }
+                        alt={deal.title}
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-[#0d1725]/20" />
+                      <div
+                        className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[11px] font-semibold text-white ${accent.badge}`}
+                      >
+                        {getCategoryLabel(deal.category)}
+                      </div>
+                    </div>
 
-          <div className="flex flex-col items-start justify-between gap-10 lg:flex-row lg:items-center">
-            <div className="font-['Shantell Sans'] text-[40px] font-bold leading-10">
-              Polokaz
+                    <div className="flex flex-1 flex-col p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-xl font-bold leading-tight text-[#1d2b40]">
+                            {deal.title}
+                          </h3>
+                          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#7d8ea5]">
+                            {deal.coupontoolsCouponId || deal.id} - Active
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-[#eff6ff] px-3 py-1 text-xs font-semibold text-[#0f7af7]">
+                          {deal.merchantName}
+                        </span>
+                      </div>
+
+                      <p className="mt-3 text-sm leading-6 text-[#708198]">
+                        {deal.description ||
+                          "Enjoy handpicked local offers with limited-time savings."}
+                      </p>
+
+                      <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-[#7b8aa0] sm:grid-cols-3">
+                        <div className="rounded-2xl bg-[#f8fbff] p-3">
+                          <p className="font-medium text-[#97a6ba]">Live Date</p>
+                          <p className="mt-1 font-semibold text-[#253650]">
+                            {formatDate(deal.startDate)}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl bg-[#f8fbff] p-3">
+                          <p className="font-medium text-[#97a6ba]">End Date</p>
+                          <p className="mt-1 font-semibold text-[#253650]">
+                            {formatDate(deal.endDate)}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl bg-[#f8fbff] p-3 col-span-2 sm:col-span-1">
+                          <p className="font-medium text-[#97a6ba]">Location</p>
+                          <p className="mt-1 font-semibold text-[#253650]">
+                            {selectedLocation === "Select location"
+                              ? "Las Vegas, Nevada"
+                              : selectedLocation}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 flex items-center justify-end">
+                        <button
+                          type="button"
+                          className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition ${accent.button}`}
+                        >
+                          Get Now
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {filteredDeals.length === 0 ? (
+            <div className="rounded-[22px] border border-dashed border-[#cddced] bg-white px-6 py-12 text-center text-sm text-[#718199]">
+              No coupons matched your search.
             </div>
+          ) : null}
+        </section>
 
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-6 w-6" />
-                  <p className="font-['DM Sans'] text-[14px] leading-[22px]">
-                    ABC Company, 123 East, 17th Street, St. louis 10001
+        <section className="pt-12">
+          <div className="overflow-hidden rounded-[26px] bg-[linear-gradient(90deg,#0e4f93_0%,#1469c4_55%,#1f83ee_100%)] text-white shadow-[0_28px_70px_rgba(8,64,130,0.24)]">
+            <div className="grid gap-8 px-6 py-8 lg:grid-cols-[1.5fr_0.9fr] lg:px-8">
+              <div>
+                <span className="inline-flex rounded-full bg-white/14 px-3 py-1 text-xs font-semibold">
+                  Referral Program
+                </span>
+                <h2 className="mt-4 max-w-md text-4xl font-black italic leading-tight sm:text-5xl">
+                  Invite Friend,
+                  <span className="block text-[#7fc2ff]">Earn Real Rewards</span>
+                </h2>
+                <p className="mt-4 max-w-xl text-sm leading-7 text-white/84">
+                  Invite your friends to join Polokaz and enjoy exciting
+                  rewards. Share your unique referral code and unlock bonus
+                  savings for every successful signup.
+                </p>
+
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    className="rounded-full bg-[#0f7af7] px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(15,122,247,0.25)]"
+                  >
+                    Invite a Friend
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-full border border-white/30 px-5 py-3 text-sm font-semibold text-white"
+                  >
+                    Know More
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] bg-white/10 p-5 backdrop-blur">
+                <div className="rounded-[22px] bg-[linear-gradient(135deg,#58b4ff_0%,#0f7af7_100%)] px-5 py-4 text-center shadow-[0_16px_30px_rgba(0,0,0,0.15)]">
+                  <p className="text-4xl font-black">$5.00</p>
+                  <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/80">
+                    Per successful referral
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-28">
-                  <div className="flex items-center gap-4">
-                    <div className="h-6 w-6" />
-                    <div className="h-[18px] w-[18px] rounded-full bg-white" />
-                    <p className="font-['Assistant'] text-[14px]">
-                      (123) 456-7890
-                    </p>
+                <div className="mt-6 space-y-4">
+                  {[
+                    {
+                      icon: Share2,
+                      title: "Share Link",
+                    },
+                    {
+                      icon: UserPlus,
+                      title: "Friend Signs Up",
+                    },
+                    {
+                      icon: Wallet,
+                      title: "Get Reward",
+                    },
+                  ].map((step, index) => (
+                    <div
+                      key={step.title}
+                      className="flex items-center gap-3 rounded-2xl bg-white/8 px-4 py-3"
+                    >
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 text-sm font-semibold">
+                        {index + 1}
+                      </div>
+                      <step.icon className="h-4 w-4 text-[#a9d7ff]" />
+                      <p className="text-sm font-medium">{step.title}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="pt-12 pb-14">
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[#22334d]">
+              Our Trending Merchants
+            </h2>
+            <button
+              type="button"
+              className="text-sm font-semibold text-[#0f7af7]"
+            >
+              View all
+            </button>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {MERCHANTS.map((merchant) => (
+              <article
+                key={merchant.id}
+                className="overflow-hidden rounded-[20px] bg-white shadow-[0_16px_40px_rgba(21,44,80,0.08)]"
+              >
+                <div className="relative h-32">
+                  <img
+                    src={merchant.image}
+                    alt={merchant.name}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,13,26,0)_0%,rgba(3,13,26,0.72)_100%)]" />
+                  <div className="absolute right-3 top-3 rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-[#0f7af7]">
+                    Open
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="h-6 w-6" />
-                    <p className="font-['Assistant'] text-[14px]">
-                      (123) 456-7890
-                    </p>
+                </div>
+
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-semibold text-[#21334d]">
+                        {merchant.name}
+                      </h3>
+                      <div className="mt-1 flex items-center gap-1 text-xs text-[#8392a7]">
+                        <Star className="h-3.5 w-3.5 fill-[#ef8a23] text-[#ef8a23]" />
+                        <span>{merchant.rating}</span>
+                        <span>-</span>
+                        <span>4.8/5.0</span>
+                      </div>
+                    </div>
                   </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 rounded-[18px] bg-[#f6f9fd] p-3 text-center">
+                    <div>
+                      <p className="text-lg font-bold text-[#1d2b40]">
+                        {merchant.offers}
+                      </p>
+                      <p className="text-xs text-[#8091a6]">Active Deals</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-[#1d2b40]">
+                        {merchant.redeemed}
+                      </p>
+                      <p className="text-xs text-[#8091a6]">Redeemed</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <footer className="bg-[#071425] text-white">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[1.2fr_0.7fr_0.9fr]">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0f7af7]">
+                  <TicketPercent className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#4da4ff]">
+                    Polokaz
+                  </p>
+                  <p className="text-xs text-white/60">Save more, locally.</p>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                <span className="font-['DM Sans'] text-[14px] font-medium opacity-50">
-                  Social Media
-                </span>
-                <div className="flex flex-wrap items-center gap-4">
-                  {/* Replace these placeholders with actual icons */}
-                  <div className="h-6 w-6" />
-                  <div className="h-[18px] w-[18px] rounded-full bg-white" />
-                  <div className="h-6 w-6" />
-                  <div className="h-[18px] w-[18px] rounded bg-white" />
-                  <div className="h-6 w-6" />
-                  <div className="h-6 w-6" />
-                  <div className="h-6 w-6" />
-                  <div className="h-6 w-6" />
-                  <div className="h-6 w-6" />
-                  <div className="h-[18px] w-[18px] rounded-full bg-white" />
-                  <div className="h-6 w-6" />
+              <p className="mt-5 max-w-sm text-sm leading-7 text-white/68">
+                We connect users with the best nearby restaurants, cafes,
+                stores and service providers to help you explore more while
+                saving on your favorite experiences.
+              </p>
+
+              <div className="mt-6 flex items-center gap-3">
+                {[Facebook, Instagram, Mail].map((Icon, index) => (
+                  <div
+                    key={index}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/12 bg-white/5"
+                  >
+                    <Icon className="h-4 w-4 text-[#85c2ff]" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-[#4da4ff]">
+                Important Links
+              </h3>
+              <ul className="mt-5 space-y-3 text-sm text-white/70">
+                <li>Coupons</li>
+                <li>Events</li>
+                <li>About us</li>
+                <li>Career</li>
+                <li>Subscription</li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-[#4da4ff]">
+                Contact Us
+              </h3>
+              <div className="mt-5 space-y-4 text-sm text-white/70">
+                <div className="flex items-start gap-3">
+                  <MapPin className="mt-0.5 h-4 w-4 text-[#85c2ff]" />
+                  <p>ABC Company, 123 East 7th Street, St. Louis 10001</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Phone className="h-4 w-4 text-[#85c2ff]" />
+                  <p>(123) 456-7890</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Mail className="h-4 w-4 text-[#85c2ff]" />
+                  <p>polokaz@gmail.com</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-10 space-y-4">
-            <div className="h-px w-full bg-white/20" />
-            <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-              <div className="flex flex-wrap items-center gap-6 font-['DM Sans'] text-[14px] font-medium uppercase">
-                <button>About us</button>
-                <button>Contact us</button>
-                <button>Help</button>
-                <button>Privacy Policy</button>
-                <button>Disclaimer</button>
-              </div>
-              <p className="font-['Assistant'] text-[14px] opacity-50">
-                Copyright © 2022 • ABC Company.
-              </p>
+          <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
+            <p>(c) 2026 ABC Company. All Rights Reserved.</p>
+            <div className="flex items-center gap-5">
+              <button type="button">Help Center</button>
+              <button type="button">Privacy Policy</button>
             </div>
           </div>
         </div>

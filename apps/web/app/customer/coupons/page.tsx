@@ -1,369 +1,630 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { authClient } from "@polokaz/auth/client";
+import { getDummyDeals, type Deal } from "@/lib/api/deals";
+import {
+  ChevronDown,
+  Facebook,
+  Instagram,
+  Mail,
+  MapPin,
+  Menu,
+  Phone,
+  Search,
+  TicketPercent,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+
+type UserProfile = {
+  name: string;
+  email: string;
+  image?: string | null;
+};
+
+const CATEGORY_OPTIONS = [
+  { label: "Select Category", value: "all" },
+  { label: "Food & Shopping", value: "food" },
+  { label: "Health & Wellness", value: "health" },
+  { label: "Beauty & Fitness", value: "beauty" },
+  { label: "Retail & Travel", value: "retail" },
+];
+
+const LOCATION_OPTIONS = [
+  "Select location",
+  "Las Vegas, Nevada",
+  "New York, USA",
+  "Chicago, USA",
+  "Los Angeles, USA",
+];
+
+const VOUCHER_FALLBACK = [
+  {
+    id: "voucher-1",
+    title: "$300 Off On Overall Bill",
+    description:
+      "Enjoy a $300 discount on select premium dining experiences and special event menus.",
+    category: "Retail & Shopping",
+    code: "V2200A - Active",
+    merchant: "ABC Merchant",
+    liveDate: "2025-11-20",
+    endDate: "2025-11-30",
+    location: "Las Vegas, Nevada",
+    image:
+      "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    id: "voucher-2",
+    title: "$200 Off On Weekend Combo",
+    description:
+      "Valid on selected family combo offers and weekend celebration packages.",
+    category: "Retail & Shopping",
+    code: "V2400B - Active",
+    merchant: "ABC Merchant",
+    liveDate: "2025-11-22",
+    endDate: "2025-12-05",
+    location: "Las Vegas, Nevada",
+    image:
+      "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=900&q=80",
+  },
+];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-interface Deal {
-  id: string;
-  title: string;
-  description: string | null;
-  category: string | null;
-  discountValue: string | null;
-  merchantName: string;
-  startDate: string | null;
-  endDate: string | null;
-  thumbnailUrl: string | null;
-  images: string[] | null;
+function formatDate(dateString: string | null) {
+  if (!dateString) return "N/A";
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
 }
 
-type CouponDisplay = {
-  id: string;
-  category: string;
-  code: string;
-  title: string;
-  description: string;
-  liveDate: string;
-  endDate: string;
-  location: string;
-  merchant: string;
-  imageUrl?: string;
-};
-
-const FALLBACK_COUPONS: CouponDisplay[] = Array.from({ length: 6 }).map((_, i) => ({
-  id: String(i),
-  category: "Food & Drink",
-  code: "C2100B - Active",
-  title: "20% Off On Overall Bill",
-  description:
-    "Enjoy a flat 20% discount on all food and beverage orders at select locations. No minimum bill required.",
-  liveDate: "2025-11-20",
-  endDate: "2025-11-20",
-  location: "Las Vegas, Nevada",
-  merchant: "Abc Merchant",
-  imageUrl: "https://placehold.co/214x218",
-}));
-
-function mapDealToCoupon(d: Deal): CouponDisplay {
-  return {
-    id: d.id,
-    category: d.category ?? "Deal",
-    code: `${d.id.slice(-6).toUpperCase()} - Active`,
-    title: d.title,
-    description: d.description ?? "No minimum bill required.",
-    liveDate: d.startDate ? d.startDate.slice(0, 10) : "—",
-    endDate: d.endDate ? d.endDate.slice(0, 10) : "—",
-    location: "Las Vegas, Nevada",
-    merchant: d.merchantName,
-    imageUrl: d.thumbnailUrl ?? d.images?.[0] ?? "https://placehold.co/214x218",
+function mapDealCategory(category: string | null) {
+  const labels: Record<string, string> = {
+    food: "Retail & Shopping",
+    health: "Health & Wellness",
+    beauty: "Beauty & Fitness",
+    retail: "Retail & Shopping",
   };
+
+  if (!category) return "Retail & Shopping";
+  return labels[category] ?? category;
+}
+
+function buildVoucherRows() {
+  return Array.from({ length: 6 }).map((_, index) => {
+    const item = VOUCHER_FALLBACK[index % VOUCHER_FALLBACK.length];
+    return {
+      ...item,
+      id: `${item.id}-${index}`,
+    };
+  });
 }
 
 export default function Page() {
-  const [coupons, setCoupons] = useState<typeof FALLBACK_COUPONS>(FALLBACK_COUPONS);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ couponsCount: 12, vouchersCount: 16, earnings: "$16" });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedLocation, setSelectedLocation] = useState("Select location");
+  const [activeTab, setActiveTab] = useState<"coupons" | "vouchers">("coupons");
+  const [visibleCount, setVisibleCount] = useState(6);
+  const [deals, setDeals] = useState<Deal[]>(getDummyDeals());
+  const [user, setUser] = useState<UserProfile>({
+    name: "My Account",
+    email: "account@polokaz.com",
+    image: null,
+  });
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
-    async function fetchDeals() {
+    async function loadSession() {
       try {
-        const res = await fetch(`${API_URL}/api/deals?limit=20`);
-        if (!res.ok) throw new Error("Failed to fetch");
-        const data = await res.json();
-        const deals: Deal[] = data.deals ?? [];
-        if (deals.length > 0) {
-          setCoupons(deals.map(mapDealToCoupon));
-          setStats((s) => ({ ...s, couponsCount: data.pagination?.total ?? deals.length }));
+        const session = await authClient.getSession();
+        if (session.data?.user) {
+          setUser({
+            name: session.data.user.name,
+            email: session.data.user.email,
+            image: session.data.user.image,
+          });
         }
       } catch {
-        // Keep fallback data
-      } finally {
-        setLoading(false);
+        // Keep fallback profile when session is unavailable on first paint.
       }
     }
-    fetchDeals();
+
+    async function loadDeals() {
+      try {
+        const response = await fetch(`${API_URL}/api/deals?limit=20`, {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch deals");
+        }
+
+        const data = await response.json();
+        if (Array.isArray(data.deals) && data.deals.length > 0) {
+          setDeals(data.deals);
+        }
+      } catch {
+        setDeals(getDummyDeals());
+      }
+    }
+
+    loadSession();
+    loadDeals();
   }, []);
 
+  useEffect(() => {
+    setVisibleCount(6);
+  }, [activeTab, searchQuery, selectedCategory, selectedLocation]);
+
+  const couponRows = useMemo(() => {
+    return deals.filter((deal) => {
+      const normalizedSearch = searchQuery.toLowerCase();
+      const matchesSearch =
+        !normalizedSearch ||
+        deal.title.toLowerCase().includes(normalizedSearch) ||
+        deal.merchantName.toLowerCase().includes(normalizedSearch) ||
+        deal.description?.toLowerCase().includes(normalizedSearch);
+
+      const matchesCategory =
+        selectedCategory === "all" || deal.category === selectedCategory;
+
+      return matchesSearch && matchesCategory;
+    });
+  }, [deals, searchQuery, selectedCategory]);
+
+  const voucherRows = useMemo(() => buildVoucherRows(), []);
+
+  const rows = activeTab === "coupons" ? couponRows : voucherRows;
+  const visibleRows = rows.slice(0, visibleCount);
+
+  const stats = {
+    couponsCount: couponRows.length || 12,
+    vouchersCount: voucherRows.length || 16,
+    earnings: "$62",
+  };
+
   return (
-    <main className="min-h-screen bg-white text-gray-900">
-      {/* Top Nav */}
-      <header className="w-full border-b border-gray-100">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
-            <img
-              src="https://placehold.co/169x55"
-              alt="Polokaz logo"
-              className="h-12 w-auto"
-            />
+    <main className="min-h-screen bg-[#eef2f7] text-[#15253b]">
+      <header className="sticky top-0 z-30 border-b border-[#dfe7f2] bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0f7af7] text-white shadow-[0_10px_24px_rgba(15,122,247,0.24)]">
+              <TicketPercent className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#0f7af7]">
+                Polokaz
+              </p>
+              <p className="text-xs text-[#738299]">Deals around you</p>
+            </div>
           </div>
 
-          <nav className="hidden items-center gap-20 text-[20px] font-inter md:flex">
-            <a className="font-light text-black" href="#">
-              Home
-            </a>
-            <a className="font-light text-black" href="#">
-              Coupons
-            </a>
-            <a className="font-light text-black" href="#">
-              Events
-            </a>
-            <a className="font-medium text-[#0378ED]" href="#">
+          <nav className="hidden items-center gap-8 text-sm font-medium text-[#4b5c74] md:flex">
+            <Link href="/">Home</Link>
+            <Link href="/customer/coupons">Coupons</Link>
+            <Link href="/customer/dashboard" className="text-[#0f7af7]">
               Dashboard
-            </a>
+            </Link>
+            <a href="#">Events</a>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <img
-              src="https://placehold.co/62x62"
-              alt="User avatar"
-              className="h-14 w-14 rounded-lg border border-gray-300 object-cover"
-            />
-            <div className="hidden text-[24px] font-inter sm:block">
-              Pratik Vankore
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="hidden items-center gap-3 rounded-full bg-[#eef3fb] px-3 py-2 text-left transition hover:bg-[#e5edf8] md:flex"
+              >
+                <Avatar className="h-10 w-10 border border-[#d8e4f6]">
+                  <AvatarImage src={user.image ?? ""} alt={user.name} />
+                  <AvatarFallback>
+                    {user.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="max-w-[150px] truncate text-[15px] font-medium text-[#2f4460]">
+                  {user.name}
+                </span>
+                <ChevronDown className="h-4 w-4 text-[#7d8da3]" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              sideOffset={10}
+              className="w-64 rounded-2xl border-[#dfe8f5] p-2 shadow-[0_20px_50px_rgba(25,42,70,0.12)]"
+            >
+              <DropdownMenuLabel className="px-3 py-2">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10 border border-[#d8e4f6]">
+                    <AvatarImage src={user.image ?? ""} alt={user.name} />
+                    <AvatarFallback>
+                      {user.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-[#22334d]">
+                      {user.name}
+                    </p>
+                    <p className="truncate text-xs font-normal text-[#7d8ea5]">
+                      {user.email}
+                    </p>
+                  </div>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-[#e8eef7]" />
+              <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
+                <Link href="/customer/dashboard">Dashboard</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
+                <Link href="/customer/coupons">My Coupons</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
+                <Link href="/referral">Referral Program</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#d8e4f6] text-[#24405f] md:hidden"
+            onClick={() => setMobileNavOpen((value) => !value)}
+            aria-label="Toggle navigation"
+          >
+            {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+
+        {mobileNavOpen ? (
+          <div className="border-t border-[#e4ebf5] bg-white px-4 py-4 md:hidden">
+            <div className="flex flex-col gap-3 text-sm font-medium text-[#4b5c74]">
+              <Link href="/">Home</Link>
+              <Link href="/customer/coupons">Coupons</Link>
+              <Link href="/customer/dashboard" className="text-[#0f7af7]">
+                Dashboard
+              </Link>
+              <a href="#">Events</a>
+            </div>
+            <div className="mt-4 flex items-center gap-3 rounded-2xl bg-[#eef3fb] px-3 py-3">
+              <Avatar className="h-10 w-10 border border-[#d8e4f6]">
+                <AvatarImage src={user.image ?? ""} alt={user.name} />
+                <AvatarFallback>
+                  {user.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-[#22334d]">
+                  {user.name}
+                </p>
+                <p className="truncate text-xs text-[#7d8ea5]">{user.email}</p>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
       </header>
 
-      <section className="mx-auto max-w-6xl px-4 pt-8 pb-16">
-        {/* Stats row */}
-        <div className="flex flex-col gap-6 md:flex-row">
-          {/* Coupons / Vouchers */}
-          <div className="flex-1 rounded-xl border border-[#A9D4FF] bg-[#FBFDFF] px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-end gap-4">
-                <span className="font-inter text-[48px] font-light text-[#494949]">
-                  {stats.couponsCount}
-                </span>
-                <span className="pb-1 font-inter text-[24px] font-light text-[#494949]">
-                  Coupons
-                </span>
-              </div>
-              <div className="h-[130px] w-px bg-[#A9D4FF]" />
-              <div className="flex items-end gap-4">
-                <span className="font-inter text-[48px] font-light text-[#494949]">
-                  {stats.vouchersCount}
-                </span>
-                <span className="pb-1 font-inter text-[24px] font-light text-[#494949]">
-                  Vouchers
-                </span>
-              </div>
-            </div>
+      <section className="bg-[linear-gradient(90deg,#0c3f73_0%,#0b4d8d_40%,#173a63_100%)] text-white">
+        <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div>
+            <p className="text-sm text-white/80">Welcome back,</p>
+            <h1 className="mt-1 text-3xl font-black italic sm:text-4xl">
+              {user.name}
+            </h1>
+            <p className="mt-2 text-sm text-white/75">
+              Here&apos;s what&apos;s happening with your deals today
+            </p>
           </div>
 
-          {/* Earnings */}
-          <div className="flex-1 rounded-xl border border-[#A9D4FF] bg-[#FBFDFF] px-8 py-6">
-            <div className="flex items-center justify-center gap-3">
-              <span className="font-inter text-[24px] font-light text-[#494949]">
-                My Earnings,
-              </span>
-              <span className="font-inter text-[48px] font-light text-[#494949]">
-                {stats.earnings}
-              </span>
-              <span className="font-inter text-[24px] font-light text-[#494949]">
-                Till now
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="mt-12">
-          <div className="flex gap-8 px-2 font-inter text-[24px]">
-            <button className="border-b-4 border-[#0378ED] pb-3 font-medium text-[#0378ED]">
-              My Coupons
-            </button>
-            <button className="pb-3 font-light text-black">My Vouchers</button>
-          </div>
-          <div className="h-px w-full bg-[#E5E5E5]" />
-        </div>
-
-        {/* Filters */}
-        <div className="mt-8 flex flex-col gap-4 lg:flex-row">
-          {/* Search */}
-          <div className="flex flex-1 items-center gap-3 rounded-xl border border-[#E3E3E3] bg-white px-4 py-2">
-            <div className="h-6 w-6 rounded-md bg-[#ABABAB]" />
-            <span className="font-inter text-[20px] text-[#ABABAB]">
-              Search here
-            </span>
-          </div>
-
-          {/* Location */}
-          <div className="flex w-full items-center gap-3 rounded-xl border border-[#E3E3E3] bg-white px-4 py-2 lg:w-[324px]">
-            <span className="font-inter text-[20px] text-[#ABABAB]">
-              Select location
-            </span>
-            <div className="ml-auto h-[5px] w-[10px] rounded-sm bg-[#5F6368]" />
-          </div>
-
-          {/* Categories */}
-          <div className="flex w-full items-center gap-3 rounded-xl border border-[#E3E3E3] bg-white px-4 py-2 lg:w-[324px]">
-            <span className="font-inter text-[20px] text-[#ABABAB]">
-              Select Categories
-            </span>
-            <div className="ml-auto h-[5px] w-[10px] rounded-sm bg-[#5F6368]" />
-          </div>
-        </div>
-
-        {/* Coupons grid */}
-        <div className="mt-12 flex flex-wrap justify-center gap-8">
-          {loading && coupons.length === 0 ? (
-            <div className="w-full py-12 text-center font-inter text-[#7A7A7A]">
-              Loading deals…
-            </div>
-          ) : (
-          coupons.map((coupon) => (
-            <article
-              key={coupon.id}
-              className="flex w-full max-w-[560px] overflow-hidden rounded-lg border border-[#0378ED] bg-white"
-            >
-              {/* Left image/overlay */}
-              <div className="relative w-[214px] shrink-0">
-                <img
-                  src={coupon.imageUrl ?? "https://placehold.co/214x218"}
-                  alt={coupon.category}
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-[#0378ED]/25 backdrop-blur-sm" />
-                <div className="absolute left-1 top-1 inline-flex items-center rounded-tl-md rounded-br-sm bg-[#0378ED] px-3 py-1">
-                  <span className="font-inter text-[12px] text-white">
-                    {coupon.category}
-                  </span>
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <img
-                    src="https://placehold.co/125x125"
-                    alt="Merchant"
-                    className="h-[125px] w-[125px] rounded-full border border-[#959595] shadow"
-                  />
-                </div>
-              </div>
-
-              {/* Right content */}
-              <div className="flex flex-1 flex-col p-4 pr-5">
-                <div className="mb-2 flex items-start justify-between">
-                  <div className="font-inter text-[12px] text-[#7A7A7A]">
-                    {coupon.code}
-                  </div>
-                  <div className="inline-flex h-6 items-center justify-center rounded-tr-md rounded-bl-sm bg-[#0378ED] px-4">
-                    <span className="font-inter text-[12px] text-white">
-                      {coupon.merchant}
-                    </span>
-                  </div>
-                </div>
-                <h3 className="mb-2 font-inter text-[24px] font-semibold leading-6 text-[#2E2E2E]">
-                  {coupon.title}
-                </h3>
-                <p className="mb-4 font-inter text-[12px] text-[#7A7A7A]">
-                  {coupon.description}
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { label: "My Coupons", value: String(stats.couponsCount) },
+              { label: "My Vouchers", value: String(stats.vouchersCount) },
+              { label: "My Earning", value: stats.earnings, accent: true },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="min-w-[150px] rounded-2xl border border-white/18 bg-white/8 px-6 py-5 text-center backdrop-blur"
+              >
+                <p
+                  className={`text-3xl font-black italic ${
+                    item.accent ? "text-[#ff9a2f]" : "text-white"
+                  }`}
+                >
+                  {item.value}
                 </p>
-
-                <div className="mb-4 grid grid-cols-2 gap-y-2 font-inter text-[12px] text-[#7A7A7A]">
-                  <div>
-                    <div>Live Date</div>
-                    <div>{coupon.liveDate}</div>
-                  </div>
-                  <div>
-                    <div>End Date</div>
-                    <div>{coupon.endDate}</div>
-                  </div>
-                  <div>
-                    <div>Location</div>
-                    <div className="leading-3 text-[#4F4E4E]">
-                      {coupon.location}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-auto flex items-center justify-end">
-                  <button className="inline-flex items-center justify-center rounded-lg border border-[#0378ED] px-5 py-1.5 font-inter text-[12px] font-semibold text-[#0378ED]">
-                    Get Now
-                  </button>
-                </div>
+                <p className="mt-2 text-sm text-white/70">{item.label}</p>
               </div>
-            </article>
-          )))}
-        </div>
-
-        {/* Load more */}
-        <div className="mt-12 flex justify-center">
-          <button className="flex h-14 w-full max-w-[820px] items-center justify-center rounded-xl border border-[#3193F5] bg-[#C4E1FF] font-inter text-[16px] font-semibold text-[#0378ED]">
-            Load More
-          </button>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#0378ED] text-white">
-        <div className="mx-auto max-w-6xl px-4 py-12">
-          <div className="mb-10 h-[2px] w-full bg-white" />
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_18px_50px_rgba(20,42,79,0.08)]">
+          <div className="border-b border-[#edf1f6] px-4 pt-5 sm:px-6">
+            <div className="flex gap-8 text-sm font-medium">
+              <button
+                type="button"
+                onClick={() => setActiveTab("coupons")}
+                className={`border-b-2 pb-4 transition ${
+                  activeTab === "coupons"
+                    ? "border-[#0f7af7] text-[#0f7af7]"
+                    : "border-transparent text-[#1e2f46]"
+                }`}
+              >
+                My Coupons
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("vouchers")}
+                className={`border-b-2 pb-4 transition ${
+                  activeTab === "vouchers"
+                    ? "border-[#0f7af7] text-[#0f7af7]"
+                    : "border-transparent text-[#1e2f46]"
+                }`}
+              >
+                My Vouchers
+              </button>
+            </div>
+          </div>
 
-          <div className="flex flex-col items-start justify-between gap-10 lg:flex-row lg:items-center">
-            <div className="font-['Shantell Sans'] text-[40px] font-bold leading-10">
-              Polokaz
+          <div className="bg-[#f5f7fb] px-4 py-5 sm:px-6">
+            <div className="grid gap-3 rounded-[22px] bg-white p-3 shadow-[0_10px_30px_rgba(20,42,79,0.06)] lg:grid-cols-[1.3fr_1fr_1fr_auto]">
+              <label className="flex items-center gap-3 rounded-2xl border border-[#e8edf5] px-4 py-3">
+                <Search className="h-4 w-4 text-[#91a1b5]" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search here"
+                  className="w-full bg-transparent text-sm text-[#22344e] outline-none placeholder:text-[#9dadc0]"
+                />
+              </label>
+
+              <select
+                value={selectedCategory}
+                onChange={(event) => setSelectedCategory(event.target.value)}
+                className="rounded-2xl border border-[#e8edf5] px-4 py-3 text-sm text-[#6f8197] outline-none"
+              >
+                {CATEGORY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedLocation}
+                onChange={(event) => setSelectedLocation(event.target.value)}
+                className="rounded-2xl border border-[#e8edf5] px-4 py-3 text-sm text-[#6f8197] outline-none"
+              >
+                {LOCATION_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                className="rounded-2xl bg-[#0f7af7] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0b66d1]"
+              >
+                Search
+              </button>
             </div>
 
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-6 w-6" />
-                  <p className="font-['DM Sans'] text-[14px] leading-[22px]">
-                    ABC Company, 123 East, 17th Street, St. louis 10001
-                  </p>
-                </div>
+            <div className="mt-6 grid gap-5 xl:grid-cols-2">
+              {visibleRows.map((row, index) => {
+                const isCoupon = activeTab === "coupons";
+                const accent = index % 2 === 0;
+                const badgeColor = accent ? "bg-[#0f7af7]" : "bg-[#ef8a23]";
+                const buttonColor = accent
+                  ? "bg-[#0f7af7] hover:bg-[#0b66d1]"
+                  : "bg-[#ef8a23] hover:bg-[#d97712]";
+                const borderColor = accent
+                  ? "border-[#bedcff]"
+                  : "border-[#ffd9ba]";
 
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-28">
-                  <div className="flex items-center gap-4">
-                    <div className="h-6 w-6" />
-                    <div className="h-[18px] w-[18px] rounded-full bg-white" />
-                    <p className="font-['Assistant'] text-[14px]">
-                      (123) 456-7890
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="h-6 w-6" />
-                    <p className="font-['Assistant'] text-[14px]">
-                      (123) 456-7890
-                    </p>
-                  </div>
+                return (
+                  <article
+                    key={row.id}
+                    className={`overflow-hidden rounded-[20px] border bg-white shadow-[0_12px_34px_rgba(18,40,74,0.08)] ${borderColor}`}
+                  >
+                    <div className="flex flex-col sm:flex-row">
+                      <div className="relative h-52 sm:h-auto sm:w-[34%]">
+                        <img
+                          src={
+                            isCoupon
+                              ? row.thumbnailUrl ||
+                                row.images?.[0] ||
+                                "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80"
+                              : row.image
+                          }
+                          alt={row.title}
+                          className="h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-[#0f1c2d]/18" />
+                        <div
+                          className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[11px] font-semibold text-white ${badgeColor}`}
+                        >
+                          {isCoupon
+                            ? mapDealCategory(row.category)
+                            : row.category}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-1 flex-col p-4 sm:p-5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="text-xl font-bold leading-tight text-[#1d2b40]">
+                              {row.title}
+                            </h3>
+                            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#7c8ca1]">
+                              {isCoupon
+                                ? `${row.coupontoolsCouponId || row.id} - Active`
+                                : row.code}
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full px-3 py-1 text-[11px] font-semibold text-white ${badgeColor}`}
+                          >
+                            {isCoupon ? row.merchantName : row.merchant}
+                          </span>
+                        </div>
+
+                        <p className="mt-3 text-sm leading-6 text-[#6e8097]">
+                          {row.description ||
+                            "Enjoy premium local offers with flexible savings on every order."}
+                        </p>
+
+                        <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
+                          <div className="rounded-2xl bg-[#f8fbff] p-3">
+                            <p className="font-medium text-[#97a6ba]">Live Date</p>
+                            <p className="mt-1 font-semibold text-[#23354f]">
+                              {isCoupon
+                                ? formatDate(row.startDate)
+                                : row.liveDate}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-[#f8fbff] p-3">
+                            <p className="font-medium text-[#97a6ba]">End Date</p>
+                            <p className="mt-1 font-semibold text-[#23354f]">
+                              {isCoupon
+                                ? formatDate(row.endDate)
+                                : row.endDate}
+                            </p>
+                          </div>
+                          <div className="col-span-2 rounded-2xl bg-[#f8fbff] p-3 sm:col-span-1">
+                            <p className="font-medium text-[#97a6ba]">Location</p>
+                            <p className="mt-1 font-semibold text-[#23354f]">
+                              {selectedLocation === "Select location"
+                                ? isCoupon
+                                  ? "Las Vegas, Nevada"
+                                  : row.location
+                                : selectedLocation}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-5 flex items-center justify-end">
+                          <button
+                            type="button"
+                            className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition ${buttonColor}`}
+                          >
+                            Get Now
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            {visibleRows.length === 0 ? (
+              <div className="mt-6 rounded-[20px] border border-dashed border-[#ccdaea] bg-white px-6 py-12 text-center text-sm text-[#6e8097]">
+                No results matched your current filters.
+              </div>
+            ) : null}
+
+            {visibleCount < rows.length ? (
+              <div className="mt-8">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((count) => count + 4)}
+                  className="flex w-full items-center justify-center rounded-full bg-white py-3 text-sm font-semibold text-[#0f7af7] shadow-[inset_0_0_0_1px_#dce8f8]"
+                >
+                  Load More
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      <footer className="bg-[#071425] text-white">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[1.2fr_0.7fr_0.9fr]">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0f7af7]">
+                  <TicketPercent className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#4da4ff]">
+                    Polokaz
+                  </p>
+                  <p className="text-xs text-white/60">Save more, locally.</p>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                <span className="font-['DM Sans'] text-[14px] font-medium opacity-50">
-                  Social Media
-                </span>
-                <div className="flex flex-wrap items-center gap-4">
-                  {/* Replace these placeholders with actual icons */}
-                  <div className="h-6 w-6" />
-                  <div className="h-[18px] w-[18px] rounded-full bg-white" />
-                  <div className="h-6 w-6" />
-                  <div className="h-[18px] w-[18px] rounded bg-white" />
-                  <div className="h-6 w-6" />
-                  <div className="h-6 w-6" />
-                  <div className="h-6 w-6" />
-                  <div className="h-6 w-6" />
-                  <div className="h-6 w-6" />
-                  <div className="h-[18px] w-[18px] rounded-full bg-white" />
-                  <div className="h-6 w-6" />
+              <p className="mt-5 max-w-sm text-sm leading-7 text-white/68">
+                We connect users with the best nearby restaurants, cafes,
+                stores, and service providers to help you save more while
+                enjoying your favorite experiences.
+              </p>
+
+              <div className="mt-6 flex items-center gap-3">
+                {[Facebook, X, Instagram, Mail].map((Icon, index) => (
+                  <div
+                    key={index}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/12 bg-white/5"
+                  >
+                    <Icon className="h-4 w-4 text-[#85c2ff]" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-[#4da4ff]">
+                Important Links
+              </h3>
+              <ul className="mt-5 space-y-3 text-sm text-white/70">
+                <li>Coupons</li>
+                <li>Events</li>
+                <li>About us</li>
+                <li>Career</li>
+                <li>Subscription</li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-[#4da4ff]">
+                Contact Us
+              </h3>
+              <div className="mt-5 space-y-4 text-sm text-white/70">
+                <div className="flex items-start gap-3">
+                  <MapPin className="mt-0.5 h-4 w-4 text-[#85c2ff]" />
+                  <p>ABC Company, 123 East 7th Street, St. Louis 10001</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Phone className="h-4 w-4 text-[#85c2ff]" />
+                  <p>(123) 456-7890</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Mail className="h-4 w-4 text-[#85c2ff]" />
+                  <p>polokaz@gmail.com</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-10 space-y-4">
-            <div className="h-px w-full bg-white/20" />
-            <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-              <div className="flex flex-wrap items-center gap-6 font-['DM Sans'] text-[14px] font-medium uppercase">
-                <button>About us</button>
-                <button>Contact us</button>
-                <button>Help</button>
-                <button>Privacy Policy</button>
-                <button>Disclaimer</button>
-              </div>
-              <p className="font-['Assistant'] text-[14px] opacity-50">
-                Copyright © 2022 • ABC Company.
-              </p>
+          <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
+            <p>(c) 2026 ABC Company. All Rights Reserved.</p>
+            <div className="flex items-center gap-5">
+              <button type="button">Help Center</button>
+              <button type="button">Privacy Policy</button>
             </div>
           </div>
         </div>
@@ -371,4 +632,3 @@ export default function Page() {
     </main>
   );
 }
-
