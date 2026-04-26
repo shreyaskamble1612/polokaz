@@ -35,7 +35,7 @@ type UserProfile = {
   email: string;
   image?: string | null;
 };
-
+// In a real application, these would come from your backend or an API. For this example, we're hardcoding them for demonstration purposes.
 const CATEGORIES = [
   {
     id: "food",
@@ -74,6 +74,7 @@ const CATEGORIES = [
   },
 ];
 
+// In a real application, these would come from your backend or an API. For this example, we're hardcoding them for demonstration purposes.
 const MERCHANTS = [
   {
     id: "m1",
@@ -149,7 +150,7 @@ function getDealAccent(index: number) {
         border: "border-[#ffd7b0]",
       };
 }
-
+// In a real application, these would come from your backend or an API. For this example, we're hardcoding them for demonstration purposes.
 export default function Page() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("Select location");
