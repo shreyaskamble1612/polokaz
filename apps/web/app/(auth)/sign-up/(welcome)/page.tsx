@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandLogo } from "@/components/brand/brand-logo";
 import ReferralIdLink from "@/components/referral-id-link";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
@@ -8,6 +9,9 @@ export default function LoginPage() {
   return (
     <>
       <div className="z-20 max-w-7xl md:px-0 px-4">
+        <div className="mb-10 flex justify-center">
+          <BrandLogo size="xl" priority />
+        </div>
         <motion.h1
           className="tracking-tighter text-white text-6xl text-center font-medium md:text-9xl"
           initial={{

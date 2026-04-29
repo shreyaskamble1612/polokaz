@@ -3,7 +3,7 @@
 import { Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavUser } from "@/components/layout/home/nav-user";
-import Link from "next/link";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 interface DashboardHeaderProps {
   user: {
@@ -28,9 +28,7 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
         </Button>
 
         <div className="flex items-center gap-2">
-          <Link href="/" className="font-semibold text-lg tracking-tight">
-            Polokaz
-          </Link>
+          <BrandLogo href="/" size="md" />
         </div>
 
         <div className="flex-1" />
@@ -45,4 +43,3 @@ export function DashboardHeader({ user, onMenuClick }: DashboardHeaderProps) {
     </header>
   );
 }
-

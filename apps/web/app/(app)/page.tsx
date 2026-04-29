@@ -1,3 +1,4 @@
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { CreateReferralDialog } from "@/components/create-referral-dialog";
 import { Button } from "@/components/ui/button";
 
@@ -6,6 +7,9 @@ export default function Home() {
     <div className="h-screen flex items-center px-6">
       <div className="w-full h-96 md:h-[90vh] bg-primary rounded-4xl flex items-center px-12 justify-center">
         <div className="space-y-3 text-center">
+          <div className="flex justify-center">
+            <BrandLogo size="xl" priority />
+          </div>
           <h1 className="text-4xl md:text-6xl tracking-tighter text-primary-foreground font-medium max-w-2xl">
             Unlock More Benefits
           </h1>

@@ -1,13 +1,11 @@
 import { Session } from "@polokaz/auth";
-import Link from "next/link";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { NavUser } from "./nav-user";
 
 function HomeHeader({ session }: { session: Session }) {
   return (
     <header className="px-6 py-4 border-b-border bg-background justify-between flex items-center">
-      <h1 className="text-xl font-semibold tracking-tighter">
-        <Link href="/">Polokaz</Link>
-      </h1>
+      <BrandLogo href="/" size="md" priority />
 
       <NavUser
         user={{

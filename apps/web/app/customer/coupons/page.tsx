@@ -21,10 +21,10 @@ import {
   Menu,
   Phone,
   Search,
-  TicketPercent,
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 type UserProfile = {
   name: string;
@@ -201,15 +201,7 @@ export default function Page() {
       <header className="sticky top-0 z-30 border-b border-[#dfe7f2] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0f7af7] text-white shadow-[0_10px_24px_rgba(15,122,247,0.24)]">
-              <TicketPercent className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#0f7af7]">
-                Polokaz
-              </p>
-              <p className="text-xs text-[#738299]">Deals around you</p>
-            </div>
+            <BrandLogo href="/" size="md" />
           </div>
 
           <nav className="hidden items-center gap-8 text-sm font-medium text-[#4b5c74] md:flex">
@@ -557,16 +549,9 @@ export default function Page() {
           <div className="grid gap-10 lg:grid-cols-[1.2fr_0.7fr_0.9fr]">
             <div>
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0f7af7]">
-                  <TicketPercent className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#4da4ff]">
-                    Polokaz
-                  </p>
-                  <p className="text-xs text-white/60">Save more, locally.</p>
-                </div>
+                <BrandLogo size="lg" />
               </div>
+              <p className="mt-2 text-xs text-white/60">Save more, locally.</p>
 
               <p className="mt-5 max-w-sm text-sm leading-7 text-white/68">
                 We connect users with the best nearby restaurants, cafes,
