@@ -1,6 +1,9 @@
 import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
 
+export const membershipTierValues = ["free", "basic", "gold", "merchant"] as const;
+export type MembershipTier = (typeof membershipTierValues)[number];
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -16,6 +19,9 @@ export const user = pgTable("user", {
   banned: boolean("banned").default(false),
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires"),
+  tier: text("tier").$type<MembershipTier>().default("free").notNull(),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
   referralId: text("referral_id"),
   birthdate: timestamp("birthdate").notNull(),
   countryName: text("country_name").notNull(),

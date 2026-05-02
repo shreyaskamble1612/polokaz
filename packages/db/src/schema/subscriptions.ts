@@ -7,9 +7,9 @@ import { relations, sql } from "drizzle-orm";
  * Manages subscription tiers and user subscription status
  */
 
-// Subscription tier definitions (Bronze, Silver, Gold, Platinum)
+// Subscription tier definitions (Free, Basic, Gold, Merchant)
 export const subscriptionTier = pgTable("subscription_tier", {
-  id: text("id").primaryKey(), // e.g., 'bronze', 'silver', 'gold', 'platinum'
+  id: text("id").primaryKey(), // e.g., 'free', 'basic', 'gold', 'merchant'
   name: text("name").notNull(), // Display name
   description: text("description"),
   monthlyPrice: decimal("monthly_price", { precision: 10, scale: 2 }).notNull(),
@@ -138,4 +138,3 @@ export const subscriptionHistoryRelations = relations(subscriptionHistory, ({ on
     references: [subscriptionTier.id],
   }),
 }));
-

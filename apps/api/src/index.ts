@@ -8,8 +8,10 @@ import { referralRouter } from "./controllers/referrals";
 import { trackdeskRouter } from "./controllers/trackdesk";
 import { dealsRouter } from "./controllers/deals";
 import { usersRouter } from "./controllers/users";
+import { stripeRouter } from "./controllers/stripe";
 import { trackdeskWebhookRouter } from "./controllers/webhooks/trackdesk";
 import { coupontoolsWebhookRouter } from "./controllers/webhooks/coupontools";
+import { stripeWebhookRouter } from "./controllers/webhooks/stripe";
 import "dotenv/config";
 import fs from "fs";
 
@@ -62,6 +64,7 @@ app.all("/api/auth/*splat", (req, res, next) => {
 // Webhook routes (no authentication required)
 app.use("/api/webhooks/trackdesk", trackdeskWebhookRouter);
 app.use("/api/webhooks/coupontools", coupontoolsWebhookRouter);
+app.use("/api/webhooks/stripe", stripeWebhookRouter);
 
 app.use(authenticate);
 
@@ -73,6 +76,7 @@ app.use("/api/deals", dealsRouter);
 app.use("/api/referral", referralRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/trackdesk", trackdeskRouter);
+app.use("/api/stripe", stripeRouter);
 
 // Centralized error handler to log unexpected exceptions and return JSON
 app.use((err: any, req: any, res: any, next: any) => {
