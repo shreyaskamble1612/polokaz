@@ -34,3 +34,15 @@
     at endReadableNT (node:internal/streams/readable:1696:12)
     at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
 
+2026-05-21T06:21:19.893Z - PolokazError: You don't have permission to access this.
+    at ReferralsService.getAll (C:\Users\HP\Desktop\Freelancing\Freelancing\polokaz-master\apps\api\src\services\referrals.ts:19:30)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\Freelancing\polokaz-master\apps\api\src\controllers\referrals.ts:11:35)
+    at Layer.handleRequest (C:\Users\HP\Desktop\Freelancing\Freelancing\polokaz-master\node_modules\.pnpm\router@2.2.0\node_modules\router\lib\layer.js:152:17)
+    at next (C:\Users\HP\Desktop\Freelancing\Freelancing\polokaz-master\node_modules\.pnpm\router@2.2.0\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (C:\Users\HP\Desktop\Freelancing\Freelancing\polokaz-master\node_modules\.pnpm\router@2.2.0\node_modules\router\lib\route.js:117:3)
+    at handle (C:\Users\HP\Desktop\Freelancing\Freelancing\polokaz-master\node_modules\.pnpm\router@2.2.0\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (C:\Users\HP\Desktop\Freelancing\Freelancing\polokaz-master\node_modules\.pnpm\router@2.2.0\node_modules\router\lib\layer.js:152:17)
+    at C:\Users\HP\Desktop\Freelancing\Freelancing\polokaz-master\node_modules\.pnpm\router@2.2.0\node_modules\router\index.js:295:15
+    at processParams (C:\Users\HP\Desktop\Freelancing\Freelancing\polokaz-master\node_modules\.pnpm\router@2.2.0\node_modules\router\index.js:582:12)
+    at next (C:\Users\HP\Desktop\Freelancing\Freelancing\polokaz-master\node_modules\.pnpm\router@2.2.0\node_modules\router\index.js:291:5)
+

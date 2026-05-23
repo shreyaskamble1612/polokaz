@@ -26,6 +26,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 type UserProfile = {
   name: string;
@@ -419,6 +420,14 @@ export default function Page() {
                 <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
                   <Link href="/referral" prefetch>Referral Program</Link>
                 </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-[#e8eef7]" />
+                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 text-red-600">
+                  <LogoutButton
+                    className="flex w-full items-center gap-2 text-left"
+                    label="Log out"
+                    onLogout={() => router.refresh()}
+                  />
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -463,6 +472,11 @@ export default function Page() {
                 <p className="truncate text-xs text-[#7d8ea5]">{user.email}</p>
               </div>
             </div>
+            <LogoutButton
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#d8e4f6] bg-white px-4 py-3 text-sm font-medium text-[#24405f] transition hover:bg-[#f7faff]"
+              label="Log out"
+              onLogout={() => router.refresh()}
+            />
           </div>
         ) : null}
       </header>
@@ -496,7 +510,7 @@ export default function Page() {
                 onClick={() => setSelectedCategory(category.id)}
                 className={`group relative overflow-hidden rounded-[18px] text-left transition hover:-translate-y-0.5 ${
                   index === CATEGORY_TILES.length - 1
-                    ? "lg:[&:not(:last-child)]:col-span-1"
+                    ? "lg:not-last:col-span-1"
                     : ""
                 }`}
               >
@@ -569,6 +583,7 @@ export default function Page() {
             <select
               value={selectedCategory}
               onChange={(event) => setSelectedCategory(event.target.value)}
+              aria-label="Filter by category"
               className="rounded-2xl bg-white px-4 py-3 text-sm text-[#6f8197] outline-none shadow-[inset_0_0_0_1px_#e8edf5]"
             >
               {CATEGORY_OPTIONS.map((option) => (
@@ -581,6 +596,7 @@ export default function Page() {
             <select
               value={selectedLocation}
               onChange={(event) => setSelectedLocation(event.target.value)}
+              aria-label="Filter by location"
               className="rounded-2xl bg-white px-4 py-3 text-sm text-[#6f8197] outline-none shadow-[inset_0_0_0_1px_#e8edf5]"
             >
               {LOCATION_OPTIONS.map((option) => (
@@ -672,12 +688,21 @@ export default function Page() {
                       </div>
 
                       <div className="mt-5 flex items-center justify-end">
-                        <button
-                          type="button"
-                          className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition ${buttonColor}`}
-                        >
-                          Get Now
-                        </button>
+                          {activeTab === "coupons" ? (
+                            <Link
+                              href={`/deals/${card.id}`}
+                              className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition ${buttonColor}`}
+                            >
+                              Get Now
+                            </Link>
+                          ) : (
+                            <button
+                              type="button"
+                              className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition ${buttonColor}`}
+                            >
+                              Get Now
+                            </button>
+                          )}
                       </div>
                     </div>
                   </div>

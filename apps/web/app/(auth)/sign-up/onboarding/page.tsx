@@ -1,6 +1,7 @@
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 import Image from "next/image";
+import { Suspense } from "react";
 
 export default function Page() {
   return (
@@ -9,7 +10,9 @@ export default function Page() {
         <BrandLogo href="/" size="lg" className="mb-2" priority />
         <div className="flex items-center justify-center">
           <div className="md:w-md w-full">
-            <SignUpForm />
+            <Suspense fallback={null}>
+              <SignUpForm />
+            </Suspense>
           </div>
         </div>
       </div>

@@ -1,11 +1,18 @@
 import express from "express";
 import { UsersService } from "../services/users";
+import { requireRole } from "../lib/authorization";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
+  const session = requireRole(req, res, ["admin"]);
+
+  if (!session) {
+    return;
+  }
+
   const service = new UsersService({
-    session: req.session,
+    session,
   });
 
   const users = await service.getAll();
@@ -14,8 +21,14 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
+  const session = requireRole(req, res, ["admin"]);
+
+  if (!session) {
+    return;
+  }
+
   const service = new UsersService({
-    session: req.session,
+    session,
   });
 
   const user = await service.getOne(req.params.id);

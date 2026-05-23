@@ -117,7 +117,7 @@ export function CreateReferralDialog({ children, onSuccess }: CreateReferralDial
     if (createdReferralData?.trackdeskUrl) {
       return createdReferralData.trackdeskUrl;
     }
-    return `${process.env.NEXT_PUBLIC_APP_URL}/sign-up?referralId=${createdReferralCode}`;
+    return `${process.env.NEXT_PUBLIC_APP_URL}/sign-up/onboarding?referralId=${createdReferralCode}`;
   };
 
   const copyToClipboard = () => {

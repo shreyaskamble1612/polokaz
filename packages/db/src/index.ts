@@ -1,8 +1,11 @@
 export * from "./db";
 export * from "./schema";
 export {
+  asc,
   eq,
   and,
+  desc,
+  ilike,
   or,
   not,
   isNull,

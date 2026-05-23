@@ -8,12 +8,12 @@ import { deal } from "@polokaz/db";
 
 const SAMPLE_DEALS = [
   {
-    id: "cam_sample_1",
+    coupontoolsId: "cam_sample_1",
     title: "20% Off On Overall Bill",
     description:
       "Enjoy a flat 20% discount on all food and beverage orders at select locations. No minimum bill required.",
     category: "Food & Drink",
-    dealType: "percentage",
+    dealType: "coupon",
     discountValue: "20",
     merchantName: "Abc Merchant",
     status: "active",
@@ -23,11 +23,11 @@ const SAMPLE_DEALS = [
     featured: true,
   },
   {
-    id: "cam_sample_2",
+    coupontoolsId: "cam_sample_2",
     title: "$25 Off On Clothing",
     description: "Get $25 off your next clothing purchase. Valid on orders over $100.",
     category: "Retail & Shopping",
-    dealType: "fixed_amount",
+    dealType: "voucher",
     discountValue: "25",
     merchantName: "Abc Merchant",
     status: "active",
@@ -37,11 +37,11 @@ const SAMPLE_DEALS = [
     featured: true,
   },
   {
-    id: "cam_sample_3",
+    coupontoolsId: "cam_sample_3",
     title: "15% Off Wellness Services",
     description: "Access resources for stress management, mindfulness, and achieving your personal health goals.",
     category: "Health & Wellness",
-    dealType: "percentage",
+    dealType: "coupon",
     discountValue: "15",
     merchantName: "Wellness Co",
     status: "active",
@@ -59,11 +59,13 @@ async function main() {
       .insert(deal)
       .values({
         ...d,
+        expiresAt: d.endDate,
+        syncedAt: new Date(),
         images: ["https://placehold.co/214x218"],
         thumbnailUrl: "https://placehold.co/214x218",
       })
       .onConflictDoUpdate({
-        target: deal.id,
+        target: deal.coupontoolsId,
         set: {
           title: d.title,
           description: d.description,
@@ -74,6 +76,8 @@ async function main() {
           status: d.status,
           startDate: d.startDate,
           endDate: d.endDate,
+          expiresAt: d.endDate,
+          syncedAt: new Date(),
           featured: d.featured,
           updatedAt: new Date(),
         },

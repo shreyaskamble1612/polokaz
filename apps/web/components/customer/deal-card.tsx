@@ -2,6 +2,7 @@
 
 import { Deal } from "@/lib/api/deals";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface DealCardProps {
   deal: Deal;
@@ -105,16 +106,25 @@ export function DealCard({ deal, onGetNow }: DealCardProps) {
         </div>
 
         <div className="mt-auto flex items-center justify-end">
-          <Button
-            onClick={handleGetNow}
-            variant="outline"
-            className="inline-flex items-center justify-center rounded-lg border border-[#0378ED] px-5 py-1.5 font-inter text-[12px] font-semibold text-[#0378ED] hover:bg-[#0378ED] hover:text-white transition-colors"
-          >
-            Get Now
-          </Button>
+          {onGetNow ? (
+            <Button
+              onClick={handleGetNow}
+              variant="outline"
+              className="inline-flex items-center justify-center rounded-lg border border-[#0378ED] px-5 py-1.5 font-inter text-[12px] font-semibold text-[#0378ED] hover:bg-[#0378ED] hover:text-white transition-colors"
+            >
+              Get Now
+            </Button>
+          ) : (
+            <Button
+              asChild
+              variant="outline"
+              className="inline-flex items-center justify-center rounded-lg border border-[#0378ED] px-5 py-1.5 font-inter text-[12px] font-semibold text-[#0378ED] hover:bg-[#0378ED] hover:text-white transition-colors"
+            >
+              <Link href={`/deals/${deal.id}`}>Get Now</Link>
+            </Button>
+          )}
         </div>
       </div>
     </article>
   );
 }
-

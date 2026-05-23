@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const membershipTierValues = ["free", "basic", "gold", "merchant"] as const;
 export type MembershipTier = (typeof membershipTierValues)[number];
@@ -87,6 +87,41 @@ export const verification = pgTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
+export const merchantApplicationStatusValues = ["pending", "approved", "rejected"] as const;
+export type MerchantApplicationStatus = (typeof merchantApplicationStatusValues)[number];
+
+export const merchantApplication = pgTable(
+  "merchant_application",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    companyName: text("company_name").notNull(),
+    companyEmail: text("company_email").notNull(),
+    companyPhone: text("company_phone").notNull(),
+    companyAddress: text("company_address").notNull(),
+    companyWebsite: text("company_website"),
+    businessType: text("business_type").notNull(),
+    contactPersonOneName: text("contact_person_one_name").notNull(),
+    contactPersonOnePhone: text("contact_person_one_phone").notNull(),
+    contactPersonTwoName: text("contact_person_two_name"),
+    contactPersonTwoPhone: text("contact_person_two_phone"),
+    memberRange: text("member_range").notNull(),
+    notes: text("notes"),
+    status: text("status").$type<MerchantApplicationStatus>().default("pending").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("merchantApplication_userId_idx").on(table.userId),
+    uniqueIndex("merchantApplication_userId_unique").on(table.userId),
+  ],
+);
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
@@ -102,6 +137,13 @@ export const sessionRelations = relations(session, ({ one }) => ({
 export const accountRelations = relations(account, ({ one }) => ({
   user: one(user, {
     fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
+export const merchantApplicationRelations = relations(merchantApplication, ({ one }) => ({
+  user: one(user, {
+    fields: [merchantApplication.userId],
     references: [user.id],
   }),
 }));

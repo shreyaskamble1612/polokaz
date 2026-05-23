@@ -74,8 +74,12 @@ export async function fetchDeals(params: ListDealsParams = {}): Promise<DealsRes
 /**
  * Sync deals from Coupontools (admin only)
  */
-export async function syncDealsFromCoupontools(): Promise<{ synced: number; errors: number }> {
-  const url = `${process.env.NEXT_PUBLIC_API_URL}/api/deals/sync`;
+export async function syncDealsFromCoupontools(): Promise<{
+  synced: number;
+  errors: number;
+  deactivated: number;
+}> {
+  const url = `${process.env.NEXT_PUBLIC_API_URL}/api/admin/sync-deals`;
   
   const response = await fetch(url, {
     method: "POST",
@@ -153,4 +157,3 @@ export function getDummyDeals(): Deal[] {
     },
   ];
 }
-

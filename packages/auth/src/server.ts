@@ -15,7 +15,9 @@ const instance = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
-  trustedOrigins: [process.env.NEXT_PUBLIC_APP_URL],
+  trustedOrigins: process.env.NEXT_PUBLIC_APP_URL
+    ? [process.env.NEXT_PUBLIC_APP_URL]
+    : [],
   emailAndPassword: {
     enabled: true,
   },
@@ -33,6 +35,7 @@ const instance = betterAuth({
 
       // If no referral was provided, continue normally (referral is optional)
       if (!referralId) return;
+      if (!ctx.context.newSession?.user.id) return;
 
       try {
         await consumeReferral(
@@ -65,7 +68,7 @@ const instance = betterAuth({
       }
 
       // Check expiry correctly using timestamps
-      if (referral.expiresAt.getTime() < Date.now()) {
+      if (referral.expiresAt && referral.expiresAt.getTime() < Date.now()) {
         throw new APIError("UNPROCESSABLE_ENTITY", {
           message: "Referral link expired. Ask for new one",
         });
@@ -82,11 +85,6 @@ const instance = betterAuth({
   },
   user: {
     additionalFields: {
-      referralId: {
-        type: "string",
-        required: false,
-        input: true,
-      },
       birthdate: {
         type: "date",
         required: true,
@@ -95,6 +93,16 @@ const instance = betterAuth({
       countryName: {
         type: "string",
         required: true,
+        input: true,
+      },
+      referralId: {
+        type: "string",
+        required: false,
+        input: true,
+      },
+      tier: {
+        type: "string",
+        required: false,
         input: true,
       },
     },

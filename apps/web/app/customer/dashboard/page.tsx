@@ -24,8 +24,10 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 type UserProfile = {
   name: string;
@@ -111,6 +113,18 @@ function buildVoucherRows() {
       id: `${item.id}-${index}`,
     };
   });
+}
+
+function isCouponRow(
+  row: Deal | (typeof VOUCHER_FALLBACK)[number],
+): row is Deal {
+  return "merchantName" in row;
+}
+
+function isVoucherRow(
+  row: Deal | (typeof VOUCHER_FALLBACK)[number],
+): row is (typeof VOUCHER_FALLBACK)[number] {
+  return "merchant" in row;
 }
 
 export default function Page() {
@@ -288,6 +302,14 @@ export default function Page() {
                 <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
                   <Link href="/referral" prefetch>Referral Program</Link>
                 </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-[#e8eef7]" />
+                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 text-red-600">
+                  <LogoutButton
+                    className="flex w-full items-center gap-2 text-left"
+                    label="Log out"
+                    onLogout={() => router.refresh()}
+                  />
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -332,6 +354,11 @@ export default function Page() {
                 <p className="truncate text-xs text-[#7d8ea5]">{user.email}</p>
               </div>
             </div>
+            <LogoutButton
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#d8e4f6] bg-white px-4 py-3 text-sm font-medium text-[#24405f] transition hover:bg-[#f7faff]"
+              label="Log out"
+              onLogout={() => router.refresh()}
+            />
           </div>
         ) : null}
       </header>
@@ -373,7 +400,7 @@ export default function Page() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-[24px] bg-white shadow-[0_18px_50px_rgba(20,42,79,0.08)]">
+        <div className="overflow-hidden rounded-3xl bg-white shadow-[0_18px_50px_rgba(20,42,79,0.08)]">
           <div className="border-b border-[#edf1f6] px-4 pt-5 sm:px-6">
             <div className="flex gap-8 text-sm font-medium">
               <button
@@ -417,6 +444,7 @@ export default function Page() {
               <select
                 value={selectedCategory}
                 onChange={(event) => setSelectedCategory(event.target.value)}
+                aria-label="Filter by category"
                 className="rounded-2xl border border-[#e8edf5] px-4 py-3 text-sm text-[#6f8197] outline-none"
               >
                 {CATEGORY_OPTIONS.map((option) => (
@@ -429,6 +457,7 @@ export default function Page() {
               <select
                 value={selectedLocation}
                 onChange={(event) => setSelectedLocation(event.target.value)}
+                aria-label="Filter by location"
                 className="rounded-2xl border border-[#e8edf5] px-4 py-3 text-sm text-[#6f8197] outline-none"
               >
                 {LOCATION_OPTIONS.map((option) => (
@@ -449,6 +478,8 @@ export default function Page() {
             <div className="mt-6 grid gap-5 xl:grid-cols-2">
               {visibleRows.map((row, index) => {
                 const isCoupon = activeTab === "coupons";
+                const couponRow = isCouponRow(row) ? row : null;
+                const voucherRow = isVoucherRow(row) ? row : null;
                 const accent = index % 2 === 0;
                 const badgeColor = accent ? "bg-[#0f7af7]" : "bg-[#ef8a23]";
                 const buttonColor = accent
@@ -464,17 +495,20 @@ export default function Page() {
                     className={`overflow-hidden rounded-[20px] border bg-white shadow-[0_12px_34px_rgba(18,40,74,0.08)] ${borderColor}`}
                   >
                     <div className="flex flex-col sm:flex-row">
-                      <div className="relative h-52 sm:h-auto sm:w-[34%]">
-                        <img
+                      <div className="relative h-52 overflow-hidden sm:h-auto sm:w-[34%]">
+                        <Image
                           src={
                             isCoupon
-                              ? row.thumbnailUrl ||
-                                row.images?.[0] ||
+                              ? couponRow?.thumbnailUrl ||
+                                couponRow?.images?.[0] ||
                                 "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80"
-                              : row.image
+                              : voucherRow?.image ||
+                                "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=900&q=80"
                           }
                           alt={row.title}
-                          className="h-full w-full object-cover"
+                          fill
+                          sizes="(max-width: 640px) 100vw, 34vw"
+                          className="object-cover"
                         />
                         <div className="absolute inset-0 bg-[#0f1c2d]/18" />
                         <div
@@ -494,14 +528,14 @@ export default function Page() {
                             </h3>
                             <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#7c8ca1]">
                               {isCoupon
-                                ? `${row.coupontoolsCouponId || row.id} - Active`
-                                : row.code}
+                                ? `${couponRow?.coupontoolsCouponId || row.id} - Active`
+                                : voucherRow?.code}
                             </p>
                           </div>
                           <span
                             className={`rounded-full px-3 py-1 text-[11px] font-semibold text-white ${badgeColor}`}
                           >
-                            {isCoupon ? row.merchantName : row.merchant}
+                            {isCoupon ? couponRow?.merchantName : voucherRow?.merchant}
                           </span>
                         </div>
 
@@ -515,16 +549,16 @@ export default function Page() {
                             <p className="font-medium text-[#97a6ba]">Live Date</p>
                             <p className="mt-1 font-semibold text-[#23354f]">
                               {isCoupon
-                                ? formatDate(row.startDate)
-                                : row.liveDate}
+                                ? formatDate(couponRow?.startDate ?? null)
+                                : voucherRow?.liveDate}
                             </p>
                           </div>
                           <div className="rounded-2xl bg-[#f8fbff] p-3">
                             <p className="font-medium text-[#97a6ba]">End Date</p>
                             <p className="mt-1 font-semibold text-[#23354f]">
                               {isCoupon
-                                ? formatDate(row.endDate)
-                                : row.endDate}
+                                ? formatDate(couponRow?.endDate ?? null)
+                                : voucherRow?.endDate}
                             </p>
                           </div>
                           <div className="col-span-2 rounded-2xl bg-[#f8fbff] p-3 sm:col-span-1">
@@ -533,7 +567,7 @@ export default function Page() {
                               {selectedLocation === "Select location"
                                 ? isCoupon
                                   ? "Las Vegas, Nevada"
-                                  : row.location
+                                  : voucherRow?.location
                                 : selectedLocation}
                             </p>
                           </div>

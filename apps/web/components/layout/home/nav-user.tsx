@@ -11,11 +11,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
-import { authClient } from "@polokaz/auth/client";
+import { getRoleHomePath, getUserRole } from "@polokaz/auth/roles";
 import { Link2, LogOut, Settings, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { authClient } from "@polokaz/auth/client";
+
+import { LogoutButton } from "@/components/auth/logout-button";
 
 function NavUser({
   user,
@@ -24,10 +27,14 @@ function NavUser({
     name: string;
     email: string;
     avatar?: string | null;
+    role?: string | null;
   };
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const role = getUserRole(user);
+  const dashboardHref = getRoleHomePath(user);
+  const showMemberLinks = role === "member";
 
   return (
     <DropdownMenu>
@@ -62,45 +69,50 @@ function NavUser({
             </div>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href="/plans">
+            <Link href={dashboardHref}>
               <Sparkles />
-              Upgrade account
+              Dashboard
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator />
+        {showMemberLinks && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem asChild>
+                <Link href="/plans">
+                  <Sparkles />
+                  Upgrade account
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </>
+        )}
         <DropdownMenuGroup>
+          {showMemberLinks && (
+            <DropdownMenuItem asChild>
+              <Link href="/referral">
+                <Link2 />
+                Referral links
+              </Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem asChild>
-            <Link href="/referral">
-              <Link2 />
-              Referral links
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/settings">
+            <Link href="/profile">
               <Settings />
-              Settings
+              Profile
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          onClick={async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsLoading(true);
-            await authClient.signOut();
-            setIsLoading(false);
-
-            router.push("/sign-in");
-          }}
-        >
-          {isLoading ? <Spinner /> : <LogOut />}
-          Log out
+        <DropdownMenuItem variant="destructive" asChild>
+          <LogoutButton
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none"
+            label="Log out"
+            onLogout={() => router.refresh()}
+          />
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

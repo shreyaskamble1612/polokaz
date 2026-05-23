@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { authClient } from "@polokaz/auth/client";
+import { getRoleHomePath } from "@polokaz/auth/roles";
 import { AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Spinner } from "../ui/spinner";
@@ -55,7 +56,7 @@ export function LoginForm({
     }
 
     if (data.user) {
-      router.push("/");
+      router.push(getRoleHomePath(data.user));
     }
   }
 

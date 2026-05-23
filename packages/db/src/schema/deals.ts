@@ -1,76 +1,66 @@
-import { pgTable, text, timestamp, index, integer, decimal, boolean } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
+import {
+  boolean,
+  decimal,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 /**
- * Deals (Metadata Mirror)
- * Mirrors deal data from Coupontools for local querying and caching
+ * Deals cached from Coupontools for fast local browsing.
+ *
+ * The required sync fields mirror the PRD:
+ * - internal UUID id
+ * - unique Coupontools ID
+ * - category / deal type / status
+ * - expiry / redemption payload / sync timestamp
+ *
+ * We also keep a few display fields already used by the web app so the new
+ * sync flow stays compatible with the current browse UI.
  */
 
 export const deal = pgTable(
   "deal",
   {
-    id: text("id").primaryKey(), // Coupontools coupon ID
-    
-    // Basic deal information
+    id: text("id")
+      .default(sql`gen_random_uuid()`)
+      .primaryKey()
+      .notNull(),
+
+    coupontoolsId: text("coupontools_id").notNull().unique(),
     title: text("title").notNull(),
     description: text("description"),
-    category: text("category"), // e.g., 'food', 'entertainment', 'retail', 'services'
-    subcategory: text("subcategory"),
-    
-    // Deal type and value
-    dealType: text("deal_type").notNull(), // 'percentage', 'fixed_amount', 'bogo', 'freebie'
-    discountValue: decimal("discount_value", { precision: 10, scale: 2 }), // Percentage or amount
-    originalPrice: decimal("original_price", { precision: 10, scale: 2 }),
-    discountedPrice: decimal("discounted_price", { precision: 10, scale: 2 }),
-    
-    // Merchant information
+
+    // No merchant table exists in the repo yet, so this remains nullable text.
+    merchantId: text("merchant_id"),
     merchantName: text("merchant_name").notNull(),
-    merchantId: text("merchant_id"), // External merchant ID
-    merchantLogo: text("merchant_logo"),
-    merchantWebsite: text("merchant_website"),
-    
-    // Location data
-    locations: text("locations").array(), // Array of location IDs or addresses
-    isOnline: boolean("is_online").default(false).notNull(),
-    
-    // Availability
-    status: text("status").notNull().default('active'), // 'active', 'inactive', 'expired', 'draft'
+
+    category: text("category"),
+    dealType: text("deal_type").notNull(),
+    status: text("status").notNull().default("active"),
+
+    expiresAt: timestamp("expires_at"),
+    redemptionData: jsonb("redemption_data").$type<Record<string, unknown> | null>(),
+    syncedAt: timestamp("synced_at").defaultNow().notNull(),
+
+    // Compatibility/display fields already consumed by the app.
+    coupontoolsCouponId: text("coupontools_coupon_id"),
     startDate: timestamp("start_date"),
     endDate: timestamp("end_date"),
-    
-    // Limits and restrictions
-    maxRedemptions: integer("max_redemptions"), // Total redemptions allowed (null = unlimited)
-    maxRedemptionsPerUser: integer("max_redemptions_per_user").default(1),
-    currentRedemptions: integer("current_redemptions").default(0).notNull(),
-    
-    // Tier restrictions
-    requiredTiers: text("required_tiers").array(), // Array of tier IDs that can access this deal
-    
-    // Coupontools integration
-    coupontoolsCouponId: text("coupontools_coupon_id").unique(),
-    coupontoolsTemplateId: text("coupontools_template_id"),
-    coupontoolsData: text("coupontools_data"), // JSON blob of full Coupontools data
-    
-    // Media
-    images: text("images").array(), // Array of image URLs
+    discountValue: decimal("discount_value", { precision: 10, scale: 2 }),
+    merchantLogo: text("merchant_logo"),
+    merchantWebsite: text("merchant_website"),
+    images: text("images").array(),
     thumbnailUrl: text("thumbnail_url"),
-    
-    // SEO and display
-    slug: text("slug").unique(),
-    tags: text("tags").array(),
     featured: boolean("featured").default(false).notNull(),
-    priority: integer("priority").default(0).notNull(), // For sorting
-    
-    // Terms and conditions
-    termsAndConditions: text("terms_and_conditions"),
-    
-    // Metadata
-    metadata: text("metadata"), // JSON for additional flexible data
-    
-    // Sync tracking
-    lastSyncedAt: timestamp("last_synced_at"),
-    syncStatus: text("sync_status").default('synced'), // 'synced', 'pending', 'error'
-    
+    priority: integer("priority").default(0).notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown> | null>(),
+    coupontoolsData: jsonb("coupontools_data").$type<Record<string, unknown> | null>(),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -81,13 +71,12 @@ export const deal = pgTable(
     index("deal_status_idx").on(table.status),
     index("deal_category_idx").on(table.category),
     index("deal_merchantId_idx").on(table.merchantId),
-    index("deal_coupontoolsCouponId_idx").on(table.coupontoolsCouponId),
+    index("deal_coupontoolsId_idx").on(table.coupontoolsId),
     index("deal_featured_idx").on(table.featured),
-    index("deal_endDate_idx").on(table.endDate),
+    index("deal_expiresAt_idx").on(table.expiresAt),
   ],
 );
 
-// Deal analytics/stats (optional - for tracking performance)
 export const dealStats = pgTable(
   "deal_stats",
   {
@@ -98,19 +87,12 @@ export const dealStats = pgTable(
     dealId: text("deal_id")
       .notNull()
       .references(() => deal.id, { onDelete: "cascade" }),
-    
-    // Engagement metrics
     views: integer("views").default(0).notNull(),
     clicks: integer("clicks").default(0).notNull(),
-    saves: integer("saves").default(0).notNull(), // Added to wallet
+    saves: integer("saves").default(0).notNull(),
     redemptions: integer("redemptions").default(0).notNull(),
-    
-    // Conversion metrics
     conversionRate: decimal("conversion_rate", { precision: 5, scale: 2 }),
-    
-    // Date for time-series data
     date: timestamp("date").notNull(),
-    
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -123,7 +105,6 @@ export const dealStats = pgTable(
   ],
 );
 
-// Relations
 export const dealRelations = relations(deal, ({ many }) => ({
   stats: many(dealStats),
 }));
@@ -134,4 +115,3 @@ export const dealStatsRelations = relations(dealStats, ({ one }) => ({
     references: [deal.id],
   }),
 }));
-

@@ -13,6 +13,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { authClient } from "@polokaz/auth/client";
+import { getRoleHomePath } from "@polokaz/auth/roles";
 import { AlertTriangle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Spinner } from "../ui/spinner";
@@ -65,19 +66,19 @@ export function SignUpForm({
   const trackdeskClickId = searchParams.get("tdclid"); // Trackdesk click ID
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
-    if (!referralId) {
-      setError("root", { message: "There is no referral code" });
-
-      return;
-    }
-
-    const { error, data } = await authClient.signUp.email({
-      referralId,
+    const signUpPayload = {
       trackdeskClickId: trackdeskClickId || undefined,
-      countryName: values.country,
+      name: values.name,
+      email: values.email,
+      password: values.password,
       birthdate: values.dateOfBirth,
-      ...values,
-    });
+      countryName: values.country,
+      ...(referralId ? { referralId } : {}),
+    };
+
+    // trackdeskClickId is transient signup metadata consumed by auth hooks,
+    // not a persisted Better Auth user field.
+    const { error, data } = await authClient.signUp.email(signUpPayload);
 
     if (error) {
       setError("root", {
@@ -107,7 +108,7 @@ export function SignUpForm({
         }
       }
 
-      router.push("/");
+      router.push(getRoleHomePath(data.user));
     }
   }
 

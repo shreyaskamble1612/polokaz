@@ -39,23 +39,4 @@ router.get("/", async (req, res) => {
   }
 });
 
-/**
- * POST /api/deals/sync
- * Sync deals from Coupontools (admin/internal use)
- */
-router.post("/sync", async (req, res) => {
-  try {
-    const service = new DealsService();
-    const { synced, errors } = await service.syncFromCoupontools();
-    return res.json({ synced, errors });
-  } catch (error) {
-    logger.error("Error syncing deals from Coupontools", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return res.status(500).json({
-      error: { code: "INTERNAL_ERROR", message: "Failed to sync deals" },
-    });
-  }
-});
-
 export { router as dealsRouter };

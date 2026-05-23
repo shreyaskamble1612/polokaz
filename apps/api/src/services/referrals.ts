@@ -49,7 +49,7 @@ export class ReferralsService {
     // Create Trackdesk tracking link
     try {
       const trackdeskService = new TrackdeskService();
-      const destinationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/sign-up?referralId=${newReferral.id}`;
+      const destinationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/sign-up/onboarding?referralId=${newReferral.id}`;
       const trackdeskUrl =
         await trackdeskService.createTrackingLink(destinationUrl);
 

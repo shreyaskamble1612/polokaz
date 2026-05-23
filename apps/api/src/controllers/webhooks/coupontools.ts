@@ -7,7 +7,7 @@ import {
   logWebhookStep,
 } from "../../services/webhooks";
 import { DealsService } from "../../services/deals";
-import type { CoupontoolsCoupon, CoupontoolsDealPayload } from "../../services/coupontools";
+import { CoupontoolsService, type CoupontoolsCoupon } from "../../services/coupontools";
 import { useWebhookLogger } from "../../logger";
 
 const router = express.Router();
@@ -21,25 +21,6 @@ function verifyCoupontoolsHmac(payload: string, signature: string, secret: strin
   } catch {
     return false;
   }
-}
-
-function mapWebhookCouponToDeal(
-  campaignId: string,
-  coupon: CoupontoolsCoupon
-): CoupontoolsDealPayload {
-  const id = campaignId.startsWith("cam_") ? campaignId : `cam_${campaignId}`;
-  return {
-    id,
-    title: coupon.title ?? coupon.friendly_name ?? "Deal",
-    description: coupon.subtitle,
-    category: coupon.tags ?? undefined,
-    dealType: "percentage",
-    discountValue: coupon.coupon_value,
-    merchantName: "Merchant",
-    status: "active",
-    coupontoolsCouponId: id,
-    coupontoolsData: coupon as unknown as Record<string, unknown>,
-  };
 }
 
 /**
@@ -167,12 +148,10 @@ async function handleCouponCreated(
   });
 
   const coupon = typeof event.coupon === "object" ? event.coupon : undefined;
-  const payload = mapWebhookCouponToDeal(
+  const payload = new CoupontoolsService().mapWebhookCouponToDeal(
     String(campaignId),
     (coupon ?? {}) as CoupontoolsCoupon
   );
-  payload.id = String(campaignId);
-  payload.coupontoolsCouponId = String(campaignId);
 
   await dealsService.upsertDeal(payload);
 }
@@ -193,22 +172,21 @@ async function handleCouponUpdated(
   });
 
   const coupon = typeof event.coupon === "object" ? event.coupon : undefined;
-  const payload = mapWebhookCouponToDeal(
+  const payload = new CoupontoolsService().mapWebhookCouponToDeal(
     String(campaignId),
     (coupon ?? {}) as CoupontoolsCoupon
   );
-  payload.id = String(campaignId);
-  payload.coupontoolsCouponId = String(campaignId);
 
   await dealsService.upsertDeal(payload);
 }
 
 async function handleCouponRemoved(
   webhookEventId: string,
-  event: { campaign?: string; coupon?: string },
+  event: { campaign?: string; coupon?: string | Record<string, unknown> },
   dealsService: DealsService
 ) {
-  const campaignId = event.campaign ?? event.coupon;
+  const campaignId =
+    event.campaign ?? (typeof event.coupon === "string" ? event.coupon : undefined);
   if (!campaignId) {
     await logWebhookStep(webhookEventId, "warn", "coupon_removed missing campaign/coupon");
     return;

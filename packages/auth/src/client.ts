@@ -6,20 +6,25 @@ export const authClient = createAuthClient({
   plugins: [
     inferAdditionalFields({
       user: {
+        birthdate: {
+          type: "date",
+          input: true,
+          required: true,
+        },
+        countryName: {
+          type: "string",
+          input: true,
+          required: true,
+        },
         referralId: {
           type: "string",
           input: true,
           required: false,
         },
-        birthdate: {
-          type: "date",
-          required: true,
-          input: true,
-        },
-        countryName: {
+        tier: {
           type: "string",
-          required: true,
           input: true,
+          required: false,
         },
       },
     }),

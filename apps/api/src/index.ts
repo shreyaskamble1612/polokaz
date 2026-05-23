@@ -7,11 +7,14 @@ import morgan from "morgan";
 import { referralRouter } from "./controllers/referrals";
 import { trackdeskRouter } from "./controllers/trackdesk";
 import { dealsRouter } from "./controllers/deals";
+import { adminRouter } from "./controllers/admin";
 import { usersRouter } from "./controllers/users";
 import { stripeRouter } from "./controllers/stripe";
+import { merchantRouter } from "./controllers/merchant";
 import { trackdeskWebhookRouter } from "./controllers/webhooks/trackdesk";
 import { coupontoolsWebhookRouter } from "./controllers/webhooks/coupontools";
 import { stripeWebhookRouter } from "./controllers/webhooks/stripe";
+import { registerDealSyncCron } from "./jobs/deal-sync";
 import "dotenv/config";
 import fs from "fs";
 
@@ -73,6 +76,8 @@ app.disable("x-powered-by");
 
 // Deals (public browse + sync)
 app.use("/api/deals", dealsRouter);
+app.use("/api/admin", adminRouter);
+app.use("/api/merchant", merchantRouter);
 app.use("/api/referral", referralRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/trackdesk", trackdeskRouter);
@@ -103,6 +108,8 @@ if (!process.env.PORT) {
 }
 
 const port = process.env.PORT ?? "3001";
+
+registerDealSyncCron();
 
 app.listen(parseInt(port), () => {
   logger.info(`Server is running on http://127.0.0.1:${port}/`);

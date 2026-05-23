@@ -6,3 +6,4 @@ export * from "./wallet";
 export * from "./redemptions";
 export * from "./rewards";
 export * from "./webhooks";
+export * from "./auth";

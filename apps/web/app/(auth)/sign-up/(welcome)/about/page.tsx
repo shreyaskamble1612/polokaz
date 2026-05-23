@@ -4,6 +4,7 @@ import { BrandLogo } from "@/components/brand/brand-logo";
 import ReferralIdLink from "@/components/referral-id-link";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
+import { Suspense } from "react";
 
 const faq = [
   "Invite‑only lifestyle platform for exclusive deals, events, and experiences.",
@@ -77,12 +78,15 @@ export default function LoginPage() {
             className="text-base mx-auto text-white font-medium rounded-full cursor-pointer"
             size="lg"
           >
-            <ReferralIdLink href="/sign-up/onboarding">
-              Get started
-            </ReferralIdLink>
+            <Suspense fallback={<span>Get started</span>}>
+              <ReferralIdLink href="/sign-up">
+                Get started
+              </ReferralIdLink>
+            </Suspense>
           </Button>
         </motion.div>
       </div>
     </>
   );
 }
+
