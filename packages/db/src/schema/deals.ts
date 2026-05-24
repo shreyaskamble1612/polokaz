@@ -67,6 +67,8 @@ export const deals = pgTable(
   },
   (table) => [
     index("deals_category_status_idx").on(table.category, table.status),
+    index("deals_category_idx").on(table.category),
+    index("deals_status_idx").on(table.status),
     index("deals_merchant_id_idx").on(table.merchantId),
     index("deals_coupontools_id_idx").on(table.coupontoolsId),
     index("deals_featured_idx").on(table.featured),

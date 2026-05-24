@@ -1,9 +1,8 @@
-import { DealsBrowser } from "@/components/deals/DealsBrowser";
-import { MOCK_DEALS } from "@/lib/mock-deals";
 import { requireServerSession } from "@/lib/auth/server-session";
+import { DealsPageClient } from "./deals-page-client";
 
 export default async function DealsPage() {
   await requireServerSession();
 
-  return <DealsBrowser deals={MOCK_DEALS} />;
+  return <DealsPageClient />;
 }

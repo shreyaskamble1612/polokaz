@@ -1,9 +1,6 @@
-/**
- * Deals API Client
- * Frontend API client for fetching deals from the backend
- */
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-export interface Deal {
+export interface ApiDeal {
   id: string;
   title: string;
   description: string | null;
@@ -16,47 +13,71 @@ export interface Deal {
   status: string;
   startDate: string | null;
   endDate: string | null;
+  expiresAt?: string | null;
   images: string[] | null;
   thumbnailUrl: string | null;
   featured: boolean;
   coupontoolsCouponId: string | null;
 }
 
-export interface DealsResponse {
-  deals: Deal[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    pages: number;
+export type Deal = ApiDeal;
+
+export interface DealsListResponse {
+  deals: ApiDeal[];
+  total: number;
+  page: number;
+  totalPages: number;
+  categories: string[];
+}
+
+export type DealsByCategoryResponse = Record<string, ApiDeal[]>;
+
+export interface DealDetailResponse {
+  deal: {
+    id: string;
+    title: string;
+    description: string | null;
+    category: string | null;
+    dealType: "coupon" | "voucher" | "loyalty";
+    status: string;
+    expiresAt: string | null;
+    redemptionData: Record<string, unknown> | null;
+    syncedAt: string | null;
+    createdAt: string | null;
+    merchantId: string | null;
+    discountValue: string | null;
+    merchantLogo: string | null;
+    merchantWebsite: string | null;
+    images: string[] | null;
+    thumbnailUrl: string | null;
+    metadata: Record<string, unknown> | null;
+    coupontoolsCouponId: string | null;
   };
+  merchant: {
+    id: string;
+    userId: string;
+    businessName: string;
+    businessCategory: string | null;
+    contactEmail: string;
+    website: string | null;
+    coupontoolsMerchantId: string | null;
+    status: string;
+    createdAt: string | null;
+  } | null;
+  isSaved: boolean;
+  isRedeemed: boolean;
 }
 
 export interface ListDealsParams {
   category?: string;
-  search?: string;
-  featured?: boolean;
-  status?: string;
+  type?: "coupon" | "voucher" | "loyalty";
   page?: number;
   limit?: number;
+  search?: string;
 }
 
-/**
- * Fetch deals from the API
- */
-export async function fetchDeals(params: ListDealsParams = {}): Promise<DealsResponse> {
-  const searchParams = new URLSearchParams();
-  
-  if (params.category) searchParams.set("category", params.category);
-  if (params.search) searchParams.set("search", params.search);
-  if (params.featured) searchParams.set("featured", "true");
-  if (params.status) searchParams.set("status", params.status);
-  if (params.page) searchParams.set("page", params.page.toString());
-  if (params.limit) searchParams.set("limit", params.limit.toString());
-
-  const url = `${process.env.NEXT_PUBLIC_API_URL}/api/deals?${searchParams.toString()}`;
-  
-  const response = await fetch(url, {
+async function apiFetch<T>(path: string) {
+  const response = await fetch(`${API_URL}${path}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -65,23 +86,39 @@ export async function fetchDeals(params: ListDealsParams = {}): Promise<DealsRes
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch deals: ${response.statusText}`);
+    throw new Error(`Request failed: ${response.statusText}`);
   }
 
-  return response.json();
+  return (await response.json()) as T;
 }
 
-/**
- * Sync deals from Coupontools (admin only)
- */
+export async function fetchDeals(params: ListDealsParams = {}) {
+  const searchParams = new URLSearchParams();
+
+  if (params.category) searchParams.set("category", params.category);
+  if (params.type) searchParams.set("type", params.type);
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.limit) searchParams.set("limit", String(params.limit));
+  if (params.search) searchParams.set("search", params.search);
+
+  const suffix = searchParams.toString() ? `?${searchParams.toString()}` : "";
+  return apiFetch<DealsListResponse>(`/api/deals${suffix}`);
+}
+
+export async function fetchDealsByCategory() {
+  return apiFetch<DealsByCategoryResponse>("/api/deals/by-category");
+}
+
+export async function fetchDealDetail(id: string) {
+  return apiFetch<DealDetailResponse>(`/api/deals/${id}`);
+}
+
 export async function syncDealsFromCoupontools(): Promise<{
-  synced: number;
-  errors: number;
+  inserted: number;
+  updated: number;
   deactivated: number;
 }> {
-  const url = `${process.env.NEXT_PUBLIC_API_URL}/api/admin/sync-deals`;
-  
-  const response = await fetch(url, {
+  const response = await fetch(`${API_URL}/api/admin/sync-deals`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -96,9 +133,6 @@ export async function syncDealsFromCoupontools(): Promise<{
   return response.json();
 }
 
-/**
- * Get dummy deals for development/testing
- */
 export function getDummyDeals(): Deal[] {
   return [
     {
@@ -114,6 +148,7 @@ export function getDummyDeals(): Deal[] {
       status: "active",
       startDate: "2025-01-01T00:00:00Z",
       endDate: "2025-12-31T23:59:59Z",
+      expiresAt: "2025-12-31T23:59:59Z",
       images: ["/customer/thumbnail.png"],
       thumbnailUrl: "/customer/thumbnail.png",
       featured: true,
@@ -132,6 +167,7 @@ export function getDummyDeals(): Deal[] {
       status: "active",
       startDate: "2025-01-01T00:00:00Z",
       endDate: "2025-12-31T23:59:59Z",
+      expiresAt: "2025-12-31T23:59:59Z",
       images: ["/customer/thumbnail.png"],
       thumbnailUrl: "/customer/thumbnail.png",
       featured: true,
@@ -150,6 +186,7 @@ export function getDummyDeals(): Deal[] {
       status: "active",
       startDate: "2025-01-01T00:00:00Z",
       endDate: "2025-06-30T23:59:59Z",
+      expiresAt: "2025-06-30T23:59:59Z",
       images: ["/customer/thumbnail.png"],
       thumbnailUrl: "/customer/thumbnail.png",
       featured: false,
