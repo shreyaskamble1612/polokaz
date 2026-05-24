@@ -1,5 +1,6 @@
 import type { Deal as UiDeal, DealCategory, DealType } from "@/components/deals/types";
 import type { ApiDeal, DealDetailResponse, DealsByCategoryResponse } from "@/lib/api/deals";
+import type { WalletApiItem } from "@/lib/api/wallet";
 
 function mapCategory(category: string | null): DealCategory {
   switch ((category ?? "").trim().toLowerCase()) {
@@ -92,4 +93,8 @@ export function mapDealDetailToUiDeal(response: DealDetailResponse): UiDeal {
     imageUrl: deal.thumbnailUrl || deal.images?.[0] || "/customer/thumbnail.png",
     termsAndConditions: baseTerms(),
   };
+}
+
+export function mapWalletItemToUiDeal(item: WalletApiItem): UiDeal {
+  return mapApiDealToUiDeal(item.deal);
 }

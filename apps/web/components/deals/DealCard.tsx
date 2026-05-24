@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import type { Deal } from "./types";
 import { motion } from "motion/react";
-import { BookmarkPlus, Clock3 } from "lucide-react";
+import { BookmarkCheck, BookmarkPlus, Clock3, LoaderCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -41,9 +41,13 @@ function formatExpiry(date: string) {
 export function DealCard({
   deal,
   onSave,
+  isSaving = false,
+  isSaved = false,
 }: {
   deal: Deal;
-  onSave: (deal: Deal) => void;
+  onSave: (deal: Deal) => void | Promise<void>;
+  isSaving?: boolean;
+  isSaved?: boolean;
 }) {
   return (
     <motion.div
@@ -104,10 +108,13 @@ export function DealCard({
           <Button
             size="sm"
             onClick={() => onSave(deal)}
+            disabled={isSaving || isSaved}
             className="rounded-full bg-white text-zinc-950 shadow-[0_8px_24px_rgba(255,255,255,0.18)] hover:bg-cyan-200"
           >
-            <BookmarkPlus className="size-4" />
-            Save Deal
+            {isSaving ? <LoaderCircle className="size-4 animate-spin" /> : null}
+            {isSaved ? <BookmarkCheck className="size-4" /> : null}
+            {!isSaving && !isSaved ? <BookmarkPlus className="size-4" /> : null}
+            {isSaving ? "Saving..." : isSaved ? "Saved" : "Save Deal"}
           </Button>
         </CardFooter>
       </Card>

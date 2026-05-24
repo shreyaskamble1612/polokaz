@@ -16,9 +16,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-
-type SaveState = "idle" | "saving" | "saved";
+import { useMemo, useState } from "react";
 
 const dealTypeLabel: Record<Deal["dealType"], string> = {
   coupon: "Coupon",
@@ -51,23 +49,22 @@ export function DealDetailView({
   deal,
   collectionHref = "/deals",
   collectionLabel = "Deals",
+  isSaved = false,
+  isRedeemed = false,
+  savePending = false,
+  saveMessage,
+  onSave,
 }: {
   deal: Deal;
   collectionHref?: string;
   collectionLabel?: string;
+  isSaved?: boolean;
+  isRedeemed?: boolean;
+  savePending?: boolean;
+  saveMessage?: string | null;
+  onSave?: () => void | Promise<void>;
 }) {
-  const [saveState, setSaveState] = useState<SaveState>("idle");
   const [termsOpen, setTermsOpen] = useState(false);
-
-  useEffect(() => {
-    if (saveState !== "saving") return;
-
-    const timer = window.setTimeout(() => {
-      setSaveState("saved");
-    }, 1200);
-
-    return () => window.clearTimeout(timer);
-  }, [saveState]);
 
   const daysRemaining = useMemo(() => getDaysRemaining(deal.expiresAt), [deal.expiresAt]);
 
@@ -212,17 +209,17 @@ export function DealDetailView({
                   </div>
 
                   <div className="space-y-3">
-                    {saveState === "idle" ? (
+                    {!isSaved && !isRedeemed && !savePending ? (
                       <Button
                         type="button"
-                        onClick={() => setSaveState("saving")}
+                        onClick={() => onSave?.()}
                         className="h-12 w-full rounded-full bg-[linear-gradient(135deg,#f5d061_0%,#dca93b_100%)] text-zinc-950 shadow-[0_18px_38px_rgba(245,208,97,0.22)] hover:brightness-105"
                       >
                         Save to Wallet
                       </Button>
                     ) : null}
 
-                    {saveState === "saving" ? (
+                    {savePending ? (
                       <Button
                         type="button"
                         disabled
@@ -233,7 +230,7 @@ export function DealDetailView({
                       </Button>
                     ) : null}
 
-                    {saveState === "saved" ? (
+                    {isSaved || isRedeemed ? (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.96 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -251,7 +248,7 @@ export function DealDetailView({
                           </motion.div>
                           <div>
                             <p className="text-base font-semibold text-white">
-                              Saved to Wallet!
+                              {isRedeemed ? "Already Redeemed" : "Saved to Wallet!"}
                             </p>
                             <Link
                               href="/wallet"
@@ -262,6 +259,10 @@ export function DealDetailView({
                           </div>
                         </div>
                       </motion.div>
+                    ) : null}
+
+                    {saveMessage ? (
+                      <p className="text-sm text-zinc-400">{saveMessage}</p>
                     ) : null}
 
                     <Button

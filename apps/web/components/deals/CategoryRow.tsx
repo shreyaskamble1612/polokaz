@@ -11,10 +11,14 @@ export function CategoryRow({
   category,
   deals,
   onSave,
+  savingDealId,
+  savedDealIds,
 }: {
   category: Deal["category"];
   deals: Deal[];
-  onSave: (deal: Deal) => void;
+  onSave: (deal: Deal) => void | Promise<void>;
+  savingDealId?: string | null;
+  savedDealIds?: Set<string>;
 }) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
@@ -70,7 +74,13 @@ export function CategoryRow({
         )}
       >
         {deals.map((deal) => (
-          <DealCard key={deal.id} deal={deal} onSave={onSave} />
+          <DealCard
+            key={deal.id}
+            deal={deal}
+            onSave={onSave}
+            isSaving={savingDealId === deal.id}
+            isSaved={savedDealIds?.has(deal.id) ?? false}
+          />
         ))}
       </div>
     </section>

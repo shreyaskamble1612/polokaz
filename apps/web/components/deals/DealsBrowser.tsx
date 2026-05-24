@@ -7,7 +7,9 @@ import { CategoryRow } from "./CategoryRow";
 import type { Deal, DealType } from "./types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { saveWalletDeal, type ApiClientError } from "@/lib/api/wallet";
 import { cn } from "@/lib/utils";
+import { useSWRConfig } from "swr";
 
 const FILTERS: Array<{ label: string; value: DealType | "all" }> = [
   { label: "All", value: "all" },
@@ -19,7 +21,10 @@ const FILTERS: Array<{ label: string; value: DealType | "all" }> = [
 export function DealsBrowser({ deals }: { deals: Deal[] }) {
   const [activeFilter, setActiveFilter] = useState<DealType | "all">("all");
   const [toastOpen, setToastOpen] = useState(false);
-  const [savedDealName, setSavedDealName] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
+  const [savingDealId, setSavingDealId] = useState<string | null>(null);
+  const [savedDealIds, setSavedDealIds] = useState<Set<string>>(new Set());
+  const { mutate } = useSWRConfig();
 
   useEffect(() => {
     if (!toastOpen) return;
@@ -50,9 +55,39 @@ export function DealsBrowser({ deals }: { deals: Deal[] }) {
     [Deal["category"], Deal[] | undefined]
   >).filter((entry): entry is [Deal["category"], Deal[]] => Boolean(entry[1]?.length));
 
-  const handleSave = (deal: Deal) => {
-    setSavedDealName(deal.title);
-    setToastOpen(true);
+  const handleSave = async (deal: Deal) => {
+    if (savedDealIds.has(deal.id) || savingDealId === deal.id) return;
+
+    setSavingDealId(deal.id);
+
+    try {
+      await saveWalletDeal(deal.id);
+      setSavedDealIds((current) => new Set(current).add(deal.id));
+      setToastMessage(`Saved "${deal.title}" to your wallet.`);
+      setToastOpen(true);
+      await Promise.all([
+        mutate("/api/wallet?status=saved"),
+        mutate("/api/wallet?status=redeemed"),
+        mutate(`/api/deals/${deal.id}`),
+      ]);
+    } catch (error) {
+      const apiError = error as ApiClientError;
+
+      if (apiError.code === "ALREADY_SAVED") {
+        setSavedDealIds((current) => new Set(current).add(deal.id));
+        setToastMessage(`"${deal.title}" is already in your wallet.`);
+        setToastOpen(true);
+        await Promise.all([
+          mutate("/api/wallet?status=saved"),
+          mutate(`/api/deals/${deal.id}`),
+        ]);
+      } else {
+        setToastMessage(apiError.message || "Failed to save this deal.");
+        setToastOpen(true);
+      }
+    } finally {
+      setSavingDealId(null);
+    }
   };
 
   return (
@@ -74,9 +109,9 @@ export function DealsBrowser({ deals }: { deals: Deal[] }) {
                 <Sparkles className="size-4" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">Coming soon</p>
+                <p className="text-sm font-semibold text-white">Wallet update</p>
                 <p className="mt-1 text-sm text-zinc-400">
-                  Saving &ldquo;{savedDealName}&rdquo; will be available soon.
+                  {toastMessage}
                 </p>
               </div>
             </div>
@@ -139,6 +174,8 @@ export function DealsBrowser({ deals }: { deals: Deal[] }) {
                 category={category}
                 deals={categoryDeals}
                 onSave={handleSave}
+                savingDealId={savingDealId}
+                savedDealIds={savedDealIds}
               />
             ))
           ) : (

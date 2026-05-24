@@ -2,11 +2,24 @@
 
 import { DealDetailView } from "@/components/deals/DealDetailView";
 import { fetchDealDetail } from "@/lib/api/deals";
+import { saveWalletDeal, type ApiClientError } from "@/lib/api/wallet";
 import { mapDealDetailToUiDeal } from "@/lib/deals-adapter";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
+import { useSWRConfig } from "swr";
 
 export function DealDetailClient({ id }: { id: string }) {
   const { data, error, isLoading } = useSWR(id ? `/api/deals/${id}` : null, () => fetchDealDetail(id));
+  const { mutate } = useSWRConfig();
+  const [savePending, setSavePending] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!saveMessage) return;
+
+    const timer = window.setTimeout(() => setSaveMessage(null), 2600);
+    return () => window.clearTimeout(timer);
+  }, [saveMessage]);
 
   if (isLoading) {
     return (
@@ -28,11 +41,46 @@ export function DealDetailClient({ id }: { id: string }) {
     );
   }
 
+  const handleSave = async () => {
+    if (savePending || data.isSaved || data.isRedeemed) return;
+
+    setSavePending(true);
+
+    try {
+      await saveWalletDeal(id);
+      setSaveMessage("Saved to your wallet.");
+      await Promise.all([
+        mutate(`/api/deals/${id}`),
+        mutate("/api/wallet?status=saved"),
+        mutate("/api/wallet?status=redeemed"),
+      ]);
+    } catch (error) {
+      const apiError = error as ApiClientError;
+
+      if (apiError.code === "ALREADY_SAVED") {
+        setSaveMessage("This deal is already in your wallet.");
+        await Promise.all([
+          mutate(`/api/deals/${id}`),
+          mutate("/api/wallet?status=saved"),
+        ]);
+      } else {
+        setSaveMessage(apiError.message || "Failed to save this deal.");
+      }
+    } finally {
+      setSavePending(false);
+    }
+  };
+
   return (
     <DealDetailView
       deal={mapDealDetailToUiDeal(data)}
       collectionHref="/deals"
       collectionLabel="Deals"
+      isSaved={data.isSaved}
+      isRedeemed={data.isRedeemed}
+      savePending={savePending}
+      saveMessage={saveMessage}
+      onSave={handleSave}
     />
   );
 }

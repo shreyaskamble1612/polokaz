@@ -10,6 +10,7 @@ import { usersRouter } from "./controllers/users";
 import { adminRouter } from "./routes/admin.routes";
 import { dealsRouter } from "./routes/deals.routes";
 import { stripeRouter } from "./routes/stripe.routes";
+import { walletRouter } from "./routes/wallet.routes";
 import { merchantRouter } from "./controllers/merchant";
 import { trackdeskWebhookRouter } from "./controllers/webhooks/trackdesk";
 import { coupontoolsWebhookRouter } from "./controllers/webhooks/coupontools";
@@ -76,6 +77,7 @@ app.disable("x-powered-by");
 
 // Deals (public browse + sync)
 app.use("/api/deals", dealsRouter);
+app.use("/api/wallet", walletRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/merchant", merchantRouter);
 app.use("/api/referral", referralRouter);
