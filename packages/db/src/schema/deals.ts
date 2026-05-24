@@ -41,6 +41,7 @@ export const deals = pgTable(
     category: text("category").notNull(),
     dealType: text("deal_type").$type<DealType>().notNull(),
     status: text("status").$type<DealStatus>().default("pending_moderation").notNull(),
+    rejectionReason: text("rejection_reason"),
     expiresAt: timestamp("expires_at"),
     redemptionData: jsonb("redemption_data").$type<Record<string, unknown> | null>(),
     syncedAt: timestamp("synced_at").defaultNow().notNull(),

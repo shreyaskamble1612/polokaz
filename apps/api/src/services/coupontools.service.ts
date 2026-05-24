@@ -5,6 +5,21 @@ const logger = useCoupontoolsLogger();
 
 export type CoupontoolsCampaign = Record<string, unknown>;
 
+type CoupontoolsMerchantPayload = {
+  businessName: string;
+  contactEmail: string;
+};
+
+type CoupontoolsCreateCampaignPayload = {
+  merchantExternalId?: string | null;
+  title: string;
+  description: string;
+  category: string;
+  dealType: "coupon" | "voucher" | "loyalty";
+  discountValue: string;
+  expiresAt: string | null;
+};
+
 type SyncResult = {
   inserted: number;
   updated: number;
@@ -121,44 +136,16 @@ export class CoupontoolsService {
 
   async fetchAllCampaigns(): Promise<CoupontoolsCampaign[]> {
     const url = `${this.apiUrl}/coupon/list`;
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${this.apiKey}`,
-      "x-api-key": this.apiKey,
-      "X-Client-Id": this.apiKey,
-    };
-
-    if (this.apiSecret) {
-      headers["x-api-secret"] = this.apiSecret;
-      headers["X-Client-Secret"] = this.apiSecret;
-    }
-
     logger.info("Fetching Coupontools campaigns", { url, at: new Date().toISOString() });
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ only_active: false }),
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      logger.error("Failed to fetch Coupontools campaigns", {
-        url,
-        status: response.status,
-        body,
-      });
-      throw new Error(`Coupontools request failed with status ${response.status}`);
-    }
-
-    const payload = (await response.json()) as {
+    const payload = await this.postRequest<{
       coupon_info?: CoupontoolsCampaign[];
       coupon?: CoupontoolsCampaign[];
       coupons?: CoupontoolsCampaign[];
       campaign?: CoupontoolsCampaign[];
       campaigns?: CoupontoolsCampaign[];
       status?: { status?: string };
-    };
+    }>("/coupon/list", { only_active: false });
 
     if (payload.status?.status && payload.status.status !== "OK") {
       throw new Error(`Coupontools returned status ${payload.status.status}`);
@@ -171,6 +158,114 @@ export class CoupontoolsService {
       payload.campaign ??
       payload.campaigns ??
       []
+    );
+  }
+
+  async createMerchantAccount(payload: CoupontoolsMerchantPayload) {
+    const response = await this.postWithFallback<
+      {
+        id?: string | number;
+        merchant_id?: string | number;
+        subaccount_id?: string | number;
+        data?: {
+          id?: string | number;
+          merchant_id?: string | number;
+          subaccount_id?: string | number;
+        };
+      }
+    >(
+      [
+        process.env.COUPONTOOLS_CREATE_MERCHANT_PATH?.trim(),
+        "/merchant/create",
+        "/subaccount/create",
+      ],
+      {
+        business_name: payload.businessName,
+        contact_email: payload.contactEmail,
+        company: payload.businessName,
+        email: payload.contactEmail,
+      },
+    );
+
+    const merchantId = pickString(
+      response?.merchant_id,
+      response?.subaccount_id,
+      response?.id,
+      response?.data?.merchant_id,
+      response?.data?.subaccount_id,
+      response?.data?.id,
+    );
+
+    if (!merchantId) {
+      throw new Error("Coupontools merchant creation did not return an ID.");
+    }
+
+    return { coupontoolsMerchantId: merchantId, payload: response };
+  }
+
+  async createCampaign(payload: CoupontoolsCreateCampaignPayload) {
+    const response = await this.postWithFallback<
+      {
+        id?: string | number;
+        campaign_id?: string | number;
+        coupon_id?: string | number;
+        code?: string | number;
+        data?: {
+          id?: string | number;
+          campaign_id?: string | number;
+          coupon_id?: string | number;
+          code?: string | number;
+        };
+      }
+    >(
+      [
+        process.env.COUPONTOOLS_CREATE_CAMPAIGN_PATH?.trim(),
+        "/campaign/create",
+        "/coupon/create",
+      ],
+      {
+        title: payload.title,
+        description: payload.description,
+        category: payload.category,
+        type: payload.dealType === "loyalty" ? "loyalty_card" : payload.dealType,
+        discount_value: payload.discountValue,
+        expiry_date: payload.expiresAt,
+        merchant_id: payload.merchantExternalId,
+        subaccount: payload.merchantExternalId,
+      },
+    );
+
+    const coupontoolsId = pickString(
+      response?.campaign_id,
+      response?.coupon_id,
+      response?.id,
+      response?.code,
+      response?.data?.campaign_id,
+      response?.data?.coupon_id,
+      response?.data?.id,
+      response?.data?.code,
+    );
+
+    if (!coupontoolsId) {
+      throw new Error("Coupontools campaign creation did not return an ID.");
+    }
+
+    return { coupontoolsId, payload: response };
+  }
+
+  async activateCampaign(coupontoolsId: string) {
+    return this.postWithFallback(
+      [
+        process.env.COUPONTOOLS_ACTIVATE_CAMPAIGN_PATH?.trim(),
+        "/coupon/status",
+        "/campaign/status",
+      ],
+      {
+        coupon_id: coupontoolsId,
+        campaign_id: coupontoolsId,
+        id: coupontoolsId,
+        status: "published",
+      },
     );
   }
 
@@ -378,6 +473,59 @@ export class CoupontoolsService {
     if (couponCode) redemptionData.couponCode = couponCode;
 
     return Object.keys(redemptionData).length ? redemptionData : null;
+  }
+
+  private buildHeaders() {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${this.apiKey}`,
+      "x-api-key": this.apiKey,
+      "X-Client-Id": this.apiKey,
+    };
+
+    if (this.apiSecret) {
+      headers["x-api-secret"] = this.apiSecret;
+      headers["X-Client-Secret"] = this.apiSecret;
+    }
+
+    return headers;
+  }
+
+  private async postRequest<T>(path: string, body: Record<string, unknown>) {
+    const url = `${this.apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: this.buildHeaders(),
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const responseBody = await response.text();
+      logger.error("Coupontools request failed", {
+        url,
+        status: response.status,
+        body: responseBody,
+      });
+      throw new Error(`Coupontools request failed with status ${response.status}`);
+    }
+
+    return (await response.json()) as T;
+  }
+
+  private async postWithFallback<T>(paths: Array<string | undefined>, body: Record<string, unknown>) {
+    let lastError: Error | null = null;
+
+    for (const path of paths) {
+      if (!path) continue;
+
+      try {
+        return await this.postRequest<T>(path, body);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+      }
+    }
+
+    throw lastError ?? new Error("No Coupontools endpoint available for this operation.");
   }
 }
 

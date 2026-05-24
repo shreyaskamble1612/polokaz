@@ -24,6 +24,7 @@ import {
 import { authClient } from "@polokaz/auth/client";
 import { getRoleHomePath } from "@polokaz/auth/roles";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { onboardMerchant } from "@/lib/api/merchants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -236,37 +237,19 @@ export default function Page() {
       return;
     }
 
-    await fetch("/api/merchant-applications", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        companyName: values.companyName,
-        companyEmail: values.companyEmail,
-        companyPhone: values.companyPhone,
-        companyAddress: values.companyAddress,
-        companyWebsite: values.companyWebsite,
-        businessType: values.businessType,
-        contactPersonOneName: values.contactPersonOneName,
-        contactPersonOnePhone: values.contactPersonOnePhone,
-        contactPersonTwoName: values.contactPersonTwoName,
-        contactPersonTwoPhone: values.contactPersonTwoPhone,
-        memberRange: values.memberRange,
-        notes: values.notes,
-      }),
-    });
-
-    const connectResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/merchant/coupontools/connect`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      },
-    );
-
-    if (!connectResponse.ok) {
-      setError("Account created, but Coupontools connection failed. Please reconnect from the merchant dashboard.");
+    try {
+      await onboardMerchant({
+        businessName: values.companyName,
+        businessCategory: values.businessType,
+        contactEmail: values.companyEmail,
+        website: values.companyWebsite || undefined,
+      });
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Account created, but merchant onboarding failed. Please retry from the merchant dashboard.",
+      );
       setIsSubmitting(false);
       return;
     }
