@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   boolean,
   decimal,
@@ -8,46 +8,46 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
+  uuid,
 } from "drizzle-orm/pg-core";
+import { merchants } from "./merchants";
+import { user } from "./auth";
 
-/**
- * Deals cached from Coupontools for fast local browsing.
- *
- * The required sync fields mirror the PRD:
- * - internal UUID id
- * - unique Coupontools ID
- * - category / deal type / status
- * - expiry / redemption payload / sync timestamp
- *
- * We also keep a few display fields already used by the web app so the new
- * sync flow stays compatible with the current browse UI.
- */
+export const dealTypeValues = ["coupon", "voucher", "loyalty"] as const;
+export type DealType = (typeof dealTypeValues)[number];
 
-export const deal = pgTable(
-  "deal",
+export const dealStatusValues = [
+  "active",
+  "inactive",
+  "pending_moderation",
+  "rejected",
+] as const;
+export type DealStatus = (typeof dealStatusValues)[number];
+
+export const walletItemStatusValues = ["saved", "redeemed"] as const;
+export type WalletItemStatus = (typeof walletItemStatusValues)[number];
+
+export const deals = pgTable(
+  "deals",
   {
-    id: text("id")
-      .default(sql`gen_random_uuid()`)
-      .primaryKey()
-      .notNull(),
-
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
     coupontoolsId: text("coupontools_id").notNull().unique(),
     title: text("title").notNull(),
     description: text("description"),
-
-    // No merchant table exists in the repo yet, so this remains nullable text.
-    merchantId: text("merchant_id"),
-    merchantName: text("merchant_name").notNull(),
-
-    category: text("category"),
-    dealType: text("deal_type").notNull(),
-    status: text("status").notNull().default("active"),
-
+    merchantId: uuid("merchant_id").references(() => merchants.id, {
+      onDelete: "set null",
+    }),
+    category: text("category").notNull(),
+    dealType: text("deal_type").$type<DealType>().notNull(),
+    status: text("status").$type<DealStatus>().default("pending_moderation").notNull(),
     expiresAt: timestamp("expires_at"),
     redemptionData: jsonb("redemption_data").$type<Record<string, unknown> | null>(),
     syncedAt: timestamp("synced_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
 
-    // Compatibility/display fields already consumed by the app.
+    // Legacy fields kept so existing browse/admin flows can continue to compile.
+    merchantName: text("merchant_name"),
     coupontoolsCouponId: text("coupontools_coupon_id"),
     startDate: timestamp("start_date"),
     endDate: timestamp("end_date"),
@@ -60,58 +60,101 @@ export const deal = pgTable(
     priority: integer("priority").default(0).notNull(),
     metadata: jsonb("metadata").$type<Record<string, unknown> | null>(),
     coupontoolsData: jsonb("coupontools_data").$type<Record<string, unknown> | null>(),
-
-    createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
-    index("deal_status_idx").on(table.status),
-    index("deal_category_idx").on(table.category),
-    index("deal_merchantId_idx").on(table.merchantId),
-    index("deal_coupontoolsId_idx").on(table.coupontoolsId),
-    index("deal_featured_idx").on(table.featured),
-    index("deal_expiresAt_idx").on(table.expiresAt),
+    index("deals_category_status_idx").on(table.category, table.status),
+    index("deals_merchant_id_idx").on(table.merchantId),
+    index("deals_coupontools_id_idx").on(table.coupontoolsId),
+    index("deals_featured_idx").on(table.featured),
+    index("deals_expires_at_idx").on(table.expiresAt),
   ],
 );
 
-export const dealStats = pgTable(
-  "deal_stats",
+export const walletItems = pgTable(
+  "wallet_items",
   {
-    id: text("id")
-      .default(sql`gen_random_uuid()`)
-      .primaryKey()
-      .notNull(),
-    dealId: text("deal_id")
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    userId: text("user_id")
       .notNull()
-      .references(() => deal.id, { onDelete: "cascade" }),
-    views: integer("views").default(0).notNull(),
-    clicks: integer("clicks").default(0).notNull(),
-    saves: integer("saves").default(0).notNull(),
-    redemptions: integer("redemptions").default(0).notNull(),
-    conversionRate: decimal("conversion_rate", { precision: 5, scale: 2 }),
-    date: timestamp("date").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => new Date())
-      .notNull(),
+      .references(() => user.id, { onDelete: "cascade" }),
+    dealId: uuid("deal_id")
+      .notNull()
+      .references(() => deals.id, { onDelete: "cascade" }),
+    status: text("status").$type<WalletItemStatus>().default("saved").notNull(),
+    savedAt: timestamp("saved_at").defaultNow().notNull(),
+    redeemedAt: timestamp("redeemed_at"),
   },
   (table) => [
-    index("deal_stats_dealId_idx").on(table.dealId),
-    index("deal_stats_date_idx").on(table.date),
+    index("wallet_items_user_id_idx").on(table.userId),
+    index("wallet_items_deal_id_idx").on(table.dealId),
+    uniqueIndex("wallet_items_user_id_deal_id_unique").on(table.userId, table.dealId),
   ],
 );
 
-export const dealRelations = relations(deal, ({ many }) => ({
-  stats: many(dealStats),
+export const redemptions = pgTable(
+  "redemptions",
+  {
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    dealId: uuid("deal_id")
+      .notNull()
+      .references(() => deals.id, { onDelete: "cascade" }),
+    merchantId: uuid("merchant_id")
+      .notNull()
+      .references(() => merchants.id, { onDelete: "cascade" }),
+    coupontoolsEventId: text("coupontools_event_id").unique(),
+    redeemedAt: timestamp("redeemed_at").defaultNow().notNull(),
+    rewardDispatched: boolean("reward_dispatched").default(false).notNull(),
+  },
+  (table) => [
+    index("redemptions_user_id_idx").on(table.userId),
+    index("redemptions_deal_id_idx").on(table.dealId),
+    index("redemptions_merchant_id_idx").on(table.merchantId),
+  ],
+);
+
+export const dealsRelations = relations(deals, ({ one, many }) => ({
+  merchant: one(merchants, {
+    fields: [deals.merchantId],
+    references: [merchants.id],
+  }),
+  walletItems: many(walletItems),
+  redemptions: many(redemptions),
 }));
 
-export const dealStatsRelations = relations(dealStats, ({ one }) => ({
-  deal: one(deal, {
-    fields: [dealStats.dealId],
-    references: [deal.id],
+export const walletItemsRelations = relations(walletItems, ({ one }) => ({
+  user: one(user, {
+    fields: [walletItems.userId],
+    references: [user.id],
+  }),
+  deal: one(deals, {
+    fields: [walletItems.dealId],
+    references: [deals.id],
   }),
 }));
+
+export const redemptionsRelations = relations(redemptions, ({ one }) => ({
+  user: one(user, {
+    fields: [redemptions.userId],
+    references: [user.id],
+  }),
+  deal: one(deals, {
+    fields: [redemptions.dealId],
+    references: [deals.id],
+  }),
+  merchant: one(merchants, {
+    fields: [redemptions.merchantId],
+    references: [merchants.id],
+  }),
+}));
+
+// Backwards-compatible aliases for the current application imports.
+export const deal = deals;
+export const walletItem = walletItems;
+export const redemption = redemptions;
