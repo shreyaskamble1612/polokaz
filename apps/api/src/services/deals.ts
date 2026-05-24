@@ -5,25 +5,17 @@ import {
   desc,
   eq,
   ilike,
-  notInArray,
   or,
   sql,
 } from "@polokaz/db";
+import { syncDeals } from "./coupontools.service";
 import type { CoupontoolsDealPayload } from "./coupontools";
-import { CoupontoolsService } from "./coupontools";
-import { useLogger } from "../logger";
-
-const logger = useLogger();
-
-let activeSyncPromise:
-  | Promise<{ synced: number; errors: number; deactivated: number }>
-  | null = null;
 
 export interface ListDealsParams {
   category?: string;
   search?: string;
   featured?: boolean;
-  status?: string;
+  status?: "active" | "inactive" | "pending_moderation" | "rejected";
   page?: number;
   limit?: number;
 }
@@ -126,22 +118,11 @@ export class DealsService {
   }
 
   async syncFromCoupontools(): Promise<{
-    synced: number;
-    errors: number;
+    inserted: number;
+    updated: number;
     deactivated: number;
   }> {
-    if (activeSyncPromise) {
-      logger.info("Reusing in-flight Coupontools sync");
-      return activeSyncPromise;
-    }
-
-    activeSyncPromise = this.performSyncFromCoupontools();
-
-    try {
-      return await activeSyncPromise;
-    } finally {
-      activeSyncPromise = null;
-    }
+    return syncDeals();
   }
 
   async upsertDeal(payload: CoupontoolsDealPayload): Promise<void> {
@@ -159,7 +140,7 @@ export class DealsService {
         description: payload.description ?? null,
         merchantId: payload.merchantId ?? null,
         merchantName: payload.merchantName,
-        category: payload.category ?? null,
+        category: payload.category ?? "Other",
         dealType: payload.dealType,
         status: payload.status,
         expiresAt,
@@ -186,7 +167,7 @@ export class DealsService {
           description: payload.description ?? null,
           merchantId: payload.merchantId ?? null,
           merchantName: payload.merchantName,
-          category: payload.category ?? null,
+          category: payload.category ?? "Other",
           dealType: payload.dealType,
           status: payload.status,
           expiresAt,
@@ -218,77 +199,6 @@ export class DealsService {
         updatedAt: new Date(),
       })
       .where(eq(deal.coupontoolsId, coupontoolsId));
-  }
-
-  private async performSyncFromCoupontools(): Promise<{
-    synced: number;
-    errors: number;
-    deactivated: number;
-  }> {
-    let synced = 0;
-    let errors = 0;
-
-    const coupontools = new CoupontoolsService();
-    const payloads = await coupontools.listCampaigns();
-
-    for (const payload of payloads) {
-      try {
-        await this.upsertDeal(payload);
-        synced++;
-      } catch (error) {
-        logger.error("Failed to upsert deal from Coupontools", {
-          coupontoolsId: payload.coupontoolsId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        errors++;
-      }
-    }
-
-    const deactivated = await this.markMissingDealsInactive(
-      payloads.map((payload) => payload.coupontoolsId)
-    );
-
-    logger.info("Coupontools sync completed", {
-      synced,
-      errors,
-      deactivated,
-    });
-
-    return { synced, errors, deactivated };
-  }
-
-  private async markMissingDealsInactive(
-    liveCoupontoolsIds: string[]
-  ): Promise<number> {
-    const now = new Date();
-
-    if (liveCoupontoolsIds.length === 0) {
-      const result = await db
-        .update(deal)
-        .set({
-          status: "inactive",
-          syncedAt: now,
-          updatedAt: now,
-        })
-        .where(eq(deal.status, "active"))
-        .returning({ id: deal.id });
-
-      return result.length;
-    }
-
-    const result = await db
-      .update(deal)
-      .set({
-        status: "inactive",
-        syncedAt: now,
-        updatedAt: now,
-      })
-      .where(
-        and(eq(deal.status, "active"), notInArray(deal.coupontoolsId, liveCoupontoolsIds))
-      )
-      .returning({ id: deal.id });
-
-    return result.length;
   }
 
   private parseDate(value?: string): Date | null {

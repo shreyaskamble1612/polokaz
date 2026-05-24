@@ -4,6 +4,7 @@ import { useLogger } from "../logger";
 
 const router = express.Router();
 const logger = useLogger();
+const DEAL_STATUSES = ["active", "inactive", "pending_moderation", "rejected"] as const;
 
 /**
  * GET /api/deals
@@ -14,7 +15,10 @@ router.get("/", async (req, res) => {
     const category = req.query.category as string | undefined;
     const search = req.query.search as string | undefined;
     const featured = req.query.featured === "true";
-    const status = (req.query.status as string) || "active";
+    const rawStatus = (req.query.status as string) || "active";
+    const status = DEAL_STATUSES.includes(rawStatus as (typeof DEAL_STATUSES)[number])
+      ? (rawStatus as (typeof DEAL_STATUSES)[number])
+      : "active";
     const page = Math.max(1, parseInt(String(req.query.page || 1), 10));
     const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit || 20), 10)));
 

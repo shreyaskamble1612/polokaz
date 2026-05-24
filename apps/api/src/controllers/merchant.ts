@@ -1,8 +1,7 @@
 import express from "express";
-
-import { DealsService } from "../services/deals";
 import { useLogger } from "../logger";
 import { requireRole } from "../lib/authorization";
+import { syncDeals } from "../services/coupontools.service";
 
 const router = express.Router();
 const logger = useLogger(["api", "merchant"]);
@@ -15,8 +14,7 @@ router.post("/coupontools/connect", async (req, res) => {
   }
 
   try {
-    const service = new DealsService();
-    const result = await service.syncFromCoupontools();
+    const result = await syncDeals();
 
     return res.json({
       ok: true,

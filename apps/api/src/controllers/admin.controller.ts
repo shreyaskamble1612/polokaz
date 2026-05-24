@@ -1,12 +1,11 @@
-import express from "express";
-import { DealsService } from "../services/deals";
+import { Request, Response } from "express";
 import { useLogger } from "../logger";
 import { requireRole } from "../lib/authorization";
+import { syncDeals } from "../services/coupontools.service";
 
-const router = express.Router();
 const logger = useLogger(["api", "admin"]);
 
-router.post("/sync-deals", async (req, res) => {
+export async function triggerDealSync(req: Request, res: Response) {
   const session = requireRole(req, res, ["admin"]);
 
   if (!session) {
@@ -14,17 +13,16 @@ router.post("/sync-deals", async (req, res) => {
   }
 
   try {
-    const service = new DealsService();
-    const result = await service.syncFromCoupontools();
+    const result = await syncDeals();
     return res.json(result);
   } catch (error) {
     logger.error("Error syncing deals from Coupontools", {
       error: error instanceof Error ? error.message : String(error),
+      userId: session.user.id,
     });
+
     return res.status(500).json({
       error: { code: "INTERNAL_ERROR", message: "Failed to sync deals" },
     });
   }
-});
-
-export { router as adminRouter };
+}
