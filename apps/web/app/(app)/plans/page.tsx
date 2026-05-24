@@ -1,5 +1,6 @@
 "use client";
 
+import { authClient } from "@polokaz/auth/client";
 import { PointsWidget } from "@/components/points/PointsWidget";
 import { ReferralCard } from "@/components/referral/ReferralCard";
 import { Badge } from "@/components/ui/badge";
@@ -7,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, ShieldCheck, Store, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 type ConsumerTier = "free" | "basic" | "gold";
+type MembershipTier = ConsumerTier | "merchant";
 
 type PlanCard = {
   id: ConsumerTier;
@@ -19,8 +22,6 @@ type PlanCard = {
   features: string[];
   highlighted?: boolean;
 };
-
-const CURRENT_TIER: ConsumerTier = "free";
 
 const CONSUMER_PLANS: PlanCard[] = [
   {
@@ -102,14 +103,14 @@ const COMPARISON_ROWS = [
   },
 ];
 
-function getCtaLabel(tier: ConsumerTier) {
-  if (tier === CURRENT_TIER) return "Current Plan";
+function getCtaLabel(currentTier: MembershipTier, tier: ConsumerTier) {
+  if (tier === currentTier) return "Current Plan";
 
-  if (CURRENT_TIER === "gold") {
+  if (currentTier === "gold") {
     if (tier === "basic" || tier === "free") return "Downgrade";
   }
 
-  if (CURRENT_TIER === "basic" && tier === "free") return "Downgrade";
+  if (currentTier === "basic" && tier === "free") return "Downgrade";
 
   return tier === "basic" ? "Upgrade to Basic" : "Upgrade to Gold";
 }
@@ -127,7 +128,26 @@ function PlanAvailability({
 }
 
 export default function PlansPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const session = authClient.useSession();
   const [toast, setToast] = useState<string | null>(null);
+  const [loadingTier, setLoadingTier] = useState<Exclude<MembershipTier, "free"> | null>(null);
+
+  const currentTier = useMemo<MembershipTier>(() => {
+    const sessionTier = (session.data?.user as { tier?: string | null } | undefined)?.tier;
+
+    if (
+      sessionTier === "basic" ||
+      sessionTier === "gold" ||
+      sessionTier === "merchant" ||
+      sessionTier === "free"
+    ) {
+      return sessionTier;
+    }
+
+    return "free";
+  }, [session.data?.user]);
 
   useEffect(() => {
     if (!toast) return;
@@ -135,12 +155,54 @@ export default function PlansPage() {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const handleUpgrade = (tier: ConsumerTier | "merchant") => {
+  useEffect(() => {
+    if (searchParams.get("checkout") !== "success") return;
+
+    setToast("Subscription activated!");
+
+    void authClient.getSession();
+    router.refresh();
+    router.replace("/plans");
+  }, [router, searchParams]);
+
+  const handleUpgrade = async (tier: MembershipTier) => {
+    if (tier === "free") {
+      setToast("Free tier does not require checkout.");
+      return;
+    }
+
     const planName =
       tier === "merchant"
         ? "Merchant"
         : CONSUMER_PLANS.find((plan) => plan.id === tier)?.name ?? tier;
+
+    setLoadingTier(tier);
     setToast(`Redirecting to checkout for ${planName}...`);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/stripe/create-checkout`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ tier }),
+        },
+      );
+
+      const data = (await response.json()) as { url?: string; message?: string };
+
+      if (!response.ok || !data.url) {
+        throw new Error(data.message || "Failed to create checkout session.");
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "Failed to start checkout.");
+      setLoadingTier(null);
+    }
   };
 
   return (
@@ -177,7 +239,8 @@ export default function PlansPage() {
           <div className="space-y-8">
             <section className="grid gap-5 lg:grid-cols-3">
               {CONSUMER_PLANS.map((plan) => {
-                const isCurrent = plan.id === CURRENT_TIER;
+                const isCurrent = plan.id === currentTier;
+                const isLoading = loadingTier === plan.id;
 
                 return (
                   <Card
@@ -228,7 +291,7 @@ export default function PlansPage() {
 
                       <Button
                         type="button"
-                        disabled={isCurrent}
+                        disabled={isCurrent || isLoading}
                         onClick={() => handleUpgrade(plan.id)}
                         className={`w-full rounded-full ${
                           plan.highlighted
@@ -236,7 +299,7 @@ export default function PlansPage() {
                             : "bg-white text-zinc-950 hover:bg-cyan-100"
                         }`}
                       >
-                        {getCtaLabel(plan.id)}
+                        {isLoading ? "Redirecting..." : getCtaLabel(currentTier, plan.id)}
                       </Button>
                     </CardContent>
                   </Card>
@@ -327,10 +390,15 @@ export default function PlansPage() {
                   </p>
                   <Button
                     type="button"
+                    disabled={currentTier === "merchant" || loadingTier === "merchant"}
                     onClick={() => handleUpgrade("merchant")}
                     className="mt-6 w-full rounded-full bg-[linear-gradient(135deg,#f5d061_0%,#dca93b_100%)] text-zinc-950 hover:brightness-105"
                   >
-                    Get Started as Merchant
+                    {currentTier === "merchant"
+                      ? "Current Plan"
+                      : loadingTier === "merchant"
+                        ? "Redirecting..."
+                        : "Get Started as Merchant"}
                   </Button>
                 </div>
               </div>

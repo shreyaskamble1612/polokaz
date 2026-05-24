@@ -9,7 +9,7 @@ import { trackdeskRouter } from "./controllers/trackdesk";
 import { dealsRouter } from "./controllers/deals";
 import { adminRouter } from "./controllers/admin";
 import { usersRouter } from "./controllers/users";
-import { stripeRouter } from "./controllers/stripe";
+import { stripeRouter } from "./routes/stripe.routes";
 import { merchantRouter } from "./controllers/merchant";
 import { trackdeskWebhookRouter } from "./controllers/webhooks/trackdesk";
 import { coupontoolsWebhookRouter } from "./controllers/webhooks/coupontools";

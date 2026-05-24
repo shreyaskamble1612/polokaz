@@ -8,9 +8,11 @@ import {
   logWebhookStep,
 } from "../../services/webhooks";
 import { useWebhookLogger } from "../../logger";
+import { PRICE_IDS, stripe } from "../../services/stripe.service";
 
 const router = express.Router();
 const logger = useWebhookLogger();
+type MembershipTier = "free" | "basic" | "gold" | "merchant";
 
 /**
  * Stripe webhook handler mounted at /api/webhooks/stripe
@@ -27,9 +29,7 @@ router.post("/", async (req: any, res) => {
     return res.status(500).send("Webhook secret not configured");
   }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", { apiVersion: "2022-11-15" });
-
-  let event: Stripe.Event;
+  let event: any;
 
   try {
     event = stripe.webhooks.constructEvent(rawBody, stripeSignature ?? "", webhookSecret);
@@ -79,7 +79,7 @@ router.post("/", async (req: any, res) => {
     try {
       switch (event.type) {
         case "checkout.session.completed": {
-          const session = event.data.object as Stripe.Checkout.Session;
+          const session = event.data.object as any;
 
           const userId = session.metadata?.userId as string | undefined;
           const customerId = (session.customer as string) ?? null;
@@ -90,16 +90,16 @@ router.post("/", async (req: any, res) => {
             break;
           }
 
-          let tier: string = "free";
+          let tier: MembershipTier = "free";
 
           try {
             const lineItems = await stripe.checkout.sessions.listLineItems(session.id as string);
             const priceId = lineItems.data?.[0]?.price?.id;
 
             const tierMap: Record<string | undefined, string> = {
-              [process.env.STRIPE_PRICE_BASIC_MONTHLY ?? ""]: "basic",
-              [process.env.STRIPE_PRICE_GOLD_MONTHLY ?? ""]: "gold",
-              [process.env.STRIPE_PRICE_MERCHANT_MONTHLY ?? ""]: "merchant",
+              [PRICE_IDS.basic ?? ""]: "basic",
+              [PRICE_IDS.gold ?? ""]: "gold",
+              [PRICE_IDS.merchant ?? ""]: "merchant",
             };
 
             tier = tierMap[priceId] ?? (session.metadata?.tier as string) ?? "free";
@@ -123,18 +123,18 @@ router.post("/", async (req: any, res) => {
         }
 
         case "customer.subscription.updated": {
-          const subscription = event.data.object as Stripe.Subscription;
+          const subscription = event.data.object as any;
 
           const subscriptionId = subscription.id;
           const customerId = subscription.customer as string | null;
 
-          let tier: string = "free";
+          let tier: MembershipTier = "free";
           try {
             const priceId = subscription.items?.data?.[0]?.price?.id;
             const tierMap: Record<string | undefined, string> = {
-              [process.env.STRIPE_PRICE_BASIC_MONTHLY ?? ""]: "basic",
-              [process.env.STRIPE_PRICE_GOLD_MONTHLY ?? ""]: "gold",
-              [process.env.STRIPE_PRICE_MERCHANT_MONTHLY ?? ""]: "merchant",
+              [PRICE_IDS.basic ?? ""]: "basic",
+              [PRICE_IDS.gold ?? ""]: "gold",
+              [PRICE_IDS.merchant ?? ""]: "merchant",
             };
             tier = tierMap[priceId] ?? subscription.metadata?.tier ?? "free";
           } catch (e) {
@@ -159,7 +159,7 @@ router.post("/", async (req: any, res) => {
         }
 
         case "customer.subscription.deleted": {
-          const subscription = event.data.object as Stripe.Subscription;
+          const subscription = event.data.object as any;
           const subscriptionId = subscription.id;
 
           try {
@@ -178,7 +178,7 @@ router.post("/", async (req: any, res) => {
         }
 
         case "invoice.payment_failed": {
-          const invoice = event.data.object as Stripe.Invoice;
+          const invoice = event.data.object as any;
           const subscriptionId = invoice.subscription as string | null;
 
           try {
