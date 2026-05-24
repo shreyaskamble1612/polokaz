@@ -13,7 +13,7 @@ import { stripeRouter } from "./routes/stripe.routes";
 import { merchantRouter } from "./controllers/merchant";
 import { trackdeskWebhookRouter } from "./controllers/webhooks/trackdesk";
 import { coupontoolsWebhookRouter } from "./controllers/webhooks/coupontools";
-import { stripeWebhookRouter } from "./controllers/webhooks/stripe";
+import { stripeWebhookRouter } from "./routes/stripe-webhook.routes";
 import { registerDealSyncCron } from "./jobs/deal-sync";
 import "dotenv/config";
 import fs from "fs";
@@ -25,6 +25,7 @@ const logger = useLogger();
 const app = express();
 
 app.use(morgan("dev"));
+app.use("/api/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhookRouter);
 app.use(express.json({
   verify: (req: any, _res, buf) => {
     try {
@@ -67,7 +68,6 @@ app.all("/api/auth/*splat", (req, res, next) => {
 // Webhook routes (no authentication required)
 app.use("/api/webhooks/trackdesk", trackdeskWebhookRouter);
 app.use("/api/webhooks/coupontools", coupontoolsWebhookRouter);
-app.use("/api/webhooks/stripe", stripeWebhookRouter);
 
 app.use(authenticate);
 
