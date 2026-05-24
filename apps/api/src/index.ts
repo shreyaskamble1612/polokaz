@@ -11,10 +11,10 @@ import { adminRouter } from "./routes/admin.routes";
 import { dealsRouter } from "./routes/deals.routes";
 import { merchantsRouter } from "./routes/merchants.routes";
 import { stripeRouter } from "./routes/stripe.routes";
+import { webhooksRouter } from "./routes/webhooks.routes";
 import { walletRouter } from "./routes/wallet.routes";
 import { merchantRouter } from "./controllers/merchant";
 import { trackdeskWebhookRouter } from "./controllers/webhooks/trackdesk";
-import { coupontoolsWebhookRouter } from "./controllers/webhooks/coupontools";
 import { stripeWebhookRouter } from "./routes/stripe-webhook.routes";
 import "./cron/deal-sync.cron";
 import "dotenv/config";
@@ -69,7 +69,7 @@ app.all("/api/auth/*splat", (req, res, next) => {
 
 // Webhook routes (no authentication required)
 app.use("/api/webhooks/trackdesk", trackdeskWebhookRouter);
-app.use("/api/webhooks/coupontools", coupontoolsWebhookRouter);
+app.use("/api/webhooks", webhooksRouter);
 
 app.use(authenticate);
 
