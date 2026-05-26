@@ -1,6 +1,6 @@
 import express from "express";
 import crypto from "crypto";
-import { and, db, deal, eq, or, redemptions, user, walletItems } from "@polokaz/db";
+import { and, db, deal, eq, redemptions, user, walletItems } from "@polokaz/db";
 import { DealsService } from "../services/deals";
 import { CoupontoolsService, type CoupontoolsCoupon } from "../services/coupontools";
 import { isWebhookProcessed, createWebhookEvent, updateWebhookEventStatus, logWebhookStep } from "../services/webhooks";
@@ -9,7 +9,7 @@ import { useWebhookLogger } from "../logger";
 const router = express.Router();
 const logger = useWebhookLogger();
 
-type RedemptionsRow = typeof redemptions.$inferSelect;
+type Redemption = typeof redemptions.$inferSelect;
 
 type CoupontoolsWebhookBody = Record<string, unknown> & {
   id?: string;
@@ -174,7 +174,7 @@ function isRedemptionEvent(event: CoupontoolsWebhookBody): boolean {
   return Boolean(details.coupontoolsCampaignId && details.consumerIdentifier);
 }
 
-async function dispatchReward(redemption: RedemptionsRow) {
+async function dispatchReward(redemption: Redemption) {
   console.log("[REWARD] Dispatch triggered for redemption:", redemption.id);
 }
 
@@ -225,7 +225,7 @@ async function processRedemptionEvent(event: CoupontoolsWebhookBody) {
   const [userRow] = await db
     .select()
     .from(user)
-    .where(or(eq(user.email, consumerIdentifier), eq(user.id, consumerIdentifier)))
+    .where(eq(user.email, consumerIdentifier))
     .limit(1);
 
   if (!userRow) {
@@ -341,7 +341,7 @@ async function handleWebhookRequest(req: express.Request, res: express.Response)
   const payload = getPayloadBody(req);
   const event = req.body as CoupontoolsWebhookBody;
   const eventType = pickString(event.type, asRecord(event.data)?.type, asRecord(event.data)?.eventType) ?? "unknown";
-  const eventId = extractEventId(event) ?? `evt_${Date.now()}`;
+  const eventId = extractEventId(event);
 
   if (secret) {
     if (!signature || !verifySignature(payload, signature, secret)) {
@@ -349,14 +349,26 @@ async function handleWebhookRequest(req: express.Request, res: express.Response)
     }
   }
 
-  const alreadyProcessed = await isWebhookProcessed("coupontools", eventId);
+  if (isRedemptionEvent(event)) {
+    const result = await processRedemptionEvent(event);
+
+    if ("alreadyProcessed" in result) {
+      return res.status(200).json({ received: true, status: "already_processed" });
+    }
+
+    return res.status(200).json({ received: true, status: "processed" });
+  }
+
+  const webhookEventId = eventId ?? `evt_${Date.now()}`;
+
+  const alreadyProcessed = await isWebhookProcessed("coupontools", webhookEventId);
   if (alreadyProcessed) {
     return res.status(200).json({ received: true, status: "already_processed" });
   }
 
   const webhookEvent = await createWebhookEvent({
     source: "coupontools",
-    eventId,
+    eventId: webhookEventId,
     eventType,
     payload: event,
     headers: req.headers as Record<string, string>,
@@ -368,18 +380,6 @@ async function handleWebhookRequest(req: express.Request, res: express.Response)
   await updateWebhookEventStatus(webhookEvent.id, "processing");
 
   try {
-    if (isRedemptionEvent(event)) {
-      const result = await processRedemptionEvent(event);
-
-      if ("alreadyProcessed" in result) {
-        await updateWebhookEventStatus(webhookEvent.id, "processed");
-        return res.status(200).json({ received: true, status: "already_processed" });
-      }
-
-      await updateWebhookEventStatus(webhookEvent.id, "processed");
-      return res.status(200).json({ received: true, status: "processed" });
-    }
-
     const dealsService = new DealsService();
 
     switch (eventType) {
