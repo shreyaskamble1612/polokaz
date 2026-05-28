@@ -1,6 +1,6 @@
 import express from "express";
 import crypto from "crypto";
-import { and, db, deal, eq, redemptions, user, walletItems } from "@polokaz/db";
+import { and, db, deal, eq, or, redemptions, user, walletItems } from "@polokaz/db";
 import { DealsService } from "../services/deals";
 import { CoupontoolsService, type CoupontoolsCoupon } from "../services/coupontools";
 import { isWebhookProcessed, createWebhookEvent, updateWebhookEventStatus, logWebhookStep } from "../services/webhooks";
@@ -225,7 +225,7 @@ async function processRedemptionEvent(event: CoupontoolsWebhookBody) {
   const [userRow] = await db
     .select()
     .from(user)
-    .where(eq(user.email, consumerIdentifier))
+    .where(or(eq(user.email, consumerIdentifier), eq(user.id, consumerIdentifier)))
     .limit(1);
 
   if (!userRow) {
@@ -237,7 +237,7 @@ async function processRedemptionEvent(event: CoupontoolsWebhookBody) {
       .update(walletItems)
       .set({
         status: "redeemed",
-        redeemedAt: redeemedAtDate,
+        redeemedAt: new Date(),
       })
       .where(
         and(

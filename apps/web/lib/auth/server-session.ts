@@ -1,4 +1,4 @@
-import { authClient } from "@polokaz/auth/client";
+import { auth } from "@polokaz/auth/server";
 import { getRoleHomePath, getUserRole } from "@polokaz/auth/roles";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -6,13 +6,11 @@ import { redirect } from "next/navigation";
 type ServerSessionData = Awaited<ReturnType<typeof getServerSession>>;
 
 export async function getServerSession() {
-  const { data } = await authClient.getSession({
-    fetchOptions: {
-      headers: await headers(),
-    },
+  const session = await auth.api.getSession({
+    headers: await headers(),
   });
 
-  return data ?? null;
+  return session;
 }
 
 export async function requireServerSession() {

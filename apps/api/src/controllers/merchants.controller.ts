@@ -6,7 +6,9 @@ import {
   eq,
   merchants,
   redemptions,
+  subscriptionTier,
   sql,
+  userSubscription,
   user,
 } from "@polokaz/db";
 import { Request, Response } from "express";
@@ -47,6 +49,25 @@ async function getCurrentUserWithTier(userId: string) {
   return currentUser ?? null;
 }
 
+async function hasActiveMerchantSubscription(userId: string) {
+  const [subscription] = await db
+    .select({
+      id: userSubscription.id,
+    })
+    .from(userSubscription)
+    .innerJoin(subscriptionTier, eq(userSubscription.tierId, subscriptionTier.id))
+    .where(
+      and(
+        eq(userSubscription.userId, userId),
+        eq(userSubscription.status, "active"),
+        eq(subscriptionTier.id, "merchant"),
+      ),
+    )
+    .limit(1);
+
+  return Boolean(subscription);
+}
+
 async function getMerchantProfileForUser(userId: string) {
   const [merchant] = await db
     .select()
@@ -71,10 +92,11 @@ export async function onboardMerchant(req: Request, res: Response) {
   }
 
   const currentUser = await getCurrentUserWithTier(session.user.id);
+  const hasMerchantSubscription = await hasActiveMerchantSubscription(session.user.id);
 
-  if (!currentUser || currentUser.tier !== "merchant") {
+  if (!currentUser || currentUser.tier !== "merchant" || !hasMerchantSubscription) {
     return res.status(403).json({
-      error: { code: "FORBIDDEN", message: "An active merchant tier is required" },
+      error: { code: "FORBIDDEN", message: "An active merchant subscription is required" },
     });
   }
 
@@ -102,7 +124,7 @@ export async function onboardMerchant(req: Request, res: Response) {
         contactEmail: parsed.data.contactEmail,
         website: parsed.data.website?.trim() || null,
         coupontoolsMerchantId: createdMerchant.coupontoolsMerchantId,
-        status: "active",
+        status: "pending",
       })
       .returning();
 

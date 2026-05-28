@@ -1,5 +1,4 @@
-import { authClient } from "@polokaz/auth/client";
-import { headers } from "next/headers";
+import { requireServerSession } from "@/lib/auth/server-session";
 import { redirect } from "next/navigation";
 
 export default async function CustomerCouponDetailPage({
@@ -7,15 +6,7 @@ export default async function CustomerCouponDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { data } = await authClient.getSession({
-    fetchOptions: {
-      headers: await headers(),
-    },
-  });
-
-  if (!data?.session) {
-    redirect("/sign-in");
-  }
+  await requireServerSession();
 
   const { id } = await params;
   redirect(`/deals/${id}`);
