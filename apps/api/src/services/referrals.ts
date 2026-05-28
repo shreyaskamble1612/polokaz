@@ -25,7 +25,7 @@ export class ReferralsService {
       .orderBy(desc(referral.createdAt));
   }
 
-  async createOne(data: Body) {
+  async createOne(data: any) {
     
     if (!this.session) throw new ForbiddenError();
     

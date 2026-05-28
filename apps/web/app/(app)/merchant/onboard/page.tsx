@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
 
+import { clientFetch } from "@/lib/api/client-fetch";
+
 const connectionNotes = [
   "Your merchant business profile is already saved during sign up.",
   "This page only connects Coupontools for sync and redemption tracking.",
@@ -71,6 +73,7 @@ export default function Page() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [progress, setProgress] = useState(25);
+  const [error, setError] = useState<string | null>(null);
 
   const statusText = isConnected
     ? "Connected"
@@ -83,6 +86,27 @@ export default function Page() {
     : isConnecting
       ? "bg-amber-500/12 text-amber-700"
       : "bg-slate-500/12 text-slate-700";
+
+  const handleConnect = async () => {
+    if (isConnecting || isConnected) return;
+
+    setIsConnecting(true);
+    setError(null);
+    setProgress(50);
+
+    try {
+      await clientFetch("/api/merchant/coupontools/connect", {
+        method: "POST",
+      });
+      setProgress(100);
+      setIsConnected(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to connect Coupontools");
+      setProgress(25);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,#eef6ff_0%,#f8fafc_45%,#ffffff_100%)] px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
@@ -159,21 +183,16 @@ export default function Page() {
                 </div>
               </div>
 
+              {error ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                  {error}
+                </div>
+              ) : null}
+
               <div className="flex flex-wrap items-center gap-3">
                 <Button
                   type="button"
-                  onClick={() => {
-                    if (isConnecting || isConnected) return;
-
-                    setIsConnecting(true);
-                    setProgress(42);
-
-                    window.setTimeout(() => {
-                      setIsConnecting(false);
-                      setIsConnected(true);
-                      setProgress(100);
-                    }, 1600);
-                  }}
+                  onClick={handleConnect}
                   disabled={isConnecting || isConnected}
                   className="gap-2 rounded-full px-5"
                 >

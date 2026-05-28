@@ -97,7 +97,7 @@ export class DealsService {
         category: row.category,
         dealType: row.dealType,
         discountValue: row.discountValue,
-        merchantName: row.merchantName,
+        merchantName: row.merchantName ?? "Merchant",
         merchantId: row.merchantId,
         merchantLogo: row.merchantLogo,
         status: row.status,

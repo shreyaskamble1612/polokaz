@@ -8,11 +8,14 @@ import { referralRouter } from "./controllers/referrals";
 import { trackdeskRouter } from "./controllers/trackdesk";
 import { usersRouter } from "./controllers/users";
 import { adminRouter } from "./routes/admin.routes";
+import { merchantApplicationsRouter } from "./routes/merchant-applications.routes";
 import { dealsRouter } from "./routes/deals.routes";
 import { merchantsRouter } from "./routes/merchants.routes";
 import { stripeRouter } from "./routes/stripe.routes";
 import { webhooksRouter } from "./routes/webhooks.routes";
 import { walletRouter } from "./routes/wallet.routes";
+import { plansRouter } from "./routes/plans.routes";
+import { meRouter } from "./routes/me.routes";
 import { merchantRouter } from "./controllers/merchant";
 import { trackdeskWebhookRouter } from "./controllers/webhooks/trackdesk";
 import { stripeWebhookRouter } from "./routes/stripe-webhook.routes";
@@ -41,7 +44,7 @@ app.use(express.json({
 app.use(
   cors({
     origin: process.env.NEXT_PUBLIC_APP_URL, 
-    methods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed HTTP methods
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // Specify allowed HTTP methods
     credentials: true, // Allow credentials (cookies, authorization headers, etc.)
   }),
 );
@@ -49,7 +52,7 @@ app.use(
 app.all("/api/auth/*splat", (req, res, next) => {
   // authHandler returns a promise; ensure we catch rejections and log them
   Promise.resolve()
-    .then(() => authHandler(req as any, res as any, next))
+    .then(() => authHandler(req as any, res as any))
     .catch((err) => {
       try {
         logger.error?.(err?.stack ?? err);
@@ -80,12 +83,15 @@ app.disable("x-powered-by");
 app.use("/api/deals", dealsRouter);
 app.use("/api/wallet", walletRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/merchant-applications", merchantApplicationsRouter);
 app.use("/api/merchants", merchantsRouter);
 app.use("/api/merchant", merchantRouter);
 app.use("/api/referral", referralRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/trackdesk", trackdeskRouter);
 app.use("/api/stripe", stripeRouter);
+app.use("/api/plans", plansRouter);
+app.use("/api/me", meRouter);
 
 // Centralized error handler to log unexpected exceptions and return JSON
 app.use((err: any, req: any, res: any, next: any) => {

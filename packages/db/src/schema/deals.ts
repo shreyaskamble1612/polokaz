@@ -35,11 +35,14 @@ export const deals = pgTable(
     coupontoolsId: text("coupontools_id").notNull().unique(),
     title: text("title").notNull(),
     description: text("description"),
-    merchantId: uuid("merchant_id").references(() => merchants.id, {
+    terms: text("terms"),
+    merchantId: text("merchant_id").references(() => merchants.id, {
       onDelete: "set null",
     }),
     category: text("category").notNull(),
     dealType: text("deal_type").$type<DealType>().notNull(),
+    discount: text("discount"),
+    imageUrl: text("image_url"),
     status: text("status").$type<DealStatus>().default("pending_moderation").notNull(),
     rejectionReason: text("rejection_reason"),
     expiresAt: timestamp("expires_at"),
@@ -108,7 +111,7 @@ export const redemptions = pgTable(
     dealId: uuid("deal_id")
       .notNull()
       .references(() => deals.id, { onDelete: "cascade" }),
-    merchantId: uuid("merchant_id")
+    merchantId: text("merchant_id")
       .notNull()
       .references(() => merchants.id, { onDelete: "cascade" }),
     coupontoolsEventId: text("coupontools_event_id").unique(),

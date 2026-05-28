@@ -1,0 +1,26 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env -- tip: ≡ƒôí add observability to secrets: https://dotenvx.com/ops
+APPLY 1 CREATE TABLE "merchant_application" ( 	"id" text PRIMARY KEY NOT NULL, 	"user_id" text NOT
+APPLY 2 CREATE UNIQUE INDEX "merchantApplication_userId_unique" ON "merchant_application" USING bt
+APPLY 3 CREATE INDEX "merchantApplication_userId_idx" ON "merchant_application" USING btree ("user
+APPLY 4 CREATE TABLE "referral_clicks" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL
+APPLY 5 CREATE TABLE "referral_conversions" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT
+APPLY 6 CREATE UNIQUE INDEX "referral_conversions_referred_user_id_unique" ON "referral_conversion
+APPLY 7 CREATE TABLE "commissions" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, 	"
+APPLY 8 CREATE TABLE "deals" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, 	"coupon
+APPLY 9 CREATE INDEX "deals_category_status_idx" ON "deals" USING btree ("category", "status");
+APPLY 10 CREATE INDEX "deals_category_idx" ON "deals" USING btree ("category");
+APPLY 11 CREATE INDEX "deals_status_idx" ON "deals" USING btree ("status");
+APPLY 12 CREATE INDEX "deals_merchant_id_idx" ON "deals" USING btree ("merchant_id");
+APPLY 13 CREATE INDEX "deals_coupontools_id_idx" ON "deals" USING btree ("coupontools_id");
+APPLY 14 CREATE INDEX "deals_featured_idx" ON "deals" USING btree ("featured");
+APPLY 15 CREATE INDEX "deals_expires_at_idx" ON "deals" USING btree ("expires_at");
+APPLY 16 CREATE TABLE "points_ledger" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, 
+APPLY 17 CREATE TABLE "redemptions" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, 	"
+APPLY 18 CREATE INDEX "redemptions_user_id_idx" ON "redemptions" USING btree ("user_id");
+APPLY 19 CREATE INDEX "redemptions_deal_id_idx" ON "redemptions" USING btree ("deal_id");
+APPLY 20 CREATE INDEX "redemptions_merchant_id_idx" ON "redemptions" USING btree ("merchant_id");
+APPLY 21 CREATE TABLE "wallet_items" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, 	
+APPLY 22 CREATE INDEX "wallet_items_user_id_idx" ON "wallet_items" USING btree ("user_id");
+APPLY 23 CREATE INDEX "wallet_items_deal_id_idx" ON "wallet_items" USING btree ("deal_id");
+APPLY 24 CREATE UNIQUE INDEX "wallet_items_user_id_deal_id_unique" ON "wallet_items" USING btree ("
+APPLIED

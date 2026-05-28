@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@polokaz/auth/client";
+import { clientFetch } from "@/lib/api/client-fetch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,42 +10,20 @@ import { ArrowRight, Banknote, Crown, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-const MOCK_GOLD_TIER = "gold";
-
-const EARNINGS_STATS = {
-  totalEarned: 1240,
-  pendingPayout: 180,
-  totalReferrals: 38,
-  conversionRate: 27,
-};
-
 const MONTHLY_EARNINGS = [
-  { month: "Jan", amount: 110 },
-  { month: "Feb", amount: 160 },
-  { month: "Mar", amount: 220 },
-  { month: "Apr", amount: 195 },
-  { month: "May", amount: 260 },
-  { month: "Jun", amount: 295 },
-];
-
-const REFERRAL_ROWS = [
-  { id: "ref-1", name: "An*** C.", joinedDate: "2026-01-04", status: "active", commission: 35 },
-  { id: "ref-2", name: "Jo*** M.", joinedDate: "2026-01-18", status: "active", commission: 50 },
-  { id: "ref-3", name: "Sa*** W.", joinedDate: "2026-02-02", status: "inactive", commission: 20 },
-  { id: "ref-4", name: "Le*** P.", joinedDate: "2026-02-14", status: "active", commission: 45 },
-  { id: "ref-5", name: "Ri*** T.", joinedDate: "2026-03-06", status: "active", commission: 65 },
-  { id: "ref-6", name: "Ma*** K.", joinedDate: "2026-03-26", status: "inactive", commission: 25 },
-  { id: "ref-7", name: "Ka*** N.", joinedDate: "2026-04-08", status: "active", commission: 60 },
-  { id: "ref-8", name: "De*** R.", joinedDate: "2026-04-19", status: "active", commission: 55 },
-  { id: "ref-9", name: "Ti*** B.", joinedDate: "2026-05-01", status: "active", commission: 70 },
-  { id: "ref-10", name: "El*** J.", joinedDate: "2026-05-11", status: "active", commission: 48 },
+  { month: "Jan", amount: 0 },
+  { month: "Feb", amount: 0 },
+  { month: "Mar", amount: 0 },
+  { month: "Apr", amount: 0 },
+  { month: "May", amount: 0 },
+  { month: "Jun", amount: 0 },
 ];
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(value);
 }
 
@@ -59,6 +38,14 @@ function formatDate(value: string) {
 export default function EarningsPage() {
   const session = authClient.useSession();
   const [toast, setToast] = useState<string | null>(null);
+  const [stats, setStats] = useState({ totalEarned: 0, pending: 0, totalReferrals: 0 });
+  const [commissionsList, setCommissionsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const isGoldUser = useMemo(() => {
+    const sessionTier = (session.data?.user as { tier?: string | null } | undefined)?.tier;
+    return sessionTier === "gold";
+  }, [session.data?.user]);
 
   useEffect(() => {
     if (!toast) return;
@@ -66,12 +53,65 @@ export default function EarningsPage() {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const isGoldUser = useMemo(() => {
-    const sessionTier = (session.data?.user as { tier?: string | null } | undefined)?.tier;
-    return (sessionTier ?? MOCK_GOLD_TIER) === "gold";
-  }, [session.data?.user]);
+  useEffect(() => {
+    if (!isGoldUser) {
+      setLoading(false);
+      return;
+    }
 
-  const maxEarning = Math.max(...MONTHLY_EARNINGS.map((item) => item.amount));
+    async function loadStats() {
+      try {
+        const res = await clientFetch<{
+          totalEarned: number;
+          pending: number;
+          totalReferrals: number;
+          commissions: any[];
+        }>("/api/me/affiliate-stats");
+
+        setStats({
+          totalEarned: res.totalEarned,
+          pending: res.pending,
+          totalReferrals: res.totalReferrals,
+        });
+        setCommissionsList(res.commissions || []);
+      } catch (err) {
+        console.error("Failed to load affiliate stats", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadStats();
+  }, [isGoldUser]);
+
+  const handlePayoutRequest = async () => {
+    try {
+      const res = await clientFetch<{ success: boolean; message: string }>(
+        "/api/me/payout-request",
+        { method: "POST" }
+      );
+      setToast(res.message || "Payout request submitted successfully.");
+      // Refresh stats
+      const refreshRes = await clientFetch<{
+        totalEarned: number;
+        pending: number;
+        totalReferrals: number;
+        commissions: any[];
+      }>("/api/me/affiliate-stats").catch(() => null);
+      if (refreshRes) {
+        setStats({
+          totalEarned: refreshRes.totalEarned,
+          pending: refreshRes.pending,
+          totalReferrals: refreshRes.totalReferrals,
+        });
+        setCommissionsList(refreshRes.commissions || []);
+      }
+    } catch (error: any) {
+      setToast(error.message || "Failed to submit payout request.");
+    }
+  };
+
+  const maxEarning = Math.max(...MONTHLY_EARNINGS.map((item) => item.amount)) || 1;
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.12),transparent_24%),linear-gradient(180deg,#09090f_0%,#11111a_48%,#07070b_100%)] text-white">
@@ -133,22 +173,22 @@ export default function EarningsPage() {
               {[
                 {
                   label: "Total Earned",
-                  value: formatCurrency(EARNINGS_STATS.totalEarned),
+                  value: formatCurrency(stats.totalEarned),
                   icon: Banknote,
                 },
                 {
                   label: "Pending Payout",
-                  value: formatCurrency(EARNINGS_STATS.pendingPayout),
+                  value: formatCurrency(stats.pending),
                   icon: TrendingUp,
                 },
                 {
                   label: "Total Referrals",
-                  value: EARNINGS_STATS.totalReferrals,
+                  value: stats.totalReferrals,
                   icon: Users,
                 },
                 {
                   label: "Conversion Rate",
-                  value: `${EARNINGS_STATS.conversionRate}%`,
+                  value: stats.totalReferrals > 0 ? "100%" : "0%",
                   icon: ArrowRight,
                 },
               ].map((stat) => (
@@ -210,15 +250,16 @@ export default function EarningsPage() {
                     Payout
                   </p>
                   <p className="mt-4 text-4xl font-semibold tracking-tight text-white">
-                    {formatCurrency(EARNINGS_STATS.pendingPayout)}
+                    {formatCurrency(stats.pending)}
                   </p>
                   <p className="mt-3 text-sm leading-7 text-zinc-400">
                     Request a payout for currently pending commission earnings.
                   </p>
                   <Button
                     type="button"
-                    onClick={() => setToast("Payout request submitted")}
-                    className="mt-6 w-full rounded-full bg-[linear-gradient(135deg,#f5d061_0%,#dca93b_100%)] text-zinc-950 hover:brightness-105"
+                    onClick={handlePayoutRequest}
+                    disabled={stats.pending <= 0}
+                    className="mt-6 w-full rounded-full bg-[linear-gradient(135deg,#f5d061_0%,#dca93b_100%)] text-zinc-950 hover:brightness-105 disabled:opacity-50"
                   >
                     Request Payout
                   </Button>
@@ -239,37 +280,45 @@ export default function EarningsPage() {
                   <table className="min-w-full border-separate border-spacing-y-2 text-sm">
                     <thead>
                       <tr className="text-zinc-400">
-                        <th className="px-4 py-3 text-left font-medium">Name</th>
-                        <th className="px-4 py-3 text-left font-medium">Joined Date</th>
+                        <th className="px-4 py-3 text-left font-medium">Activity</th>
+                        <th className="px-4 py-3 text-left font-medium">Earned Date</th>
                         <th className="px-4 py-3 text-left font-medium">Status</th>
                         <th className="px-4 py-3 text-right font-medium">Commission Earned</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {REFERRAL_ROWS.map((row) => (
-                        <tr key={row.id}>
-                          <td className="rounded-l-2xl border border-white/8 bg-black/20 px-4 py-4 text-white">
-                            {row.name}
-                          </td>
-                          <td className="border-y border-white/8 bg-black/20 px-4 py-4 text-zinc-300">
-                            {formatDate(row.joinedDate)}
-                          </td>
-                          <td className="border-y border-white/8 bg-black/20 px-4 py-4">
-                            <Badge
-                              className={
-                                row.status === "active"
-                                  ? "border-emerald-300/20 bg-emerald-500/14 text-emerald-100"
-                                  : "border-zinc-600 bg-zinc-800 text-zinc-300"
-                              }
-                            >
-                              {row.status}
-                            </Badge>
-                          </td>
-                          <td className="rounded-r-2xl border border-white/8 bg-black/20 px-4 py-4 text-right font-semibold text-white">
-                            {formatCurrency(row.commission)}
+                      {commissionsList.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="text-center py-10 text-zinc-500 border border-white/8 bg-black/20 rounded-2xl">
+                            No commissions recorded yet. Invite friends to start earning!
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        commissionsList.map((row) => (
+                          <tr key={row.id}>
+                            <td className="rounded-l-2xl border border-white/8 bg-black/20 px-4 py-4 text-white">
+                              {row.reason === "referral_signup" ? "Referral Sign Up" : "Referral Redemption"}
+                            </td>
+                            <td className="border-y border-white/8 bg-black/20 px-4 py-4 text-zinc-300">
+                              {formatDate(row.createdAt)}
+                            </td>
+                            <td className="border-y border-white/8 bg-black/20 px-4 py-4">
+                              <Badge
+                                className={
+                                  row.status === "paid"
+                                    ? "border-emerald-300/20 bg-emerald-500/14 text-emerald-100"
+                                    : "border-zinc-600 bg-zinc-800 text-zinc-300"
+                                }
+                              >
+                                {row.status}
+                              </Badge>
+                            </td>
+                            <td className="rounded-r-2xl border border-white/8 bg-black/20 px-4 py-4 text-right font-semibold text-white">
+                              {formatCurrency(Number(row.amount))}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

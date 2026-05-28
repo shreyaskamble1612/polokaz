@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@polokaz/auth/client";
+import { clientFetch } from "@/lib/api/client-fetch";
 import { PointsWidget } from "@/components/points/PointsWidget";
 import { ReferralCard } from "@/components/referral/ReferralCard";
 import { Badge } from "@/components/ui/badge";
@@ -51,14 +52,13 @@ const CONSUMER_PLANS: PlanCard[] = [
   {
     id: "gold",
     name: "Gold",
-    price: "$24.99/mo",
+    price: "$49.99/mo",
     cta: "Upgrade to Gold",
-    highlighted: true,
     features: [
       "Everything in Basic",
-      "Premium merchant-only campaigns",
-      "VIP concierge-style support",
-      "Highest points multiplier",
+      "Guaranteed access to all premium offers",
+      "Double points on all activities",
+      "Unlock recurring affiliate payouts",
     ],
   },
 ];
@@ -132,7 +132,7 @@ export default function PlansPage() {
   const searchParams = useSearchParams();
   const session = authClient.useSession();
   const [toast, setToast] = useState<string | null>(null);
-  const [loadingTier, setLoadingTier] = useState<Exclude<MembershipTier, "free"> | null>(null);
+  const [loadingTier, setLoadingTier] = useState<MembershipTier | null>(null);
 
   const currentTier = useMemo<MembershipTier>(() => {
     const sessionTier = (session.data?.user as { tier?: string | null } | undefined)?.tier;
@@ -166,41 +166,30 @@ export default function PlansPage() {
   }, [router, searchParams]);
 
   const handleUpgrade = async (tier: MembershipTier) => {
-    if (tier === "free") {
-      setToast("Free tier does not require checkout.");
-      return;
-    }
-
     const planName =
       tier === "merchant"
         ? "Merchant"
         : CONSUMER_PLANS.find((plan) => plan.id === tier)?.name ?? tier;
 
     setLoadingTier(tier);
-    setToast(`Redirecting to checkout for ${planName}...`);
+    setToast(`Upgrading to ${planName} plan...`);
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/stripe/create-checkout`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ tier }),
-        },
-      );
+      const data = await clientFetch<{ success: boolean; tier: string }>("/api/plans/upgrade", {
+        method: "POST",
+        body: JSON.stringify({ tier }),
+      });
 
-      const data = (await response.json()) as { url?: string; message?: string };
-
-      if (!response.ok || !data.url) {
-        throw new Error(data.message || "Failed to create checkout session.");
+      if (data.success) {
+        setToast(`Successfully upgraded to ${planName}!`);
+        await authClient.getSession();
+        router.refresh();
+      } else {
+        throw new Error("Failed to upgrade tier.");
       }
-
-      window.location.href = data.url;
-    } catch (error) {
-      setToast(error instanceof Error ? error.message : "Failed to start checkout.");
+    } catch (error: any) {
+      setToast(error.message || "Failed to upgrade plan.");
+    } finally {
       setLoadingTier(null);
     }
   };

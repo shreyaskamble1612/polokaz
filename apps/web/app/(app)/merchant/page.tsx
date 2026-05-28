@@ -31,6 +31,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import useSWR from "swr";
+import { clientFetch } from "@/lib/api/client-fetch";
+
 type StatCard = {
   label: string;
   value: string;
@@ -38,85 +41,6 @@ type StatCard = {
   icon: typeof BadgeDollarSign;
   accent: string;
 };
-
-const stats: StatCard[] = [
-  {
-    label: "Active Deals",
-    value: "18",
-    delta: "+3 this week",
-    icon: LayoutDashboard,
-    accent: "from-[#0f7af7] to-[#5bb2ff]",
-  },
-  {
-    label: "Total Redemptions",
-    value: "2,341",
-    delta: "+148 today",
-    icon: HandCoins,
-    accent: "from-emerald-500 to-emerald-400",
-  },
-  {
-    label: "New Redemptions This Week",
-    value: "487",
-    delta: "+12% vs last week",
-    icon: CalendarClock,
-    accent: "from-amber-500 to-orange-400",
-  },
-  {
-    label: "Revenue Generated",
-    value: "$12,480",
-    delta: "+8.4% vs last month",
-    icon: BadgeDollarSign,
-    accent: "from-violet-500 to-fuchsia-400",
-  },
-];
-
-const recentRedemptions = [
-  {
-    id: "red-001",
-    deal: "Weekend Burger Combo",
-    customer: "Ava Johnson",
-    channel: "In-store",
-    amount: "$18.00",
-    time: "2 min ago",
-    status: "approved",
-  },
-  {
-    id: "red-002",
-    deal: "Summer Spa Offer",
-    customer: "Marcus Lee",
-    channel: "QR scan",
-    amount: "$42.00",
-    time: "11 min ago",
-    status: "approved",
-  },
-  {
-    id: "red-003",
-    deal: "Coffee Loyalty Bonus",
-    customer: "Nina Patel",
-    channel: "In-app",
-    amount: "$6.50",
-    time: "24 min ago",
-    status: "pending",
-  },
-  {
-    id: "red-004",
-    deal: "Travel Voucher",
-    customer: "Jordan Smith",
-    channel: "POS",
-    amount: "$96.00",
-    time: "38 min ago",
-    status: "approved",
-  },
-  {
-    id: "red-005",
-    deal: "Retail Welcome Gift",
-    customer: "Mia Garcia",
-    channel: "Website",
-    amount: "$12.00",
-    time: "1 hr ago",
-    status: "approved",
-  },
-];
 
 function statusBadge(status: string) {
   switch (status) {
@@ -130,6 +54,111 @@ function statusBadge(status: string) {
 }
 
 export default function Page() {
+  const { data: dealsData, error: dealsError, isLoading: dealsLoading } = useSWR<any>(
+    "/api/merchants/me/deals",
+    clientFetch
+  );
+
+  const { data: analyticsData, error: analyticsError, isLoading: analyticsLoading } = useSWR<any>(
+    "/api/merchants/me/analytics?range=30d",
+    clientFetch
+  );
+
+  const isLoading = dealsLoading || analyticsLoading;
+  const isError = dealsError || analyticsError;
+
+  if (dealsError && (dealsError.message.includes("not found") || dealsError.message.includes("profile"))) {
+    return (
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,#f1f8ff_0%,#f8fafc_44%,#ffffff_100%)] px-4 py-16 text-slate-900">
+        <div className="mx-auto max-w-xl text-center space-y-6 rounded-[30px] border border-slate-200 bg-white p-8 shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
+          <Sparkles className="mx-auto h-12 w-12 text-blue-600" />
+          <h2 className="text-3xl font-bold tracking-tight text-slate-950">Become a Partner Merchant</h2>
+          <p className="text-slate-600">
+            Start launching promotions, tracking redemptions, and growing your business with Polokaz today.
+          </p>
+          <Button asChild className="rounded-full bg-blue-600 px-8 py-6 text-lg hover:bg-blue-700">
+            <Link href="/merchant/onboard">Onboard Now</Link>
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,#f1f8ff_0%,#f8fafc_44%,#ffffff_100%)] px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl space-y-8 animate-pulse">
+          <div className="h-48 rounded-[30px] bg-slate-200" />
+          <div className="grid gap-4 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-32 rounded-2xl bg-slate-200" />
+            ))}
+          </div>
+          <div className="grid gap-6 xl:grid-cols-[1.6fr_0.9fr]">
+            <div className="h-64 rounded-2xl bg-slate-200" />
+            <div className="h-64 rounded-2xl bg-slate-200" />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (isError) {
+    return (
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,#f1f8ff_0%,#f8fafc_44%,#ffffff_100%)] px-4 py-16 text-slate-900">
+        <div className="mx-auto max-w-xl text-center space-y-6 rounded-[30px] border border-red-200 bg-white p-8 shadow-xl">
+          <h2 className="text-3xl font-bold tracking-tight text-red-600">Error loading dashboard</h2>
+          <p className="text-slate-600">{(dealsError || analyticsError)?.message || "Something went wrong."}</p>
+        </div>
+      </main>
+    );
+  }
+
+  const activeDeals = dealsData?.deals?.filter((d: any) => d.status === "active") || [];
+  const activeDealsCount = activeDeals.length;
+
+  const totalRedemptionsCount = dealsData?.deals?.reduce(
+    (sum: number, d: any) => sum + (d.redemptionCount || 0),
+    0
+  ) || 0;
+
+  const redemptions30d = analyticsData?.totalRedemptions ?? 0;
+  const uniqueCustomers30d = analyticsData?.uniqueCustomers ?? 0;
+
+  const statsList: StatCard[] = [
+    {
+      label: "Active Deals",
+      value: String(activeDealsCount),
+      delta: `${dealsData?.deals?.length || 0} total deals`,
+      icon: LayoutDashboard,
+      accent: "from-[#0f7af7] to-[#5bb2ff]",
+    },
+    {
+      label: "Total Redemptions",
+      value: totalRedemptionsCount.toLocaleString(),
+      delta: "All time",
+      icon: HandCoins,
+      accent: "from-emerald-500 to-emerald-400",
+    },
+    {
+      label: "Redemptions (30d)",
+      value: redemptions30d.toLocaleString(),
+      delta: `Avg ${analyticsData?.avgPerDay || 0}/day`,
+      icon: CalendarClock,
+      accent: "from-amber-500 to-orange-400",
+    },
+    {
+      label: "Unique Customers",
+      value: uniqueCustomers30d.toLocaleString(),
+      delta: "Last 30 days",
+      icon: BadgeDollarSign,
+      accent: "from-violet-500 to-fuchsia-400",
+    },
+  ];
+
+  const recentRedemptionsList = analyticsData?.recentRedemptions || [];
+  const topDealsList = analyticsData?.topDeals || [];
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,#f1f8ff_0%,#f8fafc_44%,#ffffff_100%)] px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -172,7 +201,7 @@ export default function Page() {
         </section>
 
         <section className="grid gap-4 lg:grid-cols-4">
-          {stats.map((stat) => {
+          {statsList.map((stat) => {
             const Icon = stat.icon;
             return (
               <Card key={stat.label} className="overflow-hidden border-slate-200/80 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
@@ -205,23 +234,27 @@ export default function Page() {
                   <TableRow>
                     <TableHead>Deal</TableHead>
                     <TableHead>Customer</TableHead>
-                    <TableHead>Channel</TableHead>
                     <TableHead>Time</TableHead>
-                    <TableHead>Amount</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentRedemptions.map((redemption) => (
-                    <TableRow key={redemption.id}>
-                      <TableCell className="font-medium text-slate-950">{redemption.deal}</TableCell>
-                      <TableCell>{redemption.customer}</TableCell>
-                      <TableCell>{redemption.channel}</TableCell>
-                      <TableCell>{redemption.time}</TableCell>
-                      <TableCell>{redemption.amount}</TableCell>
-                      <TableCell>{statusBadge(redemption.status)}</TableCell>
+                  {recentRedemptionsList.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-32 text-center text-slate-500">
+                        No redemptions recorded yet.
+                      </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    recentRedemptionsList.map((redemption: any) => (
+                      <TableRow key={redemption.id}>
+                        <TableCell className="font-medium text-slate-950">{redemption.dealTitle}</TableCell>
+                        <TableCell>{redemption.customerName}</TableCell>
+                        <TableCell>{new Date(redemption.redeemedAt).toLocaleString()}</TableCell>
+                        <TableCell>{statusBadge("approved")}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -234,9 +267,9 @@ export default function Page() {
             </CardHeader>
             <CardContent className="space-y-4">
               {[
-                { label: "Open campaigns", value: "7" },
-                { label: "Average redemption rate", value: "34.8%" },
-                { label: "Top performing deal", value: "Weekend Burger Combo" },
+                { label: "Active campaigns", value: String(activeDealsCount) },
+                { label: "Average redemption rate", value: `${analyticsData?.avgPerDay || 0} / day` },
+                { label: "Top performing deal", value: topDealsList[0]?.title || "None" },
               ].map((item) => (
                 <div key={item.label} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{item.label}</p>

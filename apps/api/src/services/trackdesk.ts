@@ -89,7 +89,7 @@ export class TrackdeskService {
         return null;
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as any;
 
       logger.info("Conversion reported successfully to Trackdesk", {
         trackdeskConversionId: result.id,
@@ -140,7 +140,7 @@ export class TrackdeskService {
         return null;
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as any;
 
       return {
         id: result.id,
@@ -189,7 +189,7 @@ export class TrackdeskService {
         return null;
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as any;
 
       logger.info("Trackdesk tracking link created", {
         trackingUrl: result.tracking_url,

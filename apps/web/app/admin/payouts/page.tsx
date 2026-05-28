@@ -17,11 +17,16 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+import useSWR from "swr";
+import { clientFetch } from "@/lib/api/client-fetch";
+import { Loader2 } from "lucide-react";
+
 type PayoutStatus = "pending" | "approved" | "paid";
-type PayoutTier = "free" | "basic" | "gold";
+type PayoutTier = "free" | "basic" | "gold" | "merchant";
 
 type Payout = {
   id: string;
+  userId: string;
   userName: string;
   email: string;
   tier: PayoutTier;
@@ -30,21 +35,13 @@ type Payout = {
   status: PayoutStatus;
 };
 
-const INITIAL_PAYOUTS: Payout[] = [
-  { id: "p1", userName: "Ava Johnson", email: "ava@polokaz.com", tier: "gold", amount: 840, commissions: 14, status: "pending" },
-  { id: "p2", userName: "Noah Smith", email: "noah@polokaz.com", tier: "basic", amount: 420, commissions: 7, status: "pending" },
-  { id: "p3", userName: "Mia Garcia", email: "mia@polokaz.com", tier: "gold", amount: 1120, commissions: 19, status: "approved" },
-  { id: "p4", userName: "Liam Chen", email: "liam@polokaz.com", tier: "basic", amount: 300, commissions: 5, status: "paid" },
-  { id: "p5", userName: "Zoe Patel", email: "zoe@polokaz.com", tier: "free", amount: 180, commissions: 3, status: "pending" },
-  { id: "p6", userName: "Ethan Brown", email: "ethan@polokaz.com", tier: "gold", amount: 670, commissions: 11, status: "approved" },
-  { id: "p7", userName: "Aria Lopez", email: "aria@polokaz.com", tier: "basic", amount: 240, commissions: 4, status: "pending" },
-];
-
-function tierBadge(tier: PayoutTier) {
+function tierBadge(tier: string) {
   return tier === "gold" ? (
     <Badge className="rounded-full bg-amber-500/14 text-amber-700 hover:bg-amber-500/14">Gold</Badge>
   ) : tier === "basic" ? (
     <Badge className="rounded-full bg-cyan-500/14 text-cyan-700 hover:bg-cyan-500/14">Basic</Badge>
+  ) : tier === "merchant" ? (
+    <Badge className="rounded-full bg-violet-500/14 text-violet-700 hover:bg-violet-500/14">Merchant</Badge>
   ) : (
     <Badge variant="secondary" className="rounded-full">Free</Badge>
   );
@@ -66,29 +63,57 @@ function money(value: number) {
 }
 
 export default function Page() {
-  const [payouts, setPayouts] = useState(INITIAL_PAYOUTS);
   const [statusFilter, setStatusFilter] = useState<PayoutStatus | "all">("pending");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activePayout, setActivePayout] = useState<Payout | null>(null);
   const [batchModalOpen, setBatchModalOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  const filteredPayouts = useMemo(
-    () => payouts.filter((payout) => statusFilter === "all" || payout.status === statusFilter),
-    [payouts, statusFilter],
+  const { data, error, isLoading, mutate } = useSWR<any>(
+    `/api/admin/payouts?status=${statusFilter === "all" ? "" : statusFilter}`,
+    clientFetch
   );
 
-  const approvePayout = (payout: Payout) => {
-    setPayouts((current) => current.map((item) => (item.id === payout.id ? { ...item, status: "approved" } : item)));
-    setToast(`Approved payout for ${payout.userName}`);
+  const filteredPayouts = useMemo(() => data?.payouts || [], [data]);
+
+  const handleApprovePayout = async (payout: Payout) => {
+    try {
+      await clientFetch(`/api/admin/payouts/${payout.userId}/approve`, {
+        method: "POST",
+      });
+      setToast(`Approved payout for ${payout.userName}`);
+      mutate();
+    } catch (err: any) {
+      alert(err.message || "Failed to approve payout");
+    }
   };
 
-  const approveSelected = () => {
-    setPayouts((current) => current.map((item) => (selectedIds.includes(item.id) ? { ...item, status: "approved" } : item)));
-    setSelectedIds([]);
-    setBatchModalOpen(false);
-    setToast(`Approved ${selectedIds.length} payouts`);
+  const approveSelected = async () => {
+    try {
+      await Promise.all(
+        selectedIds.map((userId) =>
+          clientFetch(`/api/admin/payouts/${userId}/approve`, {
+            method: "POST",
+          })
+        )
+      );
+      setToast(`Approved ${selectedIds.length} payouts`);
+      setSelectedIds([]);
+      setBatchModalOpen(false);
+      mutate();
+    } catch (err: any) {
+      alert(err.message || "Failed to approve selected payouts");
+    }
   };
+
+  if (error) {
+    return (
+      <div className="rounded-[28px] border border-red-200 bg-red-50 p-8 text-center text-red-800">
+        <h2 className="text-2xl font-bold">Failed to load payouts</h2>
+        <p className="mt-2 text-sm">{error.message || "Please make sure you have administrator privileges."}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -126,60 +151,75 @@ export default function Page() {
 
       <Card className="border-slate-200/80 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
         <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <input
-                    type="checkbox"
-                    aria-label="Select all payouts"
-                    checked={selectedIds.length > 0 && selectedIds.length === filteredPayouts.length}
-                    onChange={(event) =>
-                      setSelectedIds(event.target.checked ? filteredPayouts.map((payout) => payout.id) : [])
-                    }
-                  />
-                </TableHead>
-                <TableHead>User Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Tier</TableHead>
-                <TableHead>Pending Amount</TableHead>
-                <TableHead>Number of Commissions</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPayouts.map((payout) => (
-                <TableRow key={payout.id}>
-                  <TableCell>
+          {isLoading ? (
+            <div className="flex min-h-56 items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading payouts...
+            </div>
+          ) : filteredPayouts.length ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
                     <input
                       type="checkbox"
-                      aria-label={`Select payout for ${payout.userName}`}
-                      checked={selectedIds.includes(payout.id)}
-                      onChange={(event) => {
-                        setSelectedIds((current) =>
-                          event.target.checked ? [...current, payout.id] : current.filter((id) => id !== payout.id),
-                        );
-                      }}
+                      aria-label="Select all payouts"
+                      checked={selectedIds.length > 0 && selectedIds.length === filteredPayouts.length}
+                      onChange={(event) =>
+                        setSelectedIds(event.target.checked ? filteredPayouts.map((payout: any) => payout.userId) : [])
+                      }
                     />
-                  </TableCell>
-                  <TableCell className="font-medium text-slate-950">{payout.userName}</TableCell>
-                  <TableCell>{payout.email}</TableCell>
-                  <TableCell>{tierBadge(payout.tier)}</TableCell>
-                  <TableCell>{money(payout.amount)}</TableCell>
-                  <TableCell>{payout.commissions}</TableCell>
-                  <TableCell>{statusBadge(payout.status)}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" className="rounded-full" onClick={() => setActivePayout(payout)}>
-                        Approve Payout
-                      </Button>
-                    </div>
-                  </TableCell>
+                  </TableHead>
+                  <TableHead>User Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Tier</TableHead>
+                  <TableHead>Pending Amount</TableHead>
+                  <TableHead>Number of Commissions</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredPayouts.map((payout: any) => (
+                  <TableRow key={payout.userId}>
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        aria-label={`Select payout for ${payout.userName}`}
+                        checked={selectedIds.includes(payout.userId)}
+                        onChange={(event) => {
+                          setSelectedIds((current) =>
+                            event.target.checked ? [...current, payout.userId] : current.filter((id) => id !== payout.userId),
+                          );
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium text-slate-950">{payout.userName}</TableCell>
+                    <TableCell>{payout.email}</TableCell>
+                    <TableCell>{tierBadge(payout.tier)}</TableCell>
+                    <TableCell>{money(payout.amount)}</TableCell>
+                    <TableCell>{payout.commissions}</TableCell>
+                    <TableCell>{statusBadge(payout.status)}</TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-2">
+                        {payout.status === "pending" ? (
+                          <Button variant="outline" size="sm" className="rounded-full" onClick={() => setActivePayout(payout)}>
+                            Approve Payout
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-slate-500 italic pr-3">No actions</span>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="flex min-h-56 items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
+              No payouts found matching filters.
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -198,7 +238,7 @@ export default function Page() {
             <Button
               className="rounded-full bg-slate-950 text-white hover:bg-slate-800"
               onClick={() => {
-                if (activePayout) approvePayout(activePayout);
+                if (activePayout) handleApprovePayout(activePayout);
                 setActivePayout(null);
               }}
             >
@@ -229,3 +269,4 @@ export default function Page() {
     </div>
   );
 }
+

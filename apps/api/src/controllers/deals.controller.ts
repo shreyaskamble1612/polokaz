@@ -237,3 +237,45 @@ export async function getDealDetail(req: Request, res: Response) {
     isRedeemed: record.walletStatus === "redeemed",
   });
 }
+
+export async function listFeaturedDeals(req: Request, res: Response) {
+  const session = requireSession(req, res);
+
+  if (!session) return;
+
+  const rows = await db
+    .select({
+      id: deal.id,
+      title: deal.title,
+      description: deal.description,
+      category: deal.category,
+      dealType: deal.dealType,
+      discountValue: deal.discountValue,
+      merchantId: deal.merchantId,
+      merchantName: merchantNameSql(),
+      merchantLogo: deal.merchantLogo,
+      status: deal.status,
+      startDate: deal.startDate,
+      endDate: deal.endDate,
+      expiresAt: deal.expiresAt,
+      images: deal.images,
+      thumbnailUrl: deal.thumbnailUrl,
+      featured: deal.featured,
+      coupontoolsCouponId: deal.coupontoolsCouponId,
+    })
+    .from(deal)
+    .leftJoin(merchants, eq(deal.merchantId, merchants.id))
+    .where(and(eq(deal.status, "active" as const), eq(deal.featured, true)))
+    .orderBy(desc(deal.priority), desc(deal.createdAt))
+    .limit(6);
+
+  return res.json({
+    deals: rows.map((row) => ({
+      ...row,
+      startDate: row.startDate?.toISOString() ?? null,
+      endDate: (row.endDate ?? row.expiresAt)?.toISOString() ?? null,
+      expiresAt: row.expiresAt?.toISOString() ?? null,
+    })),
+  });
+}
+

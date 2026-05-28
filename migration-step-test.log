@@ -1,0 +1,33 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+RUN 1 CREATE TABLE "merchant_application" ( 	"id" text PRIMARY KEY NOT NULL, 	"user_id" text NOT
+RUN 2 CREATE UNIQUE INDEX "merchantApplication_userId_unique" ON "merchant_application" USING bt
+RUN 3 CREATE INDEX "merchantApplication_userId_idx" ON "merchant_application" USING btree ("user
+RUN 4 CREATE TABLE "referral_clicks" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL
+RUN 5 CREATE TABLE "referral_conversions" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT
+RUN 6 CREATE UNIQUE INDEX "referral_conversions_referred_user_id_unique" ON "referral_conversion
+RUN 7 CREATE TABLE "commissions" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, 	"
+RUN 8 CREATE TABLE "deals" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, 	"coupon
+RUN 9 CREATE INDEX "deals_category_status_idx" ON "deals" USING btree ("category", "status");
+RUN 10 CREATE INDEX "deals_category_idx" ON "deals" USING btree ("category");
+RUN 11 CREATE INDEX "deals_status_idx" ON "deals" USING btree ("status");
+RUN 12 CREATE INDEX "deals_merchant_id_idx" ON "deals" USING btree ("merchant_id");
+RUN 13 CREATE INDEX "deals_coupontools_id_idx" ON "deals" USING btree ("coupontools_id");
+RUN 14 CREATE INDEX "deals_featured_idx" ON "deals" USING btree ("featured");
+RUN 15 CREATE INDEX "deals_expires_at_idx" ON "deals" USING btree ("expires_at");
+RUN 16 CREATE TABLE "points_ledger" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, 
+RUN 17 CREATE TABLE "redemptions" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, 	"
+RUN 18 CREATE INDEX "redemptions_user_id_idx" ON "redemptions" USING btree ("user_id");
+RUN 19 CREATE INDEX "redemptions_deal_id_idx" ON "redemptions" USING btree ("deal_id");
+RUN 20 CREATE INDEX "redemptions_merchant_id_idx" ON "redemptions" USING btree ("merchant_id");
+RUN 21 CREATE TABLE "wallet_items" ( 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL, 	
+RUN 22 CREATE INDEX "wallet_items_user_id_idx" ON "wallet_items" USING btree ("user_id");
+RUN 23 CREATE INDEX "wallet_items_deal_id_idx" ON "wallet_items" USING btree ("deal_id");
+RUN 24 CREATE UNIQUE INDEX "wallet_items_user_id_deal_id_unique" ON "wallet_items" USING btree ("
+node.exe : FAILED rollback
+At C:\Users\HP\AppData\Roaming\npm\pnpm.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/pnpm/bin/pnpm.cjs" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAILED rollback:String) [], Remot 
+   eException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

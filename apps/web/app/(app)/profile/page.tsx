@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@polokaz/auth/client";
+import { clientFetch } from "@/lib/api/client-fetch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -104,13 +105,37 @@ export default function ProfilePage() {
     [user]
   );
 
-  const saveProfile = profileForm.handleSubmit(async () => {
-    setToast("Profile information saved.");
+  const saveProfile = profileForm.handleSubmit(async (data) => {
+    try {
+      await clientFetch("/api/me/profile", {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: data.name,
+          birthdate: data.birthdate,
+          countryName: data.countryName,
+        }),
+      });
+      setToast("Profile information saved.");
+      await authClient.getSession();
+    } catch (error: any) {
+      setToast(error.message || "Failed to update profile.");
+    }
   });
 
-  const saveSecurity = securityForm.handleSubmit(async () => {
-    setToast("Password change saved.");
-    securityForm.reset();
+  const saveSecurity = securityForm.handleSubmit(async (data) => {
+    try {
+      await clientFetch("/api/me/password", {
+        method: "PATCH",
+        body: JSON.stringify({
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+        }),
+      });
+      setToast("Password change saved.");
+      securityForm.reset();
+    } catch (error: any) {
+      setToast(error.message || "Failed to update password.");
+    }
   });
 
   const saveNotifications = async () => {

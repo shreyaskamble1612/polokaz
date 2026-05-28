@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 
 export const referralClicks = pgTable("referral_clicks", {
@@ -18,7 +18,9 @@ export const referralConversions = pgTable("referral_conversions", {
   }),
   signedUpAt: timestamp("signed_up_at").defaultNow().notNull(),
   rewardGranted: boolean("reward_granted").default(false).notNull(),
-});
+},
+(table) => [uniqueIndex("referral_conversions_referred_user_id_unique").on(table.referredUserId)],
+);
 
 export const referralConversionsRelations = relations(referralConversions, ({ one }) => ({
   referrer: one(user, {

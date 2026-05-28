@@ -27,7 +27,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
- type StatCard = {
+import useSWR from "swr";
+import { clientFetch } from "@/lib/api/client-fetch";
+import { Loader2 } from "lucide-react";
+
+type StatCard = {
   label: string;
   value: string;
   delta: string;
@@ -35,73 +39,94 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
   tone: string;
 };
 
-const stats: StatCard[] = [
-  { label: "Total Users", value: "1,248", delta: "+124 this month", icon: Users, tone: "from-sky-500 to-cyan-400" },
-  { label: "Active Users This Week", value: "842", delta: "+11% week over week", icon: TrendingUp, tone: "from-emerald-500 to-emerald-400" },
-  { label: "Total Deals", value: "86", delta: "+9 approved this week", icon: ChartColumn, tone: "from-violet-500 to-fuchsia-400" },
-  { label: "Redemptions This Month", value: "12,480", delta: "+18% vs last month", icon: HandCoins, tone: "from-amber-500 to-orange-400" },
-  { label: "Pending Payouts", value: "$42,180", delta: "31 payouts waiting", icon: Wallet, tone: "from-slate-700 to-slate-500" },
-  { label: "New Signups This Week", value: "214", delta: "+42 today", icon: Sparkles, tone: "from-pink-500 to-rose-400" },
-];
-
-const signupData = [
-  { day: "1", signups: 14 },
-  { day: "2", signups: 22 },
-  { day: "3", signups: 18 },
-  { day: "4", signups: 31 },
-  { day: "5", signups: 28 },
-  { day: "6", signups: 33 },
-  { day: "7", signups: 30 },
-  { day: "8", signups: 24 },
-  { day: "9", signups: 26 },
-  { day: "10", signups: 38 },
-  { day: "11", signups: 41 },
-  { day: "12", signups: 37 },
-  { day: "13", signups: 44 },
-  { day: "14", signups: 46 },
-  { day: "15", signups: 39 },
-  { day: "16", signups: 43 },
-  { day: "17", signups: 48 },
-  { day: "18", signups: 52 },
-  { day: "19", signups: 47 },
-  { day: "20", signups: 55 },
-  { day: "21", signups: 50 },
-  { day: "22", signups: 46 },
-  { day: "23", signups: 58 },
-  { day: "24", signups: 60 },
-  { day: "25", signups: 57 },
-  { day: "26", signups: 62 },
-  { day: "27", signups: 61 },
-  { day: "28", signups: 65 },
-  { day: "29", signups: 59 },
-  { day: "30", signups: 68 },
-];
-
-const dealsByCategory = [
-  { category: "Food & Dining", deals: 24 },
-  { category: "Retail", deals: 18 },
-  { category: "Travel", deals: 13 },
-  { category: "Entertainment", deals: 15 },
-  { category: "Health & Wellness", deals: 11 },
-  { category: "Beauty", deals: 5 },
-];
-
 const recentAdminActions = [
-  { label: "Approved 3 deals", detail: "Moderation queue cleared in 4 min" },
-  { label: "Processed payout batch", detail: "31 commissions moved to review" },
-  { label: "Upgraded 12 users", detail: "Tier changes confirmed successfully" },
-  { label: "Merchant onboarding", detail: "2 accounts activated this morning" },
+  { label: "System Status: Online", detail: "All sync runners operating normally." },
+  { label: "Coupontools Integration", detail: "Connected to Coupontools API." },
+  { label: "Moderation Queue", detail: "Check for pending deal submissions." },
 ];
 
-function formatTick(value: string) {
-  return `Day ${value}`;
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 export default function Page() {
-  const totalSignups = useMemo(
-    () => signupData.reduce((sum, point) => sum + point.signups, 0),
-    [],
+  const { data, error, isLoading } = useSWR<any>(
+    "/api/admin/metrics",
+    clientFetch
   );
+
+  const chartData = useMemo(() => {
+    const series = [];
+    const rawData = data?.dailyRedemptions || [];
+    const rawMap = new Map(rawData.map((r: any) => [r.date, r.count]));
+
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateString = date.toISOString().split("T")[0]; // YYYY-MM-DD
+      const count = rawMap.get(dateString) || 0;
+      series.push({
+        day: date.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        redemptions: count,
+      });
+    }
+    return series;
+  }, [data]);
+
+  const totalUsers = data?.usersByTier?.reduce((sum: number, t: any) => sum + t.count, 0) || 0;
+  const goldUsers = data?.usersByTier?.find((t: any) => t.tier === "gold")?.count || 0;
+  const merchantUsers = data?.usersByTier?.find((t: any) => t.tier === "merchant")?.count || 0;
+  const totalDeals = data?.totalDeals || 0;
+  const redemptionsThisMonth = data?.redemptionsThisMonth || 0;
+  const pendingPayouts = data?.pendingPayouts || 0;
+  const newSignups = data?.newSignups || 0;
+
+  const statsList: StatCard[] = [
+    { label: "Total Users", value: totalUsers.toLocaleString(), delta: "All time registered", icon: Users, tone: "from-sky-500 to-cyan-400" },
+    { label: "Gold Tiers", value: goldUsers.toLocaleString(), delta: "Premium subscribers", icon: TrendingUp, tone: "from-emerald-500 to-emerald-400" },
+    { label: "Partner Merchants", value: merchantUsers.toLocaleString(), delta: "Active businesses", icon: Sparkles, tone: "from-pink-500 to-rose-400" },
+    { label: "Active Deals", value: totalDeals.toLocaleString(), delta: "Live on platform", icon: ChartColumn, tone: "from-violet-500 to-fuchsia-400" },
+    { label: "Redemptions (Month)", value: redemptionsThisMonth.toLocaleString(), delta: "Since 1st of month", icon: HandCoins, tone: "from-amber-500 to-orange-400" },
+    { label: "Pending Payouts", value: formatCurrency(pendingPayouts), delta: "Waiting for approval", icon: Wallet, tone: "from-slate-700 to-slate-500" },
+  ];
+
+  const dealsByCategory = useMemo(() => {
+    const raw = data?.dealsByCategory || [];
+    return raw.map((r: any) => ({
+      category: r.category || "Uncategorized",
+      deals: r.deals || 0,
+    }));
+  }, [data]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-48 rounded-[28px] bg-slate-200" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-32 rounded-2xl bg-slate-200" />
+          ))}
+        </div>
+        <div className="grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
+          <div className="h-96 rounded-3xl bg-slate-200" />
+          <div className="h-96 rounded-3xl bg-slate-200" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-[28px] border border-red-200 bg-red-50 p-8 text-center text-red-800">
+        <h2 className="text-2xl font-bold">Failed to load admin metrics</h2>
+        <p className="mt-2 text-sm">{error.message || "Please make sure you have administrator privileges."}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -120,16 +145,11 @@ export default function Page() {
               and payout operations from one command center.
             </p>
           </div>
-
-          <Button className="rounded-full bg-slate-950 px-5 text-white hover:bg-slate-800">
-            Export Snapshot
-            <ArrowUpRight className="ml-2 h-4 w-4" />
-          </Button>
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {stats.map((stat) => {
+        {statsList.map((stat) => {
           const Icon = stat.icon;
 
           return (
@@ -154,15 +174,15 @@ export default function Page() {
       <section className="grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
         <Card className="border-slate-200/80 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
           <CardHeader className="pb-3">
-            <CardTitle className="text-2xl tracking-tight">User Signups Over Time</CardTitle>
-            <CardDescription>Last 30 days of new registrations.</CardDescription>
+            <CardTitle className="text-2xl tracking-tight">Daily Redemptions Over Time</CardTitle>
+            <CardDescription>Last 30 days of redemption activity.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={signupData}>
+                <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="day" tickFormatter={formatTick} stroke="#94a3b8" />
+                  <XAxis dataKey="day" stroke="#94a3b8" />
                   <YAxis stroke="#94a3b8" />
                   <Tooltip
                     contentStyle={{
@@ -170,11 +190,10 @@ export default function Page() {
                       border: "1px solid #e2e8f0",
                       background: "rgba(255,255,255,0.96)",
                     }}
-                    labelFormatter={(value) => `Day ${value}`}
                   />
                   <Line
                     type="monotone"
-                    dataKey="signups"
+                    dataKey="redemptions"
                     stroke="#0f7af7"
                     strokeWidth={3}
                     dot={{ r: 3 }}
@@ -188,8 +207,8 @@ export default function Page() {
 
         <Card className="border-slate-200/80 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
           <CardHeader className="pb-3">
-            <CardTitle className="text-2xl tracking-tight">Platform Activity</CardTitle>
-            <CardDescription>Quick moderation and operations notes.</CardDescription>
+            <CardTitle className="text-2xl tracking-tight">Platform Status</CardTitle>
+            <CardDescription>Quick operational status and metrics.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {recentAdminActions.map((item) => (
@@ -199,8 +218,8 @@ export default function Page() {
               </div>
             ))}
             <div className="rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-4">
-              <p className="text-sm font-semibold text-cyan-900">This month</p>
-              <p className="mt-1 text-2xl font-black text-cyan-950">{totalSignups} signups</p>
+              <p className="text-sm font-semibold text-cyan-900">New Signups This Week</p>
+              <p className="mt-1 text-2xl font-black text-cyan-950">{newSignups} users</p>
             </div>
           </CardContent>
         </Card>
@@ -210,26 +229,32 @@ export default function Page() {
         <Card className="border-slate-200/80 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
           <CardHeader className="pb-3">
             <CardTitle className="text-2xl tracking-tight">Deals by Category</CardTitle>
-            <CardDescription>Mock deal distribution across the marketplace.</CardDescription>
+            <CardDescription>Active deal distribution across the marketplace.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dealsByCategory} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="category" stroke="#94a3b8" tick={{ fontSize: 12 }} interval={0} />
-                  <YAxis stroke="#94a3b8" />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 16,
-                      border: "1px solid #e2e8f0",
-                      background: "rgba(255,255,255,0.96)",
-                    }}
-                  />
-                  <Bar dataKey="deals" radius={[10, 10, 0, 0]} fill="#0f7af7" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {dealsByCategory.length === 0 ? (
+              <div className="h-80 w-full flex items-center justify-center text-slate-500 border border-dashed rounded-3xl">
+                No active deals found.
+              </div>
+            ) : (
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dealsByCategory} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="category" stroke="#94a3b8" tick={{ fontSize: 12 }} interval={0} />
+                    <YAxis stroke="#94a3b8" />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: 16,
+                        border: "1px solid #e2e8f0",
+                        background: "rgba(255,255,255,0.96)",
+                      }}
+                    />
+                    <Bar dataKey="deals" radius={[10, 10, 0, 0]} fill="#0f7af7" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -257,3 +282,4 @@ export default function Page() {
     </div>
   );
 }
+

@@ -1,6 +1,7 @@
-import { and, db, deal, desc, eq, merchants, sql, walletItems } from "@polokaz/db";
+import { and, db, deal, desc, eq, merchants, sql, walletItems, redemptions, referralConversions } from "@polokaz/db";
 import { Request, Response } from "express";
 import { requireSession } from "../lib/authorization";
+import { dispatchReward } from "../services/rewards.service";
 
 const WALLET_STATUSES = ["saved", "redeemed"] as const;
 
@@ -292,3 +293,90 @@ export async function listWalletItems(req: Request, res: Response) {
     redeemedCount: redeemedCountRows[0]?.count ?? 0,
   });
 }
+
+export async function redeemDealInWallet(req: Request, res: Response) {
+  const session = requireSession(req, res);
+  if (!session) return;
+
+  const dealId = req.params.dealId?.trim();
+  if (!dealId) {
+    return res.status(400).json({
+      error: { code: "INVALID_REQUEST", message: "dealId is required" },
+    });
+  }
+
+  // Find saved wallet item
+  const [item] = await db
+    .select({
+      id: walletItems.id,
+      status: walletItems.status,
+      merchantId: deal.merchantId,
+    })
+    .from(walletItems)
+    .innerJoin(deal, eq(walletItems.dealId, deal.id))
+    .where(and(eq(walletItems.userId, session.user.id), eq(walletItems.dealId, dealId)))
+    .limit(1);
+
+  if (!item) {
+    return res.status(404).json({
+      error: { code: "NOT_FOUND", message: "Saved deal not found in wallet" },
+    });
+  }
+
+  if (item.status !== "saved") {
+    return res.status(400).json({
+      error: { code: "ALREADY_REDEEMED", message: "Deal has already been redeemed" },
+    });
+  }
+
+  // Update wallet item
+  await db
+    .update(walletItems)
+    .set({
+      status: "redeemed",
+      redeemedAt: new Date(),
+    })
+    .where(eq(walletItems.id, item.id));
+
+  // Insert into redemptions
+  const [redemptionRecord] = await db
+    .insert(redemptions)
+    .values({
+      userId: session.user.id,
+      dealId,
+      merchantId: item.merchantId || "", // fallback if null
+      redeemedAt: new Date(),
+      rewardDispatched: true,
+    })
+    .returning();
+
+  // Fire rewards dispatch
+  let pointsEarned = 0;
+  if (redemptionRecord) {
+    // 1. Reward the user who redeemed the deal
+    const userReward = await dispatchReward({
+      type: "deal_redemption",
+      userId: session.user.id,
+      referenceId: redemptionRecord.id,
+    });
+    pointsEarned = userReward.pointsEarned ?? 0;
+
+    // 2. If this user was referred by someone, reward the referrer
+    const [conversion] = await db
+      .select({ referrerId: referralConversions.referrerId })
+      .from(referralConversions)
+      .where(eq(referralConversions.referredUserId, session.user.id))
+      .limit(1);
+
+    if (conversion && conversion.referrerId) {
+      await dispatchReward({
+        type: "referral_redemption",
+        userId: conversion.referrerId,
+        referenceId: redemptionRecord.id,
+      });
+    }
+  }
+
+  return res.json({ success: true, pointsEarned });
+}
+

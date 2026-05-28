@@ -29,6 +29,13 @@
       "when": 1778668200000,
       "tag": "0003_coupontools_deal_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779943773401,
+      "tag": "0004_platform_step1",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,14 @@
 {
-  "extends": "../../packages/ts-config/base.json",
+  "extends": "../../packages/tsconfig/base.json",
   "include": ["./src"],
+  "exclude": ["**/*.test.ts", "src/**/*.test.ts"],
   "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "declaration": false,
+    "declarationMap": false,
     "rootDir": "../",
     "baseUrl": ".",
     "esModuleInterop": true

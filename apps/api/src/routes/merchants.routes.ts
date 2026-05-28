@@ -3,11 +3,26 @@ import {
   createMerchantDeal,
   listMerchantDeals,
   onboardMerchant,
+  getMerchantProfile,
+  updateMerchantDeal,
+  deleteMerchantDeal,
+  getMerchantAnalytics,
 } from "../controllers/merchants.controller";
 
 const router = express.Router();
 
+// Onboarding (requires user session)
 router.post("/onboard", onboardMerchant);
+
+// Profile and Deals (requires merchant session)
+router.get("/me", getMerchantProfile);
+router.get("/me/deals", listMerchantDeals);
+router.post("/me/deals", createMerchantDeal);
+router.patch("/me/deals/:dealId", updateMerchantDeal);
+router.delete("/me/deals/:dealId", deleteMerchantDeal);
+router.get("/me/analytics", getMerchantAnalytics);
+
+// Legacy routes (backwards compatibility)
 router.post("/deals", createMerchantDeal);
 router.get("/deals", listMerchantDeals);
 

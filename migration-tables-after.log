@@ -1,0 +1,27 @@
+﻿[dotenv@17.2.3] injecting env (5) from .env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+[
+  {
+    "table_name": "commissions"
+  },
+  {
+    "table_name": "deals"
+  },
+  {
+    "table_name": "merchant_application"
+  },
+  {
+    "table_name": "points_ledger"
+  },
+  {
+    "table_name": "redemptions"
+  },
+  {
+    "table_name": "referral_clicks"
+  },
+  {
+    "table_name": "referral_conversions"
+  },
+  {
+    "table_name": "wallet_items"
+  }
+]

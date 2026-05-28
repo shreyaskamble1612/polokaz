@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { authClient } from "@polokaz/auth/client";
 import { getDummyDeals, type Deal } from "@/lib/api/deals";
+import { clientFetch } from "@/lib/api/client-fetch";
 import {
   ChevronDown,
   Facebook,
@@ -134,7 +135,7 @@ export default function Page() {
   const [selectedLocation, setSelectedLocation] = useState("Select location");
   const [activeTab, setActiveTab] = useState<"coupons" | "vouchers">("coupons");
   const [visibleCount, setVisibleCount] = useState(6);
-  const [deals, setDeals] = useState<Deal[]>(getDummyDeals());
+  const [deals, setDeals] = useState<Deal[]>([]);
   const [user, setUser] = useState<UserProfile>({
     name: "My Account",
     email: "account@polokaz.com",
@@ -142,53 +143,91 @@ export default function Page() {
   });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  const [points, setPoints] = useState<number>(0);
+  const [walletStats, setWalletStats] = useState({ savedCount: 0, redeemedCount: 0 });
+  const [affiliateStats, setAffiliateStats] = useState({ totalEarned: 0, pending: 0 });
+  const [userTier, setUserTier] = useState<string>("free");
+
   useEffect(() => {
     router.prefetch("/customer/dashboard");
     router.prefetch("/customer/coupons");
   }, [router]);
 
   useEffect(() => {
-    async function loadSession() {
+    async function loadDashboardData() {
       try {
-        const session = await authClient.getSession();
-        if (session.data?.user) {
+        const sessionRes = await authClient.getSession();
+        if (sessionRes.data?.user) {
           setUser({
-            name: session.data.user.name,
-            email: session.data.user.email,
-            image: session.data.user.image,
+            name: sessionRes.data.user.name,
+            email: sessionRes.data.user.email,
+            image: sessionRes.data.user.image,
           });
+          const tier = (sessionRes.data.user as any).tier || "free";
+          setUserTier(tier);
+
+          // Fetch points
+          const pointsRes = await clientFetch<{ balance: number }>("/api/me/points").catch(() => ({ balance: 0 }));
+          setPoints(pointsRes.balance);
+
+          // Fetch wallet stats
+          const walletRes = await clientFetch<{ savedCount: number; redeemedCount: number }>("/api/wallet").catch(() => ({ savedCount: 0, redeemedCount: 0 }));
+          setWalletStats({
+            savedCount: walletRes.savedCount,
+            redeemedCount: walletRes.redeemedCount,
+          });
+
+          // Fetch affiliate stats if gold
+          if (tier === "gold") {
+            const affiliateRes = await clientFetch<{ totalEarned: number; pending: number }>("/api/me/affiliate-stats").catch(() => ({ totalEarned: 0, pending: 0 }));
+            setAffiliateStats({
+              totalEarned: affiliateRes.totalEarned,
+              pending: affiliateRes.pending,
+            });
+          }
         }
-      } catch {
-        // Keep fallback profile when session is unavailable on first paint.
+      } catch (err) {
+        console.error("Failed to load dashboard data", err);
       }
     }
 
     async function loadDeals() {
       try {
-        const response = await fetch(`${API_URL}/api/deals?limit=20`, {
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch deals");
-        }
-
-        const data = await response.json();
-        if (Array.isArray(data.deals) && data.deals.length > 0) {
+        const data = await clientFetch<{ deals: Deal[] }>("/api/deals?limit=20");
+        if (Array.isArray(data.deals)) {
           setDeals(data.deals);
         }
-      } catch {
+      } catch (err) {
+        console.error("Failed to fetch deals", err);
         setDeals(getDummyDeals());
       }
     }
 
-    loadSession();
+    loadDashboardData();
     loadDeals();
   }, []);
 
   useEffect(() => {
     setVisibleCount(6);
   }, [activeTab, searchQuery, selectedCategory, selectedLocation]);
+
+  async function handleSaveDeal(dealId: string) {
+    try {
+      await clientFetch("/api/wallet/save", {
+        method: "POST",
+        body: JSON.stringify({ dealId }),
+      });
+      // Refresh wallet stats
+      const walletRes = await clientFetch<{ savedCount: number; redeemedCount: number }>("/api/wallet").catch(() => ({ savedCount: 0, redeemedCount: 0 }));
+      setWalletStats({
+        savedCount: walletRes.savedCount,
+        redeemedCount: walletRes.redeemedCount,
+      });
+      alert("Deal saved to your wallet successfully!");
+    } catch (err: any) {
+      alert(err.message || "Failed to save deal");
+    }
+  }
 
   const couponRows = useMemo(() => {
     return deals.filter((deal) => {
@@ -377,9 +416,15 @@ export default function Page() {
 
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { label: "My Coupons", value: String(stats.couponsCount) },
-              { label: "My Vouchers", value: String(stats.vouchersCount) },
-              { label: "My Earning", value: stats.earnings, accent: true },
+              { label: "Saved Deals", value: String(walletStats.savedCount) },
+              { label: "Redeemed Deals", value: String(walletStats.redeemedCount) },
+              {
+                label: userTier === "gold" ? "My Earnings" : "My Points",
+                value: userTier === "gold"
+                  ? `$${(affiliateStats.totalEarned + affiliateStats.pending).toFixed(2)}`
+                  : `${points} pts`,
+                accent: true,
+              },
             ].map((item) => (
               <div
                 key={item.label}
@@ -576,6 +621,7 @@ export default function Page() {
                         <div className="mt-5 flex items-center justify-end">
                           <button
                             type="button"
+                            onClick={() => handleSaveDeal(row.id)}
                             className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition ${buttonColor}`}
                           >
                             Get Now

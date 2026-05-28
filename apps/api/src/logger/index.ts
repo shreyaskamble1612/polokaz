@@ -58,13 +58,13 @@ export function createLogger() {
       // Auth logger
       {
         category: ["api", "auth"],
-        lowestLevel: isProduction ? "warn" : "debug",
+        lowestLevel: isProduction ? "warning" : "debug",
         sinks: ["console"],
       },
       // Database logger
       {
         category: ["api", "database"],
-        lowestLevel: isProduction ? "warn" : "info",
+        lowestLevel: isProduction ? "warning" : "info",
         sinks: ["console"],
       },
     ],

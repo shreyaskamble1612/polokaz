@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpDown, Ban, Search, UserCog } from "lucide-react";
+import { ArrowUpDown, Ban, Search, UserCog, Loader2 } from "lucide-react";
+import useSWR from "swr";
+import { clientFetch } from "@/lib/api/client-fetch";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,9 +22,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type UserRole = "admin" | "merchant" | "customer";
-type UserTier = "free" | "basic" | "gold";
+type UserTier = "free" | "basic" | "gold" | "merchant";
 type UserStatus = "active" | "banned";
-type SortKey = "name" | "email" | "role" | "tier" | "joinedAt";
+type SortKey = "name" | "email" | "role" | "tier" | "createdAt";
 
 type AdminUser = {
   id: string;
@@ -30,35 +32,19 @@ type AdminUser = {
   email: string;
   role: UserRole;
   tier: UserTier;
-  joinedAt: string;
-  status: UserStatus;
-  country: string;
+  createdAt: string;
+  banned: boolean;
+  referralCount: number;
 };
 
-const INITIAL_USERS: AdminUser[] = Array.from({ length: 25 }).map((_, index) => {
-  const roles: UserRole[] = ["customer", "merchant", "customer", "admin"];
-  const tiers: UserTier[] = ["free", "basic", "gold", "basic", "free"];
-  const statuses: UserStatus[] = ["active", "active", "active", "banned", "active"];
-  const names = ["Ava", "Noah", "Sophia", "Liam", "Mia", "Ethan", "Zoe", "Lucas", "Aria", "Mason"];
-
-  return {
-    id: `user-${index + 1}`,
-    name: `${names[index % names.length]} ${String.fromCharCode(65 + (index % 26))}.`,
-    email: `user${index + 1}@polokaz.com`,
-    role: roles[index % roles.length],
-    tier: tiers[index % tiers.length],
-    joinedAt: `2026-0${(index % 9) + 1}-${String((index % 27) + 1).padStart(2, "0")}`,
-    status: statuses[index % statuses.length],
-    country: ["United States", "Canada", "Mexico", "United Kingdom"][index % 4],
-  };
-});
-
-function tierBadge(tier: UserTier) {
+function tierBadge(tier: string) {
   switch (tier) {
     case "gold":
       return <Badge className="rounded-full bg-amber-500/14 text-amber-700 hover:bg-amber-500/14">Gold</Badge>;
     case "basic":
       return <Badge className="rounded-full bg-cyan-500/14 text-cyan-700 hover:bg-cyan-500/14">Basic</Badge>;
+    case "merchant":
+      return <Badge className="rounded-full bg-violet-500/14 text-violet-700 hover:bg-violet-500/14">Merchant</Badge>;
     default:
       return <Badge variant="secondary" className="rounded-full">Free</Badge>;
   }
@@ -75,8 +61,8 @@ function roleBadge(role: UserRole) {
   }
 }
 
-function statusBadge(status: UserStatus) {
-  return status === "active" ? (
+function statusBadge(banned: boolean) {
+  return !banned ? (
     <Badge className="rounded-full bg-emerald-500/14 text-emerald-700 hover:bg-emerald-500/14">Active</Badge>
   ) : (
     <Badge className="rounded-full bg-rose-500/14 text-rose-700 hover:bg-rose-500/14">Banned</Badge>
@@ -84,12 +70,11 @@ function statusBadge(status: UserStatus) {
 }
 
 export default function Page() {
-  const [users, setUsers] = useState(INITIAL_USERS);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [tierFilter, setTierFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sortKey, setSortKey] = useState<SortKey>("joinedAt");
+  const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [viewedUser, setViewedUser] = useState<AdminUser | null>(null);
@@ -98,53 +83,81 @@ export default function Page() {
   const [targetTier, setTargetTier] = useState<UserTier>("basic");
   const [pendingTierChange, setPendingTierChange] = useState<{ user: AdminUser; tier: UserTier } | null>(null);
 
+  const queryParams = new URLSearchParams({
+    page: String(page),
+    limit: "10",
+    role: roleFilter,
+    tier: tierFilter,
+    banned: statusFilter,
+    search: search,
+  });
+
+  const { data, error, isLoading, mutate } = useSWR<any>(
+    `/api/admin/users?${queryParams.toString()}`,
+    clientFetch
+  );
+
   useEffect(() => {
     setPage(1);
   }, [search, roleFilter, tierFilter, statusFilter]);
 
-  const filteredUsers = useMemo(() => {
-    const normalized = search.toLowerCase();
-
-    return users.filter((user) => {
-      const matchesSearch =
-        !normalized ||
-        user.name.toLowerCase().includes(normalized) ||
-        user.email.toLowerCase().includes(normalized);
-      const matchesRole = roleFilter === "all" || user.role === roleFilter;
-      const matchesTier = tierFilter === "all" || user.tier === tierFilter;
-      const matchesStatus = statusFilter === "all" || user.status === statusFilter;
-
-      return matchesSearch && matchesRole && matchesTier && matchesStatus;
-    });
-  }, [users, search, roleFilter, tierFilter, statusFilter]);
-
-  const sortedUsers = useMemo(() => {
-    return [...filteredUsers].sort((left, right) => {
+  const paginatedUsers = useMemo(() => {
+    const rawUsers = data?.users || [];
+    return [...rawUsers].sort((left, right) => {
       const direction = sortDirection === "asc" ? 1 : -1;
-      const leftValue = String(left[sortKey]);
-      const rightValue = String(right[sortKey]);
+      const leftValue = String(left[sortKey] || "");
+      const rightValue = String(right[sortKey] || "");
       return leftValue.localeCompare(rightValue) * direction;
     });
-  }, [filteredUsers, sortDirection, sortKey]);
+  }, [data, sortDirection, sortKey]);
 
-  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / 10));
-  const paginatedUsers = sortedUsers.slice((page - 1) * 10, page * 10);
+  const totalPages = data?.totalPages || 1;
+  const totalUsersCount = data?.total || 0;
 
-  const updateUser = (userId: string, patch: Partial<AdminUser>) => {
-    setUsers((current) => current.map((user) => (user.id === userId ? { ...user, ...patch } : user)));
+  const handleTierChange = async (userId: string, tier: string) => {
+    try {
+      await clientFetch(`/api/admin/users/${userId}/tier`, {
+        method: "PATCH",
+        body: JSON.stringify({ tier }),
+      });
+      mutate();
+    } catch (err: any) {
+      alert(err.message || "Failed to update tier");
+    }
   };
 
-  const confirmManualTier = () => {
+  const handleBanToggle = async (userId: string, currentlyBanned: boolean) => {
+    try {
+      await clientFetch(`/api/admin/users/${userId}/ban`, {
+        method: "PATCH",
+        body: JSON.stringify({ banned: !currentlyBanned }),
+      });
+      mutate();
+    } catch (err: any) {
+      alert(err.message || "Failed to update ban status");
+    }
+  };
+
+  const confirmManualTier = async () => {
     if (!targetUserId) return;
-    updateUser(targetUserId, { tier: targetTier });
+    await handleTierChange(targetUserId, targetTier);
     setManualModalOpen(false);
   };
 
-  const confirmRowTierChange = () => {
+  const confirmRowTierChange = async () => {
     if (!pendingTierChange) return;
-    updateUser(pendingTierChange.user.id, { tier: pendingTierChange.tier });
+    await handleTierChange(pendingTierChange.user.id, pendingTierChange.tier);
     setPendingTierChange(null);
   };
+
+  if (error) {
+    return (
+      <div className="rounded-[28px] border border-red-200 bg-red-50 p-8 text-center text-red-800">
+        <h2 className="text-2xl font-bold">Failed to load user manager</h2>
+        <p className="mt-2 text-sm">{error.message || "Please make sure you have administrator privileges."}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -188,6 +201,7 @@ export default function Page() {
                 <SelectItem value="free">Free</SelectItem>
                 <SelectItem value="basic">Basic</SelectItem>
                 <SelectItem value="gold">Gold</SelectItem>
+                <SelectItem value="merchant">Merchant</SelectItem>
               </SelectContent>
             </Select>
 
@@ -197,8 +211,8 @@ export default function Page() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="banned">Banned</SelectItem>
+                <SelectItem value="false">Active</SelectItem>
+                <SelectItem value="true">Banned</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>
@@ -231,83 +245,97 @@ export default function Page() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {[
-                  ["name", "Name"],
-                  ["email", "Email"],
-                  ["role", "Role"],
-                  ["tier", "Tier"],
-                  ["joinedAt", "Joined Date"],
-                ].map(([key, label]) => (
-                  <TableHead key={key}>
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 font-medium"
-                      onClick={() => {
-                        const nextKey = key as SortKey;
-                        setSortKey(nextKey);
-                        setSortDirection((current) => (sortKey === nextKey && current === "asc" ? "desc" : "asc"));
-                      }}
-                    >
-                      {label}
-                      <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-                    </button>
-                  </TableHead>
-                ))}
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium text-slate-950">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{roleBadge(user.role)}</TableCell>
-                  <TableCell>{tierBadge(user.tier)}</TableCell>
-                  <TableCell>{new Date(user.joinedAt).toLocaleDateString("en-US")}</TableCell>
-                  <TableCell>{statusBadge(user.status)}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" className="rounded-full" onClick={() => setViewedUser(user)}>
-                        View Profile
-                      </Button>
-                      <Select
-                        value={user.tier}
-                        onValueChange={(value) =>
-                          setPendingTierChange({ user, tier: value as UserTier })
-                        }
+          {isLoading ? (
+            <div className="flex min-h-56 items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Loading users...
+            </div>
+          ) : paginatedUsers.length ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {[
+                    ["name", "Name"],
+                    ["email", "Email"],
+                    ["role", "Role"],
+                    ["tier", "Tier"],
+                    ["createdAt", "Joined Date"],
+                  ].map(([key, label]) => (
+                    <TableHead key={key}>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 font-medium"
+                        onClick={() => {
+                          const nextKey = key as SortKey;
+                          setSortKey(nextKey);
+                          setSortDirection((current) => (sortKey === nextKey && current === "asc" ? "desc" : "asc"));
+                        }}
                       >
-                        <SelectTrigger className="h-9 w-[110px] rounded-full">
-                          <SelectValue placeholder="Tier" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="free">Free</SelectItem>
-                          <SelectItem value="basic">Basic</SelectItem>
-                          <SelectItem value="gold">Gold</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant={user.status === "active" ? "destructive" : "default"}
-                        size="sm"
-                        className="rounded-full"
-                        onClick={() => updateUser(user.id, { status: user.status === "active" ? "banned" : "active" })}
-                      >
-                        <Ban className="mr-2 h-4 w-4" />
-                        {user.status === "active" ? "Ban" : "Unban"}
-                      </Button>
-                    </div>
-                  </TableCell>
+                        {label}
+                        <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+                      </button>
+                    </TableHead>
+                  ))}
+                  <TableHead>Referrals</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {paginatedUsers.map((user: AdminUser) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium text-slate-950">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{roleBadge(user.role)}</TableCell>
+                    <TableCell>{tierBadge(user.tier)}</TableCell>
+                    <TableCell>{new Date(user.createdAt).toLocaleDateString("en-US")}</TableCell>
+                    <TableCell>{user.referralCount || 0}</TableCell>
+                    <TableCell>{statusBadge(user.banned)}</TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" className="rounded-full" onClick={() => setViewedUser(user)}>
+                          View Profile
+                        </Button>
+                        <Select
+                          value={user.tier}
+                          onValueChange={(value) =>
+                            setPendingTierChange({ user, tier: value as UserTier })
+                          }
+                        >
+                          <SelectTrigger className="h-9 w-[110px] rounded-full">
+                            <SelectValue placeholder="Tier" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="free">Free</SelectItem>
+                            <SelectItem value="basic">Basic</SelectItem>
+                            <SelectItem value="gold">Gold</SelectItem>
+                            <SelectItem value="merchant">Merchant</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant={!user.banned ? "destructive" : "default"}
+                          size="sm"
+                          className="rounded-full"
+                          onClick={() => handleBanToggle(user.id, user.banned)}
+                        >
+                          <Ban className="mr-2 h-4 w-4" />
+                          {!user.banned ? "Ban" : "Unban"}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="flex min-h-56 items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
+              No users found matching filters.
+            </div>
+          )}
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-slate-500">
-              Showing {paginatedUsers.length} of {sortedUsers.length} filtered users.
+              Showing {paginatedUsers.length} of {totalUsersCount} filtered users.
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -338,13 +366,14 @@ export default function Page() {
             <DialogDescription>Admin-facing profile summary and status.</DialogDescription>
           </DialogHeader>
           {viewedUser ? (
-            <div className="space-y-3 text-sm">
+            <div className="space-y-3 text-sm text-slate-900">
+              <p><span className="font-semibold">ID:</span> {viewedUser.id}</p>
               <p><span className="font-semibold">Name:</span> {viewedUser.name}</p>
               <p><span className="font-semibold">Email:</span> {viewedUser.email}</p>
               <p><span className="font-semibold">Role:</span> {viewedUser.role}</p>
               <p><span className="font-semibold">Tier:</span> {viewedUser.tier}</p>
-              <p><span className="font-semibold">Country:</span> {viewedUser.country}</p>
-              <p><span className="font-semibold">Status:</span> {viewedUser.status}</p>
+              <p><span className="font-semibold">Referrals Count:</span> {viewedUser.referralCount || 0}</p>
+              <p><span className="font-semibold">Status:</span> {viewedUser.banned ? "Banned" : "Active"}</p>
             </div>
           ) : null}
           <DialogFooter>
@@ -371,9 +400,9 @@ export default function Page() {
                   <SelectValue placeholder="Choose user" />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map((user) => (
+                  {(data?.users || []).map((user: any) => (
                     <SelectItem key={user.id} value={user.id}>
-                      {user.name}
+                      {user.name} ({user.email})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -389,6 +418,7 @@ export default function Page() {
                   <SelectItem value="free">Free</SelectItem>
                   <SelectItem value="basic">Basic</SelectItem>
                   <SelectItem value="gold">Gold</SelectItem>
+                  <SelectItem value="merchant">Merchant</SelectItem>
                 </SelectContent>
               </Select>
             </div>

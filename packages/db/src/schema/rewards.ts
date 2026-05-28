@@ -7,6 +7,7 @@ export const pointsLedgerReasonValues = [
   "referral_signup",
   "referral_redemption",
   "points_spent",
+  "admin_grant",
 ] as const;
 export type PointsLedgerReason = (typeof pointsLedgerReasonValues)[number];
 
@@ -27,7 +28,7 @@ export const pointsLedger = pgTable("points_ledger", {
     .references(() => user.id, { onDelete: "cascade" }),
   points: integer("points").notNull(),
   reason: text("reason").$type<PointsLedgerReason>().notNull(),
-  referenceId: uuid("reference_id"),
+  referenceId: text("reference_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -40,7 +41,7 @@ export const commissions = pgTable("commissions", {
   currency: text("currency").default("USD").notNull(),
   status: text("status").$type<CommissionStatus>().default("pending").notNull(),
   reason: text("reason").$type<CommissionReason>().notNull(),
-  referenceId: uuid("reference_id"),
+  referenceId: text("reference_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   paidAt: timestamp("paid_at"),
 });

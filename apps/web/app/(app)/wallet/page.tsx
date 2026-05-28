@@ -10,6 +10,7 @@ import {
   type ApiClientError,
   type WalletApiItem,
 } from "@/lib/api/wallet";
+import { clientFetch } from "@/lib/api/client-fetch";
 import { mapWalletItemToUiDeal } from "@/lib/deals-adapter";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -43,11 +44,15 @@ function formatDate(date: string | null) {
 function SavedWalletCard({
   item,
   isRemoving,
+  isRedeeming,
   onRemove,
+  onRedeem,
 }: {
   item: WalletApiItem;
   isRemoving: boolean;
+  isRedeeming: boolean;
   onRemove: (dealId: string) => void | Promise<void>;
+  onRedeem: (dealId: string) => void | Promise<void>;
 }) {
   const deal = mapWalletItemToUiDeal(item);
 
@@ -66,7 +71,7 @@ function SavedWalletCard({
           <button
             type="button"
             onClick={() => onRemove(item.dealId)}
-            disabled={isRemoving}
+            disabled={isRemoving || isRedeeming}
             className="inline-flex size-9 items-center justify-center rounded-full border border-white/12 bg-black/35 text-zinc-200 backdrop-blur transition hover:bg-white/12 hover:text-white disabled:opacity-60"
             aria-label={`Remove ${deal.title}`}
           >
@@ -108,7 +113,14 @@ function SavedWalletCard({
         </div>
 
         <div className="flex items-center gap-3">
-          <Button className="flex-1 rounded-full bg-[linear-gradient(135deg,#f5d061_0%,#dca93b_100%)] text-zinc-950 hover:brightness-105">
+          <Button
+            onClick={() => onRedeem(item.dealId)}
+            disabled={isRedeeming || isRemoving}
+            className="flex-1 rounded-full bg-[linear-gradient(135deg,#f5d061_0%,#dca93b_100%)] text-zinc-950 hover:brightness-105 disabled:opacity-60"
+          >
+            {isRedeeming ? (
+              <LoaderCircle className="size-4 animate-spin mr-2" />
+            ) : null}
             Redeem
           </Button>
           <Button
@@ -152,6 +164,7 @@ function RedeemedWalletRow({ item }: { item: WalletApiItem }) {
 export default function WalletPage() {
   const [activeTab, setActiveTab] = useState<WalletTab>("saved");
   const [removingDealId, setRemovingDealId] = useState<string | null>(null);
+  const [redeemingDealId, setRedeemingDealId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const { mutate } = useSWRConfig();
 
@@ -197,6 +210,29 @@ export default function WalletPage() {
       setToast(apiError.message || "Failed to remove deal.");
     } finally {
       setRemovingDealId(null);
+    }
+  };
+
+  const redeemSavedDeal = async (dealId: string) => {
+    if (redeemingDealId) return;
+
+    setRedeemingDealId(dealId);
+
+    try {
+      const res = await clientFetch<{ success: boolean; pointsEarned: number }>(
+        `/api/wallet/${dealId}/redeem`,
+        { method: "POST" }
+      );
+      setToast(`Redeemed! Earned ${res.pointsEarned} points.`);
+      await Promise.all([
+        mutate("/api/wallet?status=saved"),
+        mutate("/api/wallet?status=redeemed"),
+        mutate(`/api/deals/${dealId}`),
+      ]);
+    } catch (error: any) {
+      setToast(error.message || "Failed to redeem deal.");
+    } finally {
+      setRedeemingDealId(null);
     }
   };
 
@@ -334,7 +370,9 @@ export default function WalletPage() {
                           key={item.id}
                           item={item}
                           isRemoving={removingDealId === item.dealId}
+                          isRedeeming={redeemingDealId === item.dealId}
                           onRemove={removeSavedDeal}
+                          onRedeem={redeemSavedDeal}
                         />
                       ))}
                     </div>

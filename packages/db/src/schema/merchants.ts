@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { deals, redemptions } from "./deals";
@@ -9,7 +9,7 @@ export type MerchantStatus = (typeof merchantStatusValues)[number];
 export const merchants = pgTable(
   "merchants",
   {
-    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    id: text("id").default(sql`gen_random_uuid()`).primaryKey().notNull(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -20,6 +20,10 @@ export const merchants = pgTable(
     coupontoolsMerchantId: text("coupontools_merchant_id"),
     status: text("status").$type<MerchantStatus>().default("pending").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
   },
   (table) => [uniqueIndex("merchants_user_id_unique").on(table.userId)],
 );
