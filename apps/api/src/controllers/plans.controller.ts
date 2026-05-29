@@ -39,7 +39,7 @@ export async function upgradeTier(req: Request, res: Response) {
     });
   }
 
-  const updates: Record<string, any> = { tier };
+  const updates: Record<string, any> = { tier, hasSelectedPlan: true };
   if (session.user.role !== "admin") {
     updates.role = tier === "merchant" ? "merchant" : "member";
   }

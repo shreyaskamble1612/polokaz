@@ -9,6 +9,7 @@ const logger = useStripeLogger();
 
 const createCheckoutSchema = z.object({
   tier: z.enum(["basic", "gold", "merchant"]),
+  interval: z.enum(["monthly", "yearly"]).optional().default("monthly"),
 });
 
 function getAppUrl() {
@@ -33,12 +34,13 @@ export async function createCheckoutSession(req: Request, res: Response) {
   if (!parsed.success) {
     return res.status(400).json({
       error: "INVALID_PAYLOAD",
-      message: "Tier must be one of: basic, gold, merchant.",
+      message: "Tier must be one of: basic, gold, merchant. Interval must be monthly or yearly.",
       details: parsed.error.flatten(),
     });
   }
 
   const tier = parsed.data.tier;
+  const interval = parsed.data.interval ?? "monthly";
 
   const [currentUser] = await db
     .select({
@@ -56,13 +58,14 @@ export async function createCheckoutSession(req: Request, res: Response) {
     });
   }
 
-  const priceId = PRICE_IDS[tier];
+  const tierPrices = PRICE_IDS[tier];
+  const priceId = interval === "yearly" ? (tierPrices.yearly || tierPrices.monthly) : tierPrices.monthly;
 
   if (!priceId) {
-    logger.error("Missing Stripe price ID for checkout tier.", { tier });
+    logger.error("Missing Stripe price ID for checkout tier.", { tier, interval });
     return res.status(500).json({
       error: "STRIPE_PRICE_NOT_CONFIGURED",
-      message: `Stripe price ID is missing for tier "${tier}".`,
+      message: `Stripe price ID is missing for tier "${tier}" (${interval}).`,
     });
   }
 
@@ -74,7 +77,7 @@ export async function createCheckoutSession(req: Request, res: Response) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${appUrl}/plans?checkout=success`,
       cancel_url: `${appUrl}/plans`,
-      metadata: { userId: currentUser.id, tier },
+      metadata: { userId: currentUser.id, tier, interval },
     });
 
     if (!checkoutSession.url) {

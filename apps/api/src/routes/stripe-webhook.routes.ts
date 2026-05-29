@@ -9,9 +9,11 @@ const logger = useWebhookLogger();
 type MembershipTier = "free" | "basic" | "gold" | "merchant";
 
 function mapPriceIdToTier(priceId: string | undefined | null): MembershipTier {
-  if (priceId && priceId === PRICE_IDS.basic) return "basic";
-  if (priceId && priceId === PRICE_IDS.gold) return "gold";
-  if (priceId && priceId === PRICE_IDS.merchant) return "merchant";
+  if (priceId) {
+    if (priceId === PRICE_IDS.basic.monthly || priceId === PRICE_IDS.basic.yearly) return "basic";
+    if (priceId === PRICE_IDS.gold.monthly || priceId === PRICE_IDS.gold.yearly) return "gold";
+    if (priceId === PRICE_IDS.merchant.monthly || priceId === PRICE_IDS.merchant.yearly) return "merchant";
+  }
   return "free";
 }
 
@@ -68,7 +70,7 @@ router.post("/", (req: any, res) => {
 
           await db
             .update(user)
-            .set({ tier, stripeCustomerId, stripeSubscriptionId })
+            .set({ tier, stripeCustomerId, stripeSubscriptionId, hasSelectedPlan: true })
             .where(eq(user.id, userId));
 
           break;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
+import { SubscriptionModal } from "@/components/subscription/SubscriptionModal";
 
 const geistSans = Inter({
   variable: "--font-geist-sans",
@@ -35,6 +36,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
+        <SubscriptionModal />
       </body>
     </html>
   );

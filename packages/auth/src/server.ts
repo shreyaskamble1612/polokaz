@@ -105,6 +105,11 @@ const instance = betterAuth({
         required: false,
         input: true,
       },
+      hasSelectedPlan: {
+        type: "boolean",
+        required: false,
+        input: true,
+      },
     },
   },
   plugins: [openAPI(), admin()],

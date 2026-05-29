@@ -18,6 +18,7 @@ export const user = pgTable("user", {
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires"),
   tier: text("tier").$type<MembershipTier>().default("free").notNull(),
+  hasSelectedPlan: boolean("has_selected_plan").default(false).notNull(),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
   trackdeskAffiliateId: text("trackdesk_affiliate_id"),

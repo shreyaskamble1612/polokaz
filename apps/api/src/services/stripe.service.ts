@@ -5,9 +5,18 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
 });
 
 export const PRICE_IDS = {
-  basic: process.env.STRIPE_PRICE_BASIC,
-  gold: process.env.STRIPE_PRICE_GOLD,
-  merchant: process.env.STRIPE_PRICE_MERCHANT,
+  basic: {
+    monthly: process.env.STRIPE_PRICE_BASIC_MONTHLY || process.env.STRIPE_PRICE_BASIC,
+    yearly: process.env.STRIPE_PRICE_BASIC_YEARLY,
+  },
+  gold: {
+    monthly: process.env.STRIPE_PRICE_GOLD_MONTHLY || process.env.STRIPE_PRICE_GOLD,
+    yearly: process.env.STRIPE_PRICE_GOLD_YEARLY,
+  },
+  merchant: {
+    monthly: process.env.STRIPE_PRICE_MERCHANT_MONTHLY || process.env.STRIPE_PRICE_MERCHANT,
+    yearly: process.env.STRIPE_PRICE_MERCHANT_YEARLY,
+  },
 } as const;
 
 export type StripeCheckoutTier = keyof typeof PRICE_IDS;
