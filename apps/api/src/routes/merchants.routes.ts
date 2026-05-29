@@ -7,6 +7,7 @@ import {
   updateMerchantDeal,
   deleteMerchantDeal,
   getMerchantAnalytics,
+  listActiveMerchants,
 } from "../controllers/merchants.controller";
 
 const router = express.Router();
@@ -21,6 +22,9 @@ router.post("/me/deals", createMerchantDeal);
 router.patch("/me/deals/:dealId", updateMerchantDeal);
 router.delete("/me/deals/:dealId", deleteMerchantDeal);
 router.get("/me/analytics", getMerchantAnalytics);
+
+// Active merchants (for customer home page)
+router.get("/", listActiveMerchants);
 
 // Legacy routes (backwards compatibility)
 router.post("/deals", createMerchantDeal);

@@ -216,8 +216,15 @@ export default function Page() {
               </TableBody>
             </Table>
           ) : (
-            <div className="flex min-h-56 items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
-              No payouts found matching filters.
+            <div className="flex min-h-56 flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-center p-6 text-sm text-slate-500">
+              {statusFilter === "pending" ? (
+                <>
+                  <p className="font-semibold text-slate-700">No pending payouts.</p>
+                  <p className="mt-1 text-xs text-slate-500">All commissions have been processed.</p>
+                </>
+              ) : (
+                <p>No payouts found matching filters.</p>
+              )}
             </div>
           )}
         </CardContent>

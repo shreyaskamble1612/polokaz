@@ -4,6 +4,7 @@ import {
   deal,
   desc,
   eq,
+  merchantApplication,
   merchants,
   redemptions,
   sql,
@@ -412,4 +413,40 @@ export async function getMerchantAnalytics(req: Request, res: Response) {
     })),
   });
 }
+
+
+export async function listActiveMerchants(req: Request, res: Response) {
+  const session = requireSession(req, res);
+  if (!session) return;
+
+  try {
+    const rows = await db
+      .select({
+        id: merchants.id,
+        businessName: merchants.businessName,
+        businessCategory: merchants.businessCategory,
+        website: merchants.website,
+        createdAt: merchants.createdAt,
+        companyAddress: merchantApplication.companyAddress,
+        activeDealsCount: sql<number>`count(distinct case when ${deal.status} = 'active' then ${deal.id} else null end)::int`,
+        redeemedCount: sql<number>`count(distinct ${redemptions.id})::int`,
+      })
+      .from(merchants)
+      .leftJoin(deal, eq(deal.merchantId, merchants.id))
+      .leftJoin(redemptions, eq(redemptions.merchantId, merchants.id))
+      .leftJoin(merchantApplication, eq(merchantApplication.userId, merchants.userId))
+      .where(eq(merchants.status, "active"))
+      .groupBy(merchants.id, merchantApplication.companyAddress)
+      .orderBy(desc(merchants.createdAt))
+      .limit(10);
+
+    return res.json({ merchants: rows });
+  } catch (error) {
+    logger.error("Failed to list active merchants", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return res.status(500).json({ error: "INTERNAL_ERROR" });
+  }
+}
+
 

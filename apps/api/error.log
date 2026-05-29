@@ -194,3 +194,38 @@ params: RNwB5lSgImK7hksWy6aKPMJJ0kEHIvZK,a966b8df-0e0a-446d-b7fd-b34fc8db3ca1,sa
     at <anonymous> (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
     at saveDealToWallet (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\apps\api\src\controllers\wallet.controller.ts:153:23)
 
+2026-05-28T15:58:51.699Z - Error: Failed query: insert into "wallet_items" ("id", "user_id", "deal_id", "status", "saved_at", "redeemed_at") values (default, $1, $2, $3, $4, default) returning "id"
+params: RNwB5lSgImK7hksWy6aKPMJJ0kEHIvZK,dfa20673-f40d-4f67-a9f8-73d5adf7c809,saved,2026-05-28T15:58:51.451Z
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at saveDealToWallet (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\apps\api\src\controllers\wallet.controller.ts:153:23)
+
+2026-05-28T16:51:27.823Z - Error: Failed query: insert into "wallet_items" ("id", "user_id", "deal_id", "status", "saved_at", "redeemed_at") values (default, $1, $2, $3, $4, default) returning "id"
+params: RNwB5lSgImK7hksWy6aKPMJJ0kEHIvZK,dfa20673-f40d-4f67-a9f8-73d5adf7c809,saved,2026-05-28T16:51:27.360Z
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at saveDealToWallet (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\apps\api\src\controllers\wallet.controller.ts:153:23)
+
+2026-05-29T07:21:46.471Z - Error: Failed query: insert into "wallet_items" ("id", "user_id", "deal_id", "status", "saved_at", "redeemed_at") values (default, $1, $2, $3, $4, default) returning "id"
+params: RNwB5lSgImK7hksWy6aKPMJJ0kEHIvZK,dfa20673-f40d-4f67-a9f8-73d5adf7c809,saved,2026-05-29T07:21:46.186Z
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at saveDealToWallet (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\apps\api\src\controllers\wallet.controller.ts:153:23)
+
+2026-05-29T07:21:47.029Z - Error: Failed query: insert into "wallet_items" ("id", "user_id", "deal_id", "status", "saved_at", "redeemed_at") values (default, $1, $2, $3, $4, default) returning "id"
+params: RNwB5lSgImK7hksWy6aKPMJJ0kEHIvZK,dfa20673-f40d-4f67-a9f8-73d5adf7c809,saved,2026-05-29T07:21:46.716Z
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at saveDealToWallet (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\apps\api\src\controllers\wallet.controller.ts:153:23)
+
+2026-05-29T07:21:47.035Z - Error: Failed query: insert into "wallet_items" ("id", "user_id", "deal_id", "status", "saved_at", "redeemed_at") values (default, $1, $2, $3, $4, default) returning "id"
+params: RNwB5lSgImK7hksWy6aKPMJJ0kEHIvZK,dfa20673-f40d-4f67-a9f8-73d5adf7c809,saved,2026-05-29T07:21:46.736Z
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at saveDealToWallet (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\apps\api\src\controllers\wallet.controller.ts:153:23)
+

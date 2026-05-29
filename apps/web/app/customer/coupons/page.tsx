@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { authClient } from "@polokaz/auth/client";
-import { getDummyDeals, type Deal } from "@/lib/api/deals";
+import { type Deal } from "@/lib/api/deals";
 import {
   ChevronDown,
   Facebook,
@@ -40,19 +40,6 @@ type CategoryItem = {
   id: string;
   title: string;
   subtitle: string;
-  image: string;
-};
-
-type VoucherRow = {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  code: string;
-  merchant: string;
-  liveDate: string;
-  endDate: string;
-  location: string;
   image: string;
 };
 
@@ -124,35 +111,6 @@ const LOCATION_OPTIONS = [
   "Los Angeles, USA",
 ];
 
-const VOUCHER_FALLBACK: VoucherRow[] = [
-  {
-    id: "voucher-1",
-    title: "$300 Off On Overall Bill",
-    description:
-      "Enjoy a premium dining discount on select menus and city experiences.",
-    category: "food",
-    code: "V2200A - Active",
-    merchant: "ABC Merchant",
-    liveDate: "2025-11-20",
-    endDate: "2025-11-30",
-    location: "Las Vegas, Nevada",
-    image: "/customer/thumbnail.png",
-  },
-  {
-    id: "voucher-2",
-    title: "$200 Off On Weekend Combo",
-    description:
-      "Save more on curated weekend packages built for friends and families.",
-    category: "retail",
-    code: "V2400B - Active",
-    merchant: "ABC Merchant",
-    liveDate: "2025-11-22",
-    endDate: "2025-12-05",
-    location: "Las Vegas, Nevada",
-    image: "/customer/thumbnail.png",
-  },
-];
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 function formatDate(dateString: string | null) {
@@ -178,17 +136,7 @@ function mapDealCategory(category: string | null) {
   return labels[category] ?? category;
 }
 
-function buildVoucherRows() {
-  return Array.from({ length: 8 }).map((_, index) => {
-    const item = VOUCHER_FALLBACK[index % VOUCHER_FALLBACK.length];
-    return {
-      ...item,
-      id: `${item.id}-${index}`,
-    };
-  });
-}
-
-function toCouponCard(deal: Deal, location: string): DashboardCard {
+function toDashboardCard(deal: Deal, location: string): DashboardCard {
   return {
     id: deal.id,
     title: deal.title,
@@ -208,21 +156,6 @@ function toCouponCard(deal: Deal, location: string): DashboardCard {
   };
 }
 
-function toVoucherCard(voucher: VoucherRow, location: string): DashboardCard {
-  return {
-    id: voucher.id,
-    title: voucher.title,
-    description: voucher.description,
-    categoryLabel: mapDealCategory(voucher.category),
-    code: voucher.code,
-    merchant: voucher.merchant,
-    liveDate: voucher.liveDate,
-    endDate: voucher.endDate,
-    location,
-    imageSrc: voucher.image,
-  };
-}
-
 export default function Page() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -230,7 +163,7 @@ export default function Page() {
   const [selectedLocation, setSelectedLocation] = useState("Select location");
   const [activeTab, setActiveTab] = useState<DashboardTab>("coupons");
   const [visibleCount, setVisibleCount] = useState(8);
-  const [deals, setDeals] = useState<Deal[]>(getDummyDeals());
+  const [deals, setDeals] = useState<Deal[]>([]);
   const [user, setUser] = useState<UserProfile>({
     name: "My Account",
     email: "account@polokaz.com",
@@ -261,7 +194,7 @@ export default function Page() {
 
     async function loadDeals() {
       try {
-        const response = await fetch(`${API_URL}/api/deals?limit=20`, {
+        const response = await fetch(`${API_URL}/api/deals?limit=40`, {
           credentials: "include",
         });
 
@@ -270,11 +203,11 @@ export default function Page() {
         }
 
         const data = await response.json();
-        if (Array.isArray(data.deals) && data.deals.length > 0) {
+        if (Array.isArray(data.deals)) {
           setDeals(data.deals);
         }
       } catch {
-        setDeals(getDummyDeals());
+        setDeals([]);
       }
     }
 
@@ -305,9 +238,9 @@ export default function Page() {
         const matchesCategory =
           selectedCategory === "all" || deal.category === selectedCategory;
 
-        return matchesSearch && matchesCategory;
+        return matchesSearch && matchesCategory && deal.dealType === "coupon";
       })
-      .map((deal) => toCouponCard(deal, location));
+      .map((deal) => toDashboardCard(deal, location));
   }, [deals, normalizedSearch, selectedCategory, selectedLocation]);
 
   const voucherCards = useMemo(() => {
@@ -316,21 +249,21 @@ export default function Page() {
         ? "Las Vegas, Nevada"
         : selectedLocation;
 
-    return buildVoucherRows()
-      .filter((voucher) => {
+    return deals
+      .filter((deal) => {
         const matchesSearch =
           !normalizedSearch ||
-          voucher.title.toLowerCase().includes(normalizedSearch) ||
-          voucher.merchant.toLowerCase().includes(normalizedSearch) ||
-          voucher.description.toLowerCase().includes(normalizedSearch);
+          deal.title.toLowerCase().includes(normalizedSearch) ||
+          deal.merchantName.toLowerCase().includes(normalizedSearch) ||
+          deal.description?.toLowerCase().includes(normalizedSearch);
 
         const matchesCategory =
-          selectedCategory === "all" || voucher.category === selectedCategory;
+          selectedCategory === "all" || deal.category === selectedCategory;
 
-        return matchesSearch && matchesCategory;
+        return matchesSearch && matchesCategory && (deal.dealType === "voucher" || deal.dealType === "loyalty");
       })
-      .map((voucher) => toVoucherCard(voucher, location));
-  }, [normalizedSearch, selectedCategory, selectedLocation]);
+      .map((deal) => toDashboardCard(deal, location));
+  }, [deals, normalizedSearch, selectedCategory, selectedLocation]);
 
   const cards = activeTab === "coupons" ? couponCards : voucherCards;
   const visibleCards = cards.slice(0, visibleCount);
@@ -340,18 +273,18 @@ export default function Page() {
       <header className="sticky top-0 z-30 border-b border-[#dfe7f2] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex flex-1 items-center">
-            <BrandLogo href="/" size="md" />
+            <BrandLogo href="/customer" size="md" />
           </div>
 
           <div className="hidden flex-1 justify-center md:flex">
             <nav className="relative z-10 flex items-center gap-2 text-sm font-medium text-[#4b5c74]">
-              <Link href="/" prefetch className="rounded-full px-4 py-2 transition hover:text-[#0f7af7]">
+              <Link href="/customer" prefetch className="rounded-full px-4 py-2 transition hover:text-[#0f7af7]">
                 Home
               </Link>
               <Link
                 href="/customer/coupons"
                 prefetch
-                className="rounded-full px-4 py-2 text-[#0f7af7]"
+                className="rounded-full px-4 py-2 text-[#0f7af7] bg-[#eef3fb] font-semibold"
               >
                 Coupons
               </Link>
@@ -411,13 +344,16 @@ export default function Page() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-[#e8eef7]" />
-                <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
+                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer">
                   <Link href="/customer/dashboard" prefetch>Dashboard</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
-                  <Link href="/customer/coupons" prefetch>My Coupons</Link>
+                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer">
+                  <Link href="/wallet" prefetch>My Wallet</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
+                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer">
+                  <Link href="/customer/coupons" prefetch>Explore Coupons</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer">
                   <Link href="/referral" prefetch>Referral Program</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-[#e8eef7]" />
@@ -445,16 +381,16 @@ export default function Page() {
         {mobileNavOpen ? (
           <div className="border-t border-[#e4ebf5] bg-white px-4 py-4 md:hidden">
             <div className="flex flex-col gap-3 text-sm font-medium text-[#4b5c74]">
-              <Link href="/" prefetch className="rounded-xl px-2 py-1">
+              <Link href="/customer" prefetch className="rounded-xl px-3 py-2">
                 Home
               </Link>
-              <Link href="/customer/dashboard" prefetch className="rounded-xl px-2 py-1 text-[#0f7af7]">
+              <Link href="/customer/coupons" prefetch className="rounded-xl px-3 py-2 text-[#0f7af7] bg-[#eef3fb] font-semibold">
                 Coupons
               </Link>
-              <Link href="/customer/coupons" prefetch className="rounded-xl px-2 py-1">
+              <Link href="/customer/dashboard" prefetch className="rounded-xl px-3 py-2">
                 Dashboard
               </Link>
-              <a href="#" className="rounded-xl px-2 py-1">
+              <a href="#" className="rounded-xl px-3 py-2">
                 Events
               </a>
             </div>
@@ -552,7 +488,7 @@ export default function Page() {
                     : "border-transparent text-[#1e2f46]"
                 }`}
               >
-                My Coupons
+                Coupons
               </button>
               <button
                 type="button"
@@ -563,7 +499,7 @@ export default function Page() {
                     : "border-transparent text-[#1e2f46]"
                 }`}
               >
-                My Vouchers
+                Vouchers
               </button>
             </div>
           </div>
@@ -688,21 +624,21 @@ export default function Page() {
                       </div>
 
                       <div className="mt-5 flex items-center justify-end">
-                          {activeTab === "coupons" ? (
-                            <Link
-                              href={`/deals/${card.id}`}
-                              className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition ${buttonColor}`}
-                            >
-                              Get Now
-                            </Link>
-                          ) : (
-                            <button
-                              type="button"
-                              className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition ${buttonColor}`}
-                            >
-                              Get Now
-                            </button>
-                          )}
+                        {activeTab === "coupons" ? (
+                          <Link
+                            href={`/deals/${card.id}`}
+                            className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition ${buttonColor}`}
+                          >
+                            Get Now
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/deals/${card.id}`}
+                            className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition ${buttonColor}`}
+                          >
+                            Get Now
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </div>

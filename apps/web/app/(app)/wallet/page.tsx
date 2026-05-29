@@ -383,11 +383,10 @@ export default function WalletPage() {
                           <PackageOpen className="size-9" />
                         </div>
                         <h2 className="mt-6 text-2xl font-semibold text-white">
-                          No saved deals yet.
+                          Your wallet is empty.
                         </h2>
                         <p className="mt-3 text-sm leading-7 text-zinc-400">
-                          Browse deals to save some and build your personal
-                          wallet of offers.
+                          Browse deals to save some!
                         </p>
                         <Button
                           asChild
@@ -415,6 +414,9 @@ export default function WalletPage() {
                       <h2 className="mt-6 text-2xl font-semibold text-white">
                         No redemptions yet.
                       </h2>
+                      <p className="mt-3 text-sm leading-7 text-zinc-400">
+                        Redeem a saved deal to see it here.
+                      </p>
                     </div>
                   </div>
                 )}

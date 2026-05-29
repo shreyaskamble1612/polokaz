@@ -180,9 +180,9 @@ export function DealsBrowser({ deals }: { deals: Deal[] }) {
             ))
           ) : (
             <div className="rounded-[24px] border border-dashed border-white/12 bg-white/[0.03] px-6 py-16 text-center">
-              <p className="text-lg font-medium text-white">No deals in this lane yet.</p>
+              <p className="text-lg font-medium text-white">No deals available yet.</p>
               <p className="mt-2 text-sm text-zinc-400">
-                Try another filter to bring more offers back on screen.
+                Merchants are being onboarded — check back soon!
               </p>
             </div>
           )}

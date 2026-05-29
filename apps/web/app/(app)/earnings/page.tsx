@@ -290,7 +290,7 @@ export default function EarningsPage() {
                       {commissionsList.length === 0 ? (
                         <tr>
                           <td colSpan={4} className="text-center py-10 text-zinc-500 border border-white/8 bg-black/20 rounded-2xl">
-                            No commissions recorded yet. Invite friends to start earning!
+                            No commissions earned yet. Share your referral link to start earning.
                           </td>
                         </tr>
                       ) : (

@@ -349,12 +349,20 @@ export default function Page() {
                   ))}
                 </TableBody>
               </Table>
+            ) : deals.length === 0 ? (
+              <div className="flex min-h-56 flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-center">
+                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+                <p className="mt-3 text-sm font-semibold text-slate-950">No deals created yet.</p>
+                <p className="mt-1 max-w-md text-sm text-slate-500">
+                  Create your first deal to get started.
+                </p>
+              </div>
             ) : (
               <div className="flex min-h-56 flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-center">
                 <CheckCircle2 className="h-8 w-8 text-emerald-500" />
                 <p className="mt-3 text-sm font-semibold text-slate-950">No deals matched your filters</p>
                 <p className="mt-1 max-w-md text-sm text-slate-500">
-                  Create a new offer or clear the filters to see your full merchant catalog.
+                  Clear the filters to see your full merchant catalog.
                 </p>
               </div>
             )}

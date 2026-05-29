@@ -179,5 +179,5 @@ export default async function Home() {
     redirect("/merchant");
   }
 
-  redirect("/customer/dashboard");
+  redirect("/customer");
 }

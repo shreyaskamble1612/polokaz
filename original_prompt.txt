@@ -1,0 +1,90 @@
+<USER_REQUEST>
+# POLOKAZ — Full Real-World Data Integration Prompt
+# Read this ENTIRE prompt before writing a single line of code.
+# This is for GitHub Copilot working inside the polokaz monorepo.
+
+---
+
+## WHO YOU ARE AND WHAT YOU ARE DOING
+
+You are working inside the `polokaz` Turborepo monorepo. The project is a coupon/voucher/loyalty platform with three user types: consumers, merchants, and admins. Your job is to replace ALL mock/static data across every dashboard with real data from the database and real API calls — so that every number, every user, every deal, every coupon shown on screen is live and real.
+
+---
+
+## WHAT ALREADY EXISTS (DO NOT REBUILD)
+
+### Monorepo layout:
+```
+polokaz/
+├── apps/
+│   ├── web/        → Next.js 16, App Router, Port 3000
+│   └── api/        → Express 5, Port 3001
+└── packages/
+    ├── auth/       → Better Auth (client.ts, server.ts, utils.ts)
+    ├── db/         → Drizzle ORM + Supabase PostgreSQL
+    ├── errors/     → Custom error classes
+    └── tsconfig/
+```
+
+### Auth (fully working):
+- Better Auth email/password sign-in and sign-up
+- Roles: `admin` | `user` | `merchant`
+- Session via HTTP-only cookies
+- `proxy.ts` guards routes at edge level
+- `requireSession()`, `requireAdmin()`, `requireMerchant()` in `apps/web/lib/auth/get-session.ts`
+
+### Existing DB tables (Drizzle schema in `packages/db/src/schema/`):
+```
+user            → id, name, email, emailVerified, image, role, birthdate, country, createdAt, updatedAt
+account         → Better Auth OAuth accounts
+session         → active sessions
+verification    → email verification tokens
+referral        → id, code, createdBy (FK user.id), expiresAt, maxUses, createdAt
+referral_use    → id, referralId (FK referral.id), usedBy (FK user.id), usedAt
+```
+
+### Existing API endpoints:
+- `POST /api/auth/sign-in/email`
+- `POST /api/auth/sign-up/email`
+- `GET /api/auth/get-session`
+- `POST /api/auth/sign-out`
+- `P
+<truncated 38768 bytes>
+als = Client Components → use `clientFetch` (client-side, credentials: include)
+
+3. **Always `router.refresh()` after a mutation** — this re-runs the Server Component and shows fresh data without a full page reload.
+
+4. **Always show loading skeletons** — no blank screens while data loads. Use `loading.tsx` files.
+
+5. **Always show empty states** — no broken-looking tables with zero rows. Show friendly empty state components.
+
+6. **Error boundaries on every route** — use `error.tsx` files. Never let an API failure crash the whole page.
+
+7. **Never expose admin endpoints to non-admin users** — every `/api/admin/*` route must check `role === 'admin'` on the API side, not just the frontend.
+
+8. **`credentials: 'include'`** on all client-side fetch calls — without this, cookies won't be sent and auth will fail.
+
+9. **`cache: 'no-store'`** on all server-side fetch calls — deal/user data changes frequently; never serve stale cache.
+
+10. **Type everything** — create TypeScript interfaces for every API response shape in `apps/web/lib/types.ts`. Do not use `any`.
+
+---
+
+## END OF PROMPT
+
+Start with Step 1 (schema), run the migration, then Step 2 (API), then Step 3 (frontend wiring). Do not skip steps or work out of order — each step depends on the previous one.
+Complete step 3
+if not done before
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-05-28T21:40:35+05:30.
+
+The user's current state is as follows:
+Active Document: c:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\packages\db\.env (LANGUAGE_UNSPECIFIED)
+Cursor is on line: 2
+Other open documents:
+- c:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\packages\db\.env (LANGUAGE_UNSPECIFIED)
+- c:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\.env (LANGUAGE_UNSPECIFIED)
+- c:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\apps\api\.env (LANGUAGE_UNSPECIFIED)
+- c:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\apps\api\src\controllers\merchants.controller.ts (LANGUAGE_TYPESCRIPT)
+</ADDITIONAL_METADATA>

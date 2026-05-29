@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { authClient } from "@polokaz/auth/client";
-import { getDummyDeals, type Deal } from "@/lib/api/deals";
+import { type Deal } from "@/lib/api/deals";
 import { clientFetch } from "@/lib/api/client-fetch";
 import {
   ChevronDown,
@@ -52,37 +52,6 @@ const LOCATION_OPTIONS = [
   "Los Angeles, USA",
 ];
 
-const VOUCHER_FALLBACK = [
-  {
-    id: "voucher-1",
-    title: "$300 Off On Overall Bill",
-    description:
-      "Enjoy a $300 discount on select premium dining experiences and special event menus.",
-    category: "Retail & Shopping",
-    code: "V2200A - Active",
-    merchant: "ABC Merchant",
-    liveDate: "2025-11-20",
-    endDate: "2025-11-30",
-    location: "Las Vegas, Nevada",
-    image:
-      "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80",
-  },
-  {
-    id: "voucher-2",
-    title: "$200 Off On Weekend Combo",
-    description:
-      "Valid on selected family combo offers and weekend celebration packages.",
-    category: "Retail & Shopping",
-    code: "V2400B - Active",
-    merchant: "ABC Merchant",
-    liveDate: "2025-11-22",
-    endDate: "2025-12-05",
-    location: "Las Vegas, Nevada",
-    image:
-      "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=900&q=80",
-  },
-];
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 function formatDate(dateString: string | null) {
@@ -96,7 +65,7 @@ function formatDate(dateString: string | null) {
 
 function mapDealCategory(category: string | null) {
   const labels: Record<string, string> = {
-    food: "Retail & Shopping",
+    food: "Food & Dining",
     health: "Health & Wellness",
     beauty: "Beauty & Fitness",
     retail: "Retail & Shopping",
@@ -106,27 +75,49 @@ function mapDealCategory(category: string | null) {
   return labels[category] ?? category;
 }
 
-function buildVoucherRows() {
-  return Array.from({ length: 6 }).map((_, index) => {
-    const item = VOUCHER_FALLBACK[index % VOUCHER_FALLBACK.length];
-    return {
-      ...item,
-      id: `${item.id}-${index}`,
-    };
-  });
+const CATEGORIES_THEMES = [
+  {
+    id: "food",
+    title: "Food & Drink",
+    color: "bg-[#0f7af7]",
+    borderColor: "border-[#bedcff]",
+    buttonColor: "bg-[#0f7af7] hover:bg-[#0b66d1]"
+  },
+  {
+    id: "health",
+    title: "Wellness",
+    color: "bg-[#ef8a23]",
+    borderColor: "border-[#ffd9ba]",
+    buttonColor: "bg-[#ef8a23] hover:bg-[#d97712]"
+  },
+  {
+    id: "beauty",
+    title: "Beauty & Personal Care",
+    color: "bg-[#10b981]",
+    borderColor: "border-[#a7f3d0]",
+    buttonColor: "bg-[#10b981] hover:bg-[#059669]"
+  },
+  {
+    id: "retail",
+    title: "Retail & Shopping",
+    color: "bg-[#8b5cf6]",
+    borderColor: "border-[#ddd6fe]",
+    buttonColor: "bg-[#8b5cf6] hover:bg-[#7c3aed]"
+  },
+  {
+    id: "education",
+    title: "Education",
+    color: "bg-[#ec4899]",
+    borderColor: "border-[#fbcfe8]",
+    buttonColor: "bg-[#ec4899] hover:bg-[#db2777]"
+  }
+];
+
+function getCategoryTheme(category: string | null) {
+  const matched = CATEGORIES_THEMES.find(c => c.id === category);
+  return matched || CATEGORIES_THEMES[0];
 }
 
-function isCouponRow(
-  row: Deal | (typeof VOUCHER_FALLBACK)[number],
-): row is Deal {
-  return "merchantName" in row;
-}
-
-function isVoucherRow(
-  row: Deal | (typeof VOUCHER_FALLBACK)[number],
-): row is (typeof VOUCHER_FALLBACK)[number] {
-  return "merchant" in row;
-}
 
 export default function Page() {
   const router = useRouter();
@@ -142,10 +133,13 @@ export default function Page() {
     image: null,
   });
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [merchantsList, setMerchantsList] = useState<any[]>([]);
+
 
   const [points, setPoints] = useState<number>(0);
   const [walletStats, setWalletStats] = useState({ savedCount: 0, redeemedCount: 0 });
   const [affiliateStats, setAffiliateStats] = useState({ totalEarned: 0, pending: 0 });
+  const [referralStats, setReferralStats] = useState({ clicks: 0, conversions: 0, pointsEarned: 0 });
   const [userTier, setUserTier] = useState<string>("free");
 
   useEffect(() => {
@@ -185,6 +179,12 @@ export default function Page() {
               pending: affiliateRes.pending,
             });
           }
+
+          // Fetch referral stats
+          const referralRes = await clientFetch<{ stats: { clicks: number; conversions: number; pointsEarned: number } }>("/api/referral/my-link").catch(() => null);
+          if (referralRes?.stats) {
+            setReferralStats(referralRes.stats);
+          }
         }
       } catch (err) {
         console.error("Failed to load dashboard data", err);
@@ -199,12 +199,24 @@ export default function Page() {
         }
       } catch (err) {
         console.error("Failed to fetch deals", err);
-        setDeals(getDummyDeals());
+        setDeals([]);
+      }
+    }
+
+    async function loadMerchants() {
+      try {
+        const data = await clientFetch<{ merchants: any[] }>("/api/merchants");
+        if (Array.isArray(data.merchants)) {
+          setMerchantsList(data.merchants);
+        }
+      } catch (err) {
+        console.error("Failed to fetch merchants", err);
       }
     }
 
     loadDashboardData();
     loadDeals();
+    loadMerchants();
   }, []);
 
   useEffect(() => {
@@ -241,45 +253,65 @@ export default function Page() {
       const matchesCategory =
         selectedCategory === "all" || deal.category === selectedCategory;
 
-      return matchesSearch && matchesCategory;
-    });
-  }, [deals, searchQuery, selectedCategory]);
+      const merchantObj = merchantsList.find((m) => m.id === deal.merchantId);
+      const mAddress = merchantObj?.companyAddress || "Las Vegas, Nevada";
+      const matchesLocation =
+        selectedLocation === "Select location" ||
+        mAddress.toLowerCase().includes(selectedLocation.split(",")[0].toLowerCase());
 
-  const voucherRows = useMemo(() => buildVoucherRows(), []);
+      return matchesSearch && matchesCategory && matchesLocation && deal.dealType === "coupon";
+    });
+  }, [deals, searchQuery, selectedCategory, selectedLocation, merchantsList]);
+
+  const voucherRows = useMemo(() => {
+    return deals.filter((deal) => {
+      const normalizedSearch = searchQuery.toLowerCase();
+      const matchesSearch =
+        !normalizedSearch ||
+        deal.title.toLowerCase().includes(normalizedSearch) ||
+        deal.merchantName.toLowerCase().includes(normalizedSearch) ||
+        deal.description?.toLowerCase().includes(normalizedSearch);
+
+      const matchesCategory =
+        selectedCategory === "all" || deal.category === selectedCategory;
+
+      const merchantObj = merchantsList.find((m) => m.id === deal.merchantId);
+      const mAddress = merchantObj?.companyAddress || "Las Vegas, Nevada";
+      const matchesLocation =
+        selectedLocation === "Select location" ||
+        mAddress.toLowerCase().includes(selectedLocation.split(",")[0].toLowerCase());
+
+      return matchesSearch && matchesCategory && matchesLocation && (deal.dealType === "voucher" || deal.dealType === "loyalty");
+    });
+  }, [deals, searchQuery, selectedCategory, selectedLocation, merchantsList]);
 
   const rows = activeTab === "coupons" ? couponRows : voucherRows;
   const visibleRows = rows.slice(0, visibleCount);
-
-  const stats = {
-    couponsCount: couponRows.length || 12,
-    vouchersCount: voucherRows.length || 16,
-    earnings: "$62",
-  };
 
   return (
     <main className="min-h-screen bg-[#eef2f7] text-[#15253b]">
       <header className="sticky top-0 z-30 border-b border-[#dfe7f2] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex flex-1 items-center">
-            <BrandLogo href="/" size="md" />
+            <BrandLogo href="/customer" size="md" />
           </div>
 
           <div className="hidden flex-1 justify-center md:flex">
             <nav className="relative z-10 flex items-center gap-2 text-sm font-medium text-[#4b5c74]">
-              <Link href="/" prefetch className="rounded-full px-4 py-2 transition hover:text-[#0f7af7]">
+              <Link href="/customer" prefetch className="rounded-full px-4 py-2 transition hover:text-[#0f7af7]">
                 Home
               </Link>
               <Link
-                href="/customer/dashboard"
+                href="/customer/coupons"
                 prefetch
                 className="rounded-full px-4 py-2 transition hover:text-[#0f7af7]"
               >
                 Coupons
               </Link>
               <Link
-                href="/customer/coupons"
+                href="/customer/dashboard"
                 prefetch
-                className="rounded-full px-4 py-2 text-[#0f7af7]"
+                className="rounded-full px-4 py-2 text-[#0f7af7] bg-[#eef3fb] font-semibold"
               >
                 Dashboard
               </Link>
@@ -332,13 +364,16 @@ export default function Page() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-[#e8eef7]" />
-                <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
+                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer">
                   <Link href="/customer/dashboard" prefetch>Dashboard</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
-                  <Link href="/customer/coupons" prefetch>My Coupons</Link>
+                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer">
+                  <Link href="/wallet" prefetch>My Wallet</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-xl px-3 py-2">
+                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer">
+                  <Link href="/customer/coupons" prefetch>Explore Coupons</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer">
                   <Link href="/referral" prefetch>Referral Program</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-[#e8eef7]" />
@@ -366,16 +401,16 @@ export default function Page() {
         {mobileNavOpen ? (
           <div className="border-t border-[#e4ebf5] bg-white px-4 py-4 md:hidden">
             <div className="flex flex-col gap-3 text-sm font-medium text-[#4b5c74]">
-              <Link href="/" prefetch className="rounded-xl px-2 py-1">
+              <Link href="/customer" prefetch className="rounded-xl px-3 py-2">
                 Home
               </Link>
-              <Link href="/customer/dashboard" prefetch className="rounded-xl px-2 py-1">
+              <Link href="/customer/coupons" prefetch className="rounded-xl px-3 py-2">
                 Coupons
               </Link>
-              <Link href="/customer/coupons" prefetch className="rounded-xl px-2 py-1 text-[#0f7af7]">
+              <Link href="/customer/dashboard" prefetch className="rounded-xl px-3 py-2 text-[#0f7af7] bg-[#eef3fb] font-semibold">
                 Dashboard
               </Link>
-              <a href="#" className="rounded-xl px-2 py-1">
+              <a href="#" className="rounded-xl px-3 py-2">
                 Events
               </a>
             </div>
@@ -414,7 +449,7 @@ export default function Page() {
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { label: "Saved Deals", value: String(walletStats.savedCount) },
               { label: "Redeemed Deals", value: String(walletStats.redeemedCount) },
@@ -423,8 +458,8 @@ export default function Page() {
                 value: userTier === "gold"
                   ? `$${(affiliateStats.totalEarned + affiliateStats.pending).toFixed(2)}`
                   : `${points} pts`,
-                accent: true,
               },
+              { label: "Friends Joined", value: String(referralStats.conversions), accent: true },
             ].map((item) => (
               <div
                 key={item.label}
@@ -457,7 +492,7 @@ export default function Page() {
                     : "border-transparent text-[#1e2f46]"
                 }`}
               >
-                My Coupons
+                Available Coupons
               </button>
               <button
                 type="button"
@@ -468,7 +503,7 @@ export default function Page() {
                     : "border-transparent text-[#1e2f46]"
                 }`}
               >
-                My Vouchers
+                Available Vouchers
               </button>
             </div>
           </div>
@@ -521,34 +556,23 @@ export default function Page() {
             </div>
 
             <div className="mt-6 grid gap-5 xl:grid-cols-2">
-              {visibleRows.map((row, index) => {
-                const isCoupon = activeTab === "coupons";
-                const couponRow = isCouponRow(row) ? row : null;
-                const voucherRow = isVoucherRow(row) ? row : null;
-                const accent = index % 2 === 0;
-                const badgeColor = accent ? "bg-[#0f7af7]" : "bg-[#ef8a23]";
-                const buttonColor = accent
-                  ? "bg-[#0f7af7] hover:bg-[#0b66d1]"
-                  : "bg-[#ef8a23] hover:bg-[#d97712]";
-                const borderColor = accent
-                  ? "border-[#bedcff]"
-                  : "border-[#ffd9ba]";
+              {visibleRows.map((row) => {
+                const theme = getCategoryTheme(row.category);
+                const merchantObj = merchantsList.find((m) => m.id === row.merchantId);
+                const mAddress = merchantObj?.companyAddress || "Las Vegas, Nevada";
 
                 return (
                   <article
                     key={row.id}
-                    className={`overflow-hidden rounded-[20px] border bg-white shadow-[0_12px_34px_rgba(18,40,74,0.08)] ${borderColor}`}
+                    className={`overflow-hidden rounded-[20px] border bg-white shadow-[0_12px_34px_rgba(18,40,74,0.08)] ${theme.borderColor}`}
                   >
                     <div className="flex flex-col sm:flex-row">
                       <div className="relative h-52 overflow-hidden sm:h-auto sm:w-[34%]">
                         <Image
                           src={
-                            isCoupon
-                              ? couponRow?.thumbnailUrl ||
-                                couponRow?.images?.[0] ||
-                                "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80"
-                              : voucherRow?.image ||
-                                "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=900&q=80"
+                            row.thumbnailUrl ||
+                            row.images?.[0] ||
+                            "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=900&q=80"
                           }
                           alt={row.title}
                           fill
@@ -557,75 +581,65 @@ export default function Page() {
                         />
                         <div className="absolute inset-0 bg-[#0f1c2d]/18" />
                         <div
-                          className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[11px] font-semibold text-white ${badgeColor}`}
+                          className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[11px] font-semibold text-white ${theme.color}`}
                         >
-                          {isCoupon
-                            ? mapDealCategory(row.category)
-                            : row.category}
+                          {mapDealCategory(row.category)}
                         </div>
                       </div>
 
-                      <div className="flex flex-1 flex-col p-4 sm:p-5">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="text-xl font-bold leading-tight text-[#1d2b40]">
-                              {row.title}
-                            </h3>
-                            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#7c8ca1]">
-                              {isCoupon
-                                ? `${couponRow?.coupontoolsCouponId || row.id} - Active`
-                                : voucherRow?.code}
-                            </p>
+                      <div className="flex flex-1 flex-col p-4 sm:p-5 justify-between">
+                        <div>
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h3 className="text-xl font-bold leading-tight text-[#1d2b40]">
+                                {row.title}
+                              </h3>
+                              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600 flex items-center gap-1">
+                                <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                ACTIVE
+                              </p>
+                            </div>
+                            <span
+                              className={`rounded-full px-3 py-1 text-[11px] font-semibold text-white ${theme.color}`}
+                            >
+                              {row.merchantName}
+                            </span>
                           </div>
-                          <span
-                            className={`rounded-full px-3 py-1 text-[11px] font-semibold text-white ${badgeColor}`}
-                          >
-                            {isCoupon ? couponRow?.merchantName : voucherRow?.merchant}
-                          </span>
-                        </div>
 
-                        <p className="mt-3 text-sm leading-6 text-[#6e8097]">
-                          {row.description ||
-                            "Enjoy premium local offers with flexible savings on every order."}
-                        </p>
+                          <p className="mt-3 text-sm leading-6 text-[#6e8097]">
+                            {row.description ||
+                              "Enjoy premium local offers with flexible savings on every order."}
+                          </p>
 
-                        <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
-                          <div className="rounded-2xl bg-[#f8fbff] p-3">
-                            <p className="font-medium text-[#97a6ba]">Live Date</p>
-                            <p className="mt-1 font-semibold text-[#23354f]">
-                              {isCoupon
-                                ? formatDate(couponRow?.startDate ?? null)
-                                : voucherRow?.liveDate}
-                            </p>
-                          </div>
-                          <div className="rounded-2xl bg-[#f8fbff] p-3">
-                            <p className="font-medium text-[#97a6ba]">End Date</p>
-                            <p className="mt-1 font-semibold text-[#23354f]">
-                              {isCoupon
-                                ? formatDate(couponRow?.endDate ?? null)
-                                : voucherRow?.endDate}
-                            </p>
-                          </div>
-                          <div className="col-span-2 rounded-2xl bg-[#f8fbff] p-3 sm:col-span-1">
-                            <p className="font-medium text-[#97a6ba]">Location</p>
-                            <p className="mt-1 font-semibold text-[#23354f]">
-                              {selectedLocation === "Select location"
-                                ? isCoupon
-                                  ? "Las Vegas, Nevada"
-                                  : voucherRow?.location
-                                : selectedLocation}
-                            </p>
+                          <div className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
+                            <div className="rounded-2xl bg-[#f8fbff] p-3">
+                              <p className="font-medium text-[#97a6ba]">Live Date</p>
+                              <p className="mt-1 font-semibold text-[#23354f]">
+                                {formatDate(row.startDate)}
+                              </p>
+                            </div>
+                            <div className="rounded-2xl bg-[#f8fbff] p-3">
+                              <p className="font-medium text-[#97a6ba]">End Date</p>
+                              <p className="mt-1 font-semibold text-[#23354f]">
+                                {formatDate(row.endDate)}
+                              </p>
+                            </div>
+                            <div className="col-span-2 rounded-2xl bg-[#f8fbff] p-3 sm:col-span-1">
+                              <p className="font-medium text-[#97a6ba]">Location</p>
+                              <p className="mt-1 font-semibold text-[#23354f] truncate" title={mAddress}>
+                                {mAddress}
+                              </p>
+                            </div>
                           </div>
                         </div>
 
                         <div className="mt-5 flex items-center justify-end">
-                          <button
-                            type="button"
-                            onClick={() => handleSaveDeal(row.id)}
-                            className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition ${buttonColor}`}
+                          <Link
+                            href={`/deals/${row.id}`}
+                            className={`rounded-full px-5 py-2 text-sm font-semibold text-white transition ${theme.buttonColor}`}
                           >
                             Get Now
-                          </button>
+                          </Link>
                         </div>
                       </div>
                     </div>

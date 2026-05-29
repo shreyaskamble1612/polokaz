@@ -246,8 +246,8 @@ export default function Page() {
               ) : (
                 <div className="flex min-h-48 flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-center">
                   <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-                  <p className="mt-3 text-sm font-semibold text-slate-950">No pending deals</p>
-                  <p className="mt-1 max-w-md text-sm text-slate-500">All submitted deals have been reviewed.</p>
+                  <p className="mt-3 text-sm font-semibold text-slate-950">No deals pending review.</p>
+                  <p className="mt-1 max-w-md text-sm text-slate-500">All caught up!</p>
                 </div>
               )}
             </CardContent>
