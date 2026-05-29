@@ -53,7 +53,10 @@ export function DealDetailView({
   isRedeemed = false,
   savePending = false,
   saveMessage,
+  redeemPending = false,
+  redeemMessage = null,
   onSave,
+  onRedeem,
 }: {
   deal: Deal;
   collectionHref?: string;
@@ -62,7 +65,10 @@ export function DealDetailView({
   isRedeemed?: boolean;
   savePending?: boolean;
   saveMessage?: string | null;
+  redeemPending?: boolean;
+  redeemMessage?: string | null;
   onSave?: () => void | Promise<void>;
+  onRedeem?: () => void | Promise<void>;
 }) {
   const [termsOpen, setTermsOpen] = useState(false);
 
@@ -115,6 +121,26 @@ export function DealDetailView({
                 </div>
               </div>
             </div>
+
+            {deal.redemptionData?.url ? (
+              <section id="coupontools-widget" className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.28)] sm:p-6">
+                <h3 className="text-xl font-bold tracking-tight text-white mb-4 flex items-center gap-2">
+                  <Ticket className="h-5 w-5 text-[#f5d061]" />
+                  Interactive Validation & Play
+                </h3>
+                <div className="relative w-full h-[650px] rounded-[20px] overflow-hidden bg-black/40 border border-white/5">
+                  <iframe
+                    src={deal.redemptionData.url as string}
+                    title="Interactive Coupon/Voucher"
+                    className="absolute inset-0 w-full h-full border-none"
+                    allow="geolocation; camera; microphone"
+                  />
+                </div>
+                <p className="mt-3 text-xs text-zinc-400 text-center">
+                  Use this interactive widget to play games, collect stamps, or show the code to the merchant at checkout.
+                </p>
+              </section>
+            ) : null}
 
             <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] sm:p-8">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -265,13 +291,48 @@ export function DealDetailView({
                       <p className="text-sm text-zinc-400">{saveMessage}</p>
                     ) : null}
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-12 w-full rounded-full border-white/10 bg-white/5 text-white hover:bg-white/10"
-                    >
-                      Redeem Now
-                    </Button>
+                    {isRedeemed ? (
+                      <Button
+                        type="button"
+                        disabled
+                        variant="outline"
+                        className="h-12 w-full rounded-full border-emerald-400/18 bg-emerald-500/10 text-emerald-300"
+                      >
+                        Already Redeemed
+                      </Button>
+                    ) : deal.redemptionData?.url ? (
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          const el = document.getElementById("coupontools-widget");
+                          if (el) el.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="h-12 w-full rounded-full bg-[linear-gradient(135deg,#059669_0%,#047857_100%)] text-white shadow-[0_18px_38px_rgba(5,150,105,0.22)] hover:brightness-105"
+                      >
+                        Validate & Play
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        disabled={redeemPending}
+                        onClick={() => onRedeem?.()}
+                        variant="outline"
+                        className="h-12 w-full rounded-full border-white/10 bg-white/5 text-white hover:bg-white/10 disabled:opacity-60"
+                      >
+                        {redeemPending ? (
+                          <>
+                            <LoaderCircle className="size-4 animate-spin mr-2" />
+                            Redeeming...
+                          </>
+                        ) : (
+                          "Redeem Now"
+                        )}
+                      </Button>
+                    )}
+
+                    {redeemMessage ? (
+                      <p className="text-sm text-amber-300 mt-2">{redeemMessage}</p>
+                    ) : null}
                   </div>
 
                   <div className="grid gap-3 rounded-2xl border border-white/8 bg-black/20 p-4 text-sm text-zinc-300">

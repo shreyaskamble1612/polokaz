@@ -61,6 +61,7 @@ export function mapApiDealToUiDeal(deal: ApiDeal): UiDeal {
     expiresAt: deal.endDate ?? deal.expiresAt ?? new Date(Date.now() + 14 * 86400000).toISOString(),
     imageUrl: deal.thumbnailUrl || deal.images?.[0] || "/customer/thumbnail.png",
     termsAndConditions: baseTerms(),
+    coupontoolsCouponId: deal.coupontoolsCouponId,
   };
 }
 
@@ -92,6 +93,8 @@ export function mapDealDetailToUiDeal(response: DealDetailResponse): UiDeal {
     expiresAt: deal.expiresAt ?? new Date(Date.now() + 14 * 86400000).toISOString(),
     imageUrl: deal.thumbnailUrl || deal.images?.[0] || "/customer/thumbnail.png",
     termsAndConditions: baseTerms(),
+    redemptionData: deal.redemptionData,
+    coupontoolsCouponId: deal.coupontoolsCouponId,
   };
 }
 

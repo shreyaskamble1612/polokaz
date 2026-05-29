@@ -19,4 +19,6 @@ export type Deal = {
   expiresAt: string;
   imageUrl: string;
   termsAndConditions: string[];
+  redemptionData?: Record<string, any> | null;
+  coupontoolsCouponId?: string | null;
 };

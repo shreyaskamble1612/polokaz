@@ -9,6 +9,17 @@ import {
 import { DealsService } from "../../services/deals";
 import { CoupontoolsService, type CoupontoolsCoupon } from "../../services/coupontools";
 import { useWebhookLogger } from "../../logger";
+import {
+  db,
+  deal,
+  user,
+  walletItems,
+  redemptions,
+  referralConversions,
+  eq,
+  and,
+} from "@polokaz/db";
+import { dispatchReward } from "../../services/rewards.service";
 
 const router = express.Router();
 const logger = useWebhookLogger();
@@ -199,20 +210,183 @@ async function handleCouponRemoved(
   await dealsService.markDealInactive(String(campaignId));
 }
 
-async function handleCouponClaimed(webhookEventId: string, event: Record<string, unknown>) {
+async function handleCouponClaimed(webhookEventId: string, event: Record<string, any>) {
   await logWebhookStep(webhookEventId, "info", "Processing coupon_claimed", {
     campaign: event.campaign,
     session: event.session,
   });
-  // TODO: Create wallet_item or redemption record when wallet/redemption flow is implemented
+
+  const campaignId = event.campaign;
+  if (!campaignId) {
+    await logWebhookStep(webhookEventId, "warn", "coupon_claimed missing campaign ID");
+    return;
+  }
+
+  // Parse user identification
+  const customId = typeof event.customid === "string" ? event.customid : event.customer?.customid;
+  const email = event.customer?.email;
+
+  let matchedUser;
+  if (customId) {
+    [matchedUser] = await db.select().from(user).where(eq(user.id, customId)).limit(1);
+  }
+  if (!matchedUser && email) {
+    [matchedUser] = await db.select().from(user).where(eq(user.email, email)).limit(1);
+  }
+
+  if (!matchedUser) {
+    await logWebhookStep(webhookEventId, "info", "No matching user found for coupon_claimed", { customId, email });
+    return;
+  }
+
+  // Find local deal
+  const [localDeal] = await db.select().from(deal).where(eq(deal.coupontoolsId, String(campaignId))).limit(1);
+  if (!localDeal) {
+    await logWebhookStep(webhookEventId, "warn", "No matching deal found in database for campaign", { campaignId });
+    return;
+  }
+
+  // Check if already in wallet
+  const [existingWallet] = await db
+    .select()
+    .from(walletItems)
+    .where(and(eq(walletItems.userId, matchedUser.id), eq(walletItems.dealId, localDeal.id)))
+    .limit(1);
+
+  if (!existingWallet) {
+    await db.insert(walletItems).values({
+      userId: matchedUser.id,
+      dealId: localDeal.id,
+      status: "saved",
+      savedAt: new Date(),
+    });
+    await logWebhookStep(webhookEventId, "info", "Created wallet item from coupon_claimed", {
+      userId: matchedUser.id,
+      dealId: localDeal.id,
+    });
+  } else {
+    await logWebhookStep(webhookEventId, "info", "Wallet item already exists for claimed coupon", {
+      userId: matchedUser.id,
+      dealId: localDeal.id,
+    });
+  }
 }
 
-async function handleCouponValidated(webhookEventId: string, event: Record<string, unknown>) {
+async function handleCouponValidated(webhookEventId: string, event: Record<string, any>) {
   await logWebhookStep(webhookEventId, "info", "Processing coupon_validated", {
     campaign: event.campaign,
     session: event.session,
   });
-  // TODO: Update redemption status when redemption flow is implemented
+
+  const campaignId = event.campaign;
+  if (!campaignId) {
+    await logWebhookStep(webhookEventId, "warn", "coupon_validated missing campaign ID");
+    return;
+  }
+
+  // Parse user identification
+  const customId = typeof event.customid === "string" ? event.customid : event.customer?.customid;
+  const email = event.customer?.email;
+
+  let matchedUser;
+  if (customId) {
+    [matchedUser] = await db.select().from(user).where(eq(user.id, customId)).limit(1);
+  }
+  if (!matchedUser && email) {
+    [matchedUser] = await db.select().from(user).where(eq(user.email, email)).limit(1);
+  }
+
+  if (!matchedUser) {
+    await logWebhookStep(webhookEventId, "info", "No matching user found for coupon_validated", { customId, email });
+    return;
+  }
+
+  // Find local deal
+  const [localDeal] = await db.select().from(deal).where(eq(deal.coupontoolsId, String(campaignId))).limit(1);
+  if (!localDeal) {
+    await logWebhookStep(webhookEventId, "warn", "No matching deal found in database for campaign", { campaignId });
+    return;
+  }
+
+  // Look up wallet item
+  let [walletItemRow] = await db
+    .select()
+    .from(walletItems)
+    .where(and(eq(walletItems.userId, matchedUser.id), eq(walletItems.dealId, localDeal.id)))
+    .limit(1);
+
+  if (walletItemRow) {
+    await db
+      .update(walletItems)
+      .set({
+        status: "redeemed",
+        redeemedAt: new Date(),
+      })
+      .where(eq(walletItems.id, walletItemRow.id));
+  } else {
+    // If validated directly on CouponTools, create redeemed wallet item
+    [walletItemRow] = await db
+      .insert(walletItems)
+      .values({
+        userId: matchedUser.id,
+        dealId: localDeal.id,
+        status: "redeemed",
+        savedAt: new Date(),
+        redeemedAt: new Date(),
+      })
+      .returning();
+  }
+
+  // Create redemption record
+  const [redemptionRecord] = await db
+    .insert(redemptions)
+    .values({
+      userId: matchedUser.id,
+      dealId: localDeal.id,
+      walletItemId: walletItemRow.id,
+      status: "completed",
+      redemptionCode: event.coupon_code || null,
+      redemptionMethod: "online",
+      coupontoolsRedemptionId: event.id || null,
+      coupontoolsData: JSON.stringify(event),
+      redeemedAt: new Date(),
+      validatedAt: new Date(),
+      completedAt: new Date(),
+      verified: true,
+    })
+    .returning();
+
+  await logWebhookStep(webhookEventId, "info", "Created redemption log from coupon_validated", {
+    redemptionId: redemptionRecord?.id,
+  });
+
+  if (redemptionRecord) {
+    // 1. Reward the user who redeemed
+    await dispatchReward({
+      type: "deal_redemption",
+      userId: matchedUser.id,
+      referenceId: redemptionRecord.id,
+    }).catch(err =>
+      logger.error("Failed to dispatch reward points from webhook", { error: err.message })
+    );
+
+    // 2. Reward the referrer if applicable
+    const [conversion] = await db
+      .select({ referrerId: referralConversions.referrerId })
+      .from(referralConversions)
+      .where(eq(referralConversions.referredUserId, matchedUser.id))
+      .limit(1);
+
+    if (conversion && conversion.referrerId) {
+      await dispatchReward({
+        type: "referral_redemption",
+        userId: conversion.referrerId,
+        referenceId: redemptionRecord.id,
+      }).catch(err =>
+        logger.error("Failed to dispatch referrer reward from webhook", { error: err.message })
+      );
+    }
+  }
 }
 
 export { router as coupontoolsWebhookRouter };

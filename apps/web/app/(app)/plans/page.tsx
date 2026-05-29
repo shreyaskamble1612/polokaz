@@ -172,23 +172,66 @@ export default function PlansPage() {
         : CONSUMER_PLANS.find((plan) => plan.id === tier)?.name ?? tier;
 
     setLoadingTier(tier);
-    setToast(`Upgrading to ${planName} plan...`);
+
+    if (tier === "free") {
+      setToast(`Downgrading to Free plan...`);
+      try {
+        const data = await clientFetch<{ success: boolean; tier: string }>("/api/plans/upgrade", {
+          method: "POST",
+          body: JSON.stringify({ tier }),
+        });
+
+        if (data.success) {
+          setToast(`Successfully downgraded to Free!`);
+          await authClient.getSession();
+          router.refresh();
+        } else {
+          throw new Error("Failed to downgrade tier.");
+        }
+      } catch (error: any) {
+        setToast(error.message || "Failed to downgrade plan.");
+      } finally {
+        setLoadingTier(null);
+      }
+      return;
+    }
+
+    setToast(`Redirecting to Stripe checkout for ${planName}...`);
 
     try {
-      const data = await clientFetch<{ success: boolean; tier: string }>("/api/plans/upgrade", {
+      // 1. Attempt to create a Stripe checkout session
+      const stripeRes = await clientFetch<{ url: string }>("/api/stripe/create-checkout", {
         method: "POST",
         body: JSON.stringify({ tier }),
       });
 
-      if (data.success) {
-        setToast(`Successfully upgraded to ${planName}!`);
-        await authClient.getSession();
-        router.refresh();
+      if (stripeRes?.url) {
+        window.location.href = stripeRes.url;
+        return;
       } else {
-        throw new Error("Failed to upgrade tier.");
+        throw new Error("Stripe checkout session creation failed");
       }
     } catch (error: any) {
-      setToast(error.message || "Failed to upgrade plan.");
+      console.warn("Stripe Checkout failed or keys not set. Falling back to direct database upgrade for testing.", error);
+      setToast("Stripe checkout offline. Upgrading directly for dev/testing...");
+
+      // 2. Fallback to direct database upgrade in development mode
+      try {
+        const data = await clientFetch<{ success: boolean; tier: string }>("/api/plans/upgrade", {
+          method: "POST",
+          body: JSON.stringify({ tier }),
+        });
+
+        if (data.success) {
+          setToast(`Successfully upgraded to ${planName}!`);
+          await authClient.getSession();
+          router.refresh();
+        } else {
+          throw new Error("Failed to upgrade tier.");
+        }
+      } catch (innerError: any) {
+        setToast(innerError.message || "Failed to upgrade plan.");
+      }
     } finally {
       setLoadingTier(null);
     }

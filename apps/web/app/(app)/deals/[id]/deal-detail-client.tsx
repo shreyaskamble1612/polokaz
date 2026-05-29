@@ -4,6 +4,7 @@ import { DealDetailView } from "@/components/deals/DealDetailView";
 import { fetchDealDetail } from "@/lib/api/deals";
 import { saveWalletDeal, type ApiClientError } from "@/lib/api/wallet";
 import { mapDealDetailToUiDeal } from "@/lib/deals-adapter";
+import { clientFetch } from "@/lib/api/client-fetch";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { useSWRConfig } from "swr";
@@ -13,6 +14,8 @@ export function DealDetailClient({ id }: { id: string }) {
   const { mutate } = useSWRConfig();
   const [savePending, setSavePending] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [redeemPending, setRedeemPending] = useState(false);
+  const [redeemMessage, setRedeemMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!saveMessage) return;
@@ -20,6 +23,13 @@ export function DealDetailClient({ id }: { id: string }) {
     const timer = window.setTimeout(() => setSaveMessage(null), 2600);
     return () => window.clearTimeout(timer);
   }, [saveMessage]);
+
+  useEffect(() => {
+    if (!redeemMessage) return;
+
+    const timer = window.setTimeout(() => setRedeemMessage(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [redeemMessage]);
 
   if (isLoading) {
     return (
@@ -71,6 +81,35 @@ export function DealDetailClient({ id }: { id: string }) {
     }
   };
 
+  const handleRedeem = async () => {
+    if (redeemPending || data.isRedeemed) return;
+
+    setRedeemPending(true);
+
+    try {
+      if (!data.isSaved) {
+        await saveWalletDeal(id);
+      }
+
+      const res = await clientFetch<{ success: boolean; pointsEarned: number }>(
+        `/api/wallet/${id}/redeem`,
+        { method: "POST" }
+      );
+
+      setRedeemMessage(`Successfully redeemed! Earned ${res.pointsEarned} points.`);
+      await Promise.all([
+        mutate(`/api/deals/${id}`),
+        mutate("/api/wallet?status=saved"),
+        mutate("/api/wallet?status=redeemed"),
+        mutate("/api/me/points"),
+      ]);
+    } catch (error: any) {
+      setRedeemMessage(error.message || "Failed to redeem this deal.");
+    } finally {
+      setRedeemPending(false);
+    }
+  };
+
   return (
     <DealDetailView
       deal={mapDealDetailToUiDeal(data)}
@@ -80,7 +119,10 @@ export function DealDetailClient({ id }: { id: string }) {
       isRedeemed={data.isRedeemed}
       savePending={savePending}
       saveMessage={saveMessage}
+      redeemPending={redeemPending}
+      redeemMessage={redeemMessage}
       onSave={handleSave}
+      onRedeem={handleRedeem}
     />
   );
 }
