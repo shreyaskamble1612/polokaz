@@ -19,7 +19,10 @@ interface Referral {
 
 function getReferralUrl(ref: Referral) {
   if (ref.trackdeskUrl) return ref.trackdeskUrl;
-  return `${process.env.NEXT_PUBLIC_APP_URL}/sign-up/onboarding?referralId=${ref.id}`;
+  const baseUrl = typeof window !== "undefined" 
+    ? window.location.origin 
+    : (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
+  return `${baseUrl}/sign-up/onboarding?referralId=${ref.id}`;
 }
 
 function getStatus(ref: Referral): "active" | "expired" {
