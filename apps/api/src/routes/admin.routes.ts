@@ -28,11 +28,15 @@ router.get("/metrics", getAdminMetrics);
 router.get("/users", listUsersForAdmin);
 router.patch("/users/:userId/tier", updateUserTier);
 router.patch("/users/:userId/ban", updateUserBan);
+router.post("/users/:userId/tier", updateUserTier);
+router.post("/users/:userId/ban", updateUserBan);
+router.post("/users/:id/tier", updateUserTier);
+router.post("/users/:id/ban", updateUserBan);
 
 // Payouts
 router.get("/payouts", listPayoutsForAdmin);
 router.patch("/payouts/:userId/approve", approvePayout);
-router.post("/payouts/:userId/approve", approvePayout); // support POST as well for flexibility
+router.post("/payouts/:userId/approve", approvePayout);
+router.post("/payouts/:id/approve", approvePayout);
 
 export { router as adminRouter };
-

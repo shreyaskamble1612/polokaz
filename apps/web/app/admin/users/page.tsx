@@ -117,7 +117,7 @@ export default function Page() {
   const handleTierChange = async (userId: string, tier: string) => {
     try {
       await clientFetch(`/api/admin/users/${userId}/tier`, {
-        method: "PATCH",
+        method: "POST",
         body: JSON.stringify({ tier }),
       });
       mutate();
@@ -129,7 +129,7 @@ export default function Page() {
   const handleBanToggle = async (userId: string, currentlyBanned: boolean) => {
     try {
       await clientFetch(`/api/admin/users/${userId}/ban`, {
-        method: "PATCH",
+        method: "POST",
         body: JSON.stringify({ banned: !currentlyBanned }),
       });
       mutate();

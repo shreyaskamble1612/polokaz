@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CircleCheckBig } from "lucide-react";
+import { CircleCheckBig, Loader2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,20 +19,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import useSWR from "swr";
 import { clientFetch } from "@/lib/api/client-fetch";
-import { Loader2 } from "lucide-react";
 
 type PayoutStatus = "pending" | "approved" | "paid";
 type PayoutTier = "free" | "basic" | "gold" | "merchant";
 
 type Payout = {
-  id: string;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    tier: PayoutTier;
+  };
+  totalPending: number;
+  commissionCount: number;
+  commissions: any[];
+  status: PayoutStatus;
+  
+  // Backwards compatibility fields for selected checkboxes
   userId: string;
   userName: string;
-  email: string;
-  tier: PayoutTier;
-  amount: number;
-  commissions: number;
-  status: PayoutStatus;
 };
 
 function tierBadge(tier: string) {
@@ -78,10 +83,10 @@ export default function Page() {
 
   const handleApprovePayout = async (payout: Payout) => {
     try {
-      await clientFetch(`/api/admin/payouts/${payout.userId}/approve`, {
+      await clientFetch(`/api/admin/payouts/${payout.user.id}/approve`, {
         method: "POST",
       });
-      setToast(`Approved payout for ${payout.userName}`);
+      setToast(`Approved payout for ${payout.user.name || payout.user.email}`);
       mutate();
     } catch (err: any) {
       alert(err.message || "Failed to approve payout");
@@ -166,7 +171,7 @@ export default function Page() {
                       aria-label="Select all payouts"
                       checked={selectedIds.length > 0 && selectedIds.length === filteredPayouts.length}
                       onChange={(event) =>
-                        setSelectedIds(event.target.checked ? filteredPayouts.map((payout: any) => payout.userId) : [])
+                        setSelectedIds(event.target.checked ? filteredPayouts.map((payout: any) => payout.user.id) : [])
                       }
                     />
                   </TableHead>
@@ -181,24 +186,24 @@ export default function Page() {
               </TableHeader>
               <TableBody>
                 {filteredPayouts.map((payout: any) => (
-                  <TableRow key={payout.userId}>
+                  <TableRow key={payout.user.id}>
                     <TableCell>
                       <input
                         type="checkbox"
-                        aria-label={`Select payout for ${payout.userName}`}
-                        checked={selectedIds.includes(payout.userId)}
+                        aria-label={`Select payout for ${payout.user.name || payout.user.email}`}
+                        checked={selectedIds.includes(payout.user.id)}
                         onChange={(event) => {
                           setSelectedIds((current) =>
-                            event.target.checked ? [...current, payout.userId] : current.filter((id) => id !== payout.userId),
+                            event.target.checked ? [...current, payout.user.id] : current.filter((id) => id !== payout.user.id),
                           );
                         }}
                       />
                     </TableCell>
-                    <TableCell className="font-medium text-slate-950">{payout.userName}</TableCell>
-                    <TableCell>{payout.email}</TableCell>
-                    <TableCell>{tierBadge(payout.tier)}</TableCell>
-                    <TableCell>{money(payout.amount)}</TableCell>
-                    <TableCell>{payout.commissions}</TableCell>
+                    <TableCell className="font-medium text-slate-950">{payout.user.name || "Unnamed User"}</TableCell>
+                    <TableCell>{payout.user.email}</TableCell>
+                    <TableCell>{tierBadge(payout.user.tier)}</TableCell>
+                    <TableCell>{money(payout.totalPending)}</TableCell>
+                    <TableCell>{payout.commissionCount}</TableCell>
                     <TableCell>{statusBadge(payout.status)}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
@@ -235,7 +240,7 @@ export default function Page() {
           <DialogHeader>
             <DialogTitle>Approve payout</DialogTitle>
             <DialogDescription>
-              Confirm the payout of {activePayout ? money(activePayout.amount) : "$0"} for {activePayout?.userName ?? "this user"}.
+              Confirm the payout of {activePayout ? money(activePayout.totalPending) : "$0"} for {activePayout?.user.name || activePayout?.user.email || "this user"}.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -276,4 +281,3 @@ export default function Page() {
     </div>
   );
 }
-

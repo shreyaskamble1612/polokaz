@@ -59,9 +59,11 @@ export default function Page() {
     clientFetch
   );
 
+  const metrics = data?.metrics;
+
   const chartData = useMemo(() => {
     const series = [];
-    const rawData = data?.dailyRedemptions || [];
+    const rawData = metrics?.dailyRedemptions || [];
     const rawMap = new Map(rawData.map((r: any) => [r.date, r.count]));
 
     for (let i = 29; i >= 0; i--) {
@@ -75,15 +77,15 @@ export default function Page() {
       });
     }
     return series;
-  }, [data]);
+  }, [metrics]);
 
-  const totalUsers = data?.usersByTier?.reduce((sum: number, t: any) => sum + t.count, 0) || 0;
-  const goldUsers = data?.usersByTier?.find((t: any) => t.tier === "gold")?.count || 0;
-  const merchantUsers = data?.usersByTier?.find((t: any) => t.tier === "merchant")?.count || 0;
-  const totalDeals = data?.totalDeals || 0;
-  const redemptionsThisMonth = data?.redemptionsThisMonth || 0;
-  const pendingPayouts = data?.pendingPayouts || 0;
-  const newSignups = data?.newSignups || 0;
+  const totalUsers = metrics?.usersByTier?.reduce((sum: number, t: any) => sum + t.count, 0) || 0;
+  const goldUsers = metrics?.usersByTier?.find((t: any) => t.tier === "gold")?.count || 0;
+  const merchantUsers = metrics?.usersByTier?.find((t: any) => t.tier === "merchant")?.count || 0;
+  const totalDeals = metrics?.totalDeals || 0;
+  const redemptionsThisMonth = metrics?.redemptionsThisMonth || 0;
+  const pendingPayouts = metrics?.pendingPayouts || 0;
+  const newSignups = metrics?.newSignups || 0;
 
   const statsList: StatCard[] = [
     { label: "Total Users", value: totalUsers.toLocaleString(), delta: "All time registered", icon: Users, tone: "from-sky-500 to-cyan-400" },
@@ -95,12 +97,12 @@ export default function Page() {
   ];
 
   const dealsByCategory = useMemo(() => {
-    const raw = data?.dealsByCategory || [];
+    const raw = metrics?.dealsByCategory || [];
     return raw.map((r: any) => ({
       category: r.category || "Uncategorized",
       deals: r.deals || 0,
     }));
-  }, [data]);
+  }, [metrics]);
 
   if (isLoading) {
     return (
@@ -282,4 +284,3 @@ export default function Page() {
     </div>
   );
 }
-

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, CircleX, Filter, Loader2, Search } from "lucide-react";
+import { CheckCircle2, CircleX, Filter, Loader2, Search, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import {
   rejectAdminDeal,
   type AdminModerationDeal,
 } from "@/lib/api/admin-deals";
+import { syncDealsFromCoupontools } from "@/lib/api/deals";
 
 type DealStatus = AdminModerationDeal["status"];
 type DealType = AdminModerationDeal["dealType"];
@@ -72,6 +73,28 @@ export default function Page() {
   const [rejectReason, setRejectReason] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncDeals = async () => {
+    setIsSyncing(true);
+    setToast(null);
+    try {
+      const res = await syncDealsFromCoupontools();
+      setToast(`Sync successful: Added ${res.inserted}, Updated ${res.updated}, Deactivated ${res.deactivated} deals.`);
+      
+      // Reload lists
+      const [pendingResponse, allResponse] = await Promise.all([
+        fetchPendingAdminDeals(),
+        fetchAllAdminDeals(),
+      ]);
+      setPendingDeals(pendingResponse.deals);
+      setAllDeals(allResponse.deals);
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "Failed to sync deals");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -175,9 +198,23 @@ export default function Page() {
       ) : null}
 
       <Card className="border-slate-200/80 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-2xl tracking-tight">Deal Moderation Queue</CardTitle>
-          <CardDescription>Review submitted merchant deals before they go live.</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <div>
+            <CardTitle className="text-2xl tracking-tight">Deal Moderation Queue</CardTitle>
+            <CardDescription>Review submitted merchant deals before they go live.</CardDescription>
+          </div>
+          <Button
+            onClick={handleSyncDeals}
+            disabled={isSyncing || isLoading}
+            className="rounded-full bg-slate-950 text-white hover:bg-slate-800"
+          >
+            {isSyncing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4" />
+            )}
+            Sync Coupontools
+          </Button>
         </CardHeader>
       </Card>
 

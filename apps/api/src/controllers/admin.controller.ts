@@ -260,13 +260,15 @@ export async function getAdminMetrics(req: Request, res: Response) {
   ]);
 
   return res.json({
-    usersByTier,
-    newSignups: newSignupsQuery[0]?.count ?? 0,
-    totalDeals: totalDealsQuery[0]?.count ?? 0,
-    redemptionsThisMonth: redemptionsThisMonthQuery[0]?.count ?? 0,
-    pendingPayouts: pendingPayoutsQuery[0]?.sum ?? 0,
-    dailyRedemptions,
-    dealsByCategory,
+    metrics: {
+      usersByTier,
+      newSignups: newSignupsQuery[0]?.count ?? 0,
+      totalDeals: totalDealsQuery[0]?.count ?? 0,
+      redemptionsThisMonth: redemptionsThisMonthQuery[0]?.count ?? 0,
+      pendingPayouts: pendingPayoutsQuery[0]?.sum ?? 0,
+      dailyRedemptions,
+      dealsByCategory,
+    }
   });
 }
 
@@ -354,7 +356,7 @@ export async function updateUserTier(req: Request, res: Response) {
   const session = requireRole(req, res, ["admin"]);
   if (!session) return;
 
-  const { userId } = req.params;
+  const userId = req.params.userId || req.params.id;
   const { tier } = req.body;
 
   if (!tier || !["free", "basic", "gold", "merchant"].includes(tier)) {
@@ -381,12 +383,8 @@ export async function updateUserBan(req: Request, res: Response) {
   const session = requireRole(req, res, ["admin"]);
   if (!session) return;
 
-  const { userId } = req.params;
-  const { banned } = req.body;
-
-  if (typeof banned !== "boolean") {
-    return res.status(400).json({ error: "banned status must be a boolean" });
-  }
+  const userId = req.params.userId || req.params.id;
+  const banned = typeof req.body.banned === "boolean" ? req.body.banned : true;
 
   const [updatedUser] = await db
     .update(user)
@@ -407,21 +405,91 @@ export async function listPayoutsForAdmin(req: Request, res: Response) {
 
   const status = typeof req.query.status === "string" ? req.query.status : "pending";
 
-  const payouts = await db
+  const rows = await db
     .select({
-      id: commissions.userId,
+      commissionId: commissions.id,
       userId: commissions.userId,
+      amount: commissions.amount,
+      currency: commissions.currency,
+      commissionStatus: commissions.status,
+      reason: commissions.reason,
+      referenceId: commissions.referenceId,
+      createdAt: commissions.createdAt,
+      paidAt: commissions.paidAt,
       userName: user.name,
       email: user.email,
       tier: user.tier,
-      amount: sql<number>`sum(${commissions.amount})::float`,
-      commissions: sql<number>`count(${commissions.id})::int`,
-      status: commissions.status,
     })
     .from(commissions)
     .innerJoin(user, eq(commissions.userId, user.id))
-    .where(eq(commissions.status, status as any))
-    .groupBy(commissions.userId, user.name, user.email, user.tier, commissions.status);
+    .where(eq(commissions.status, status as any));
+
+  // Group by userId in memory
+  const groups: Record<string, {
+    user: { id: string; name: string | null; email: string; tier: string };
+    totalPending: number;
+    commissionCount: number;
+    commissions: any[];
+    // Backward compatibility fields
+    id: string;
+    userId: string;
+    userName: string | null;
+    email: string;
+    tier: string;
+    status: string;
+    amount: number;
+    commissionsCount: number;
+  }> = {};
+
+  for (const row of rows) {
+    const uid = row.userId;
+    const amountNum = typeof row.amount === "string" ? parseFloat(row.amount) : Number(row.amount);
+    
+    if (!groups[uid]) {
+      groups[uid] = {
+        user: {
+          id: uid,
+          name: row.userName,
+          email: row.email,
+          tier: row.tier,
+        },
+        totalPending: 0,
+        commissionCount: 0,
+        commissions: [],
+        // Flat compatibility fields
+        id: uid,
+        userId: uid,
+        userName: row.userName,
+        email: row.email,
+        tier: row.tier,
+        status: row.commissionStatus,
+        amount: 0,
+        commissionsCount: 0,
+      };
+    }
+
+    groups[uid].totalPending += amountNum;
+    groups[uid].commissionCount += 1;
+    groups[uid].amount += amountNum;
+    groups[uid].commissionsCount += 1;
+    groups[uid].commissions.push({
+      id: row.commissionId,
+      userId: row.userId,
+      amount: amountNum,
+      currency: row.currency,
+      status: row.commissionStatus,
+      reason: row.reason,
+      referenceId: row.referenceId,
+      createdAt: row.createdAt.toISOString(),
+      paidAt: row.paidAt ? row.paidAt.toISOString() : null,
+    });
+  }
+
+  const payouts = Object.values(groups).map((group) => {
+    group.totalPending = Math.round(group.totalPending * 100) / 100;
+    group.amount = Math.round(group.amount * 100) / 100;
+    return group;
+  });
 
   return res.json({ payouts });
 }
@@ -430,7 +498,7 @@ export async function approvePayout(req: Request, res: Response) {
   const session = requireRole(req, res, ["admin"]);
   if (!session) return;
 
-  const { userId } = req.params;
+  const userId = req.params.userId || req.params.id;
 
   const [amountQuery] = await db
     .select({ sum: sql<number>`coalesce(sum(${commissions.amount}), 0)::float` })
