@@ -1,6 +1,8 @@
 import express from "express";
+import crypto from "crypto";
 import { ReferralsService } from "../services/referrals";
-import { db, eq, referral, referralUse, referralConversions, pointsLedger, and, sql } from "@polokaz/db";
+import { TrackdeskService } from "../services/trackdesk.service";
+import { db, eq, referral, referralUse, referralConversions, pointsLedger, and, sql, referralClicks, user } from "@polokaz/db";
 
 const router = express.Router();
 
@@ -76,6 +78,88 @@ router.get("/my-link", async (req, res) => {
       pointsEarned,
     },
   });
+});
+
+// Click referral link (Public endpoint)
+router.get("/click", async (req, res) => {
+  const ref = (req.query.ref as string)?.trim();
+
+  if (!ref) {
+    return res.status(400).json({
+      error: { code: "BAD_REQUEST", message: "Referral code 'ref' is required" },
+    });
+  }
+
+  try {
+    // 1. Look up referral by code
+    const [record] = await db
+      .select()
+      .from(referral)
+      .where(eq(referral.id, ref))
+      .limit(1);
+
+    if (!record) {
+      return res.status(404).json({
+        error: { code: "NOT_FOUND", message: "Referral code not found" },
+      });
+    }
+
+    // 2. Validate expiry
+    if (record.expiresAt && record.expiresAt.getTime() < Date.now()) {
+      return res.status(400).json({
+        error: { code: "EXPIRED", message: "Referral code has expired" },
+      });
+    }
+
+    // 3. Check max uses
+    const [usesQuery] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(referralUse)
+      .where(eq(referralUse.referralId, ref));
+
+    const uses = usesQuery?.count ?? 0;
+    if (record.maxUses && record.maxUses <= uses) {
+      return res.status(400).json({
+        error: { code: "LIMIT_EXCEEDED", message: "Referral link usage limit exceeded" },
+      });
+    }
+
+    // 4. Save the click (insert into referralClicks)
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    const ipAddressHash = crypto.createHash("sha256").update(ip).digest("hex");
+
+    await db.insert(referralClicks).values({
+      referralCode: ref,
+      ipAddressHash,
+    });
+
+    // 5. Fire-and-forget Trackdesk click trigger if the creator has trackdeskAffiliateId
+    const [referrerUser] = await db
+      .select({ trackdeskAffiliateId: user.trackdeskAffiliateId })
+      .from(user)
+      .where(eq(user.id, record.createdBy))
+      .limit(1);
+
+    if (referrerUser?.trackdeskAffiliateId) {
+      const userAgent = req.headers["user-agent"] || "";
+      const trackdeskService = new TrackdeskService();
+      trackdeskService
+        .logClick(ref, referrerUser.trackdeskAffiliateId, ip, userAgent)
+        .catch((err) => {
+          console.error("Failed to log click to Trackdesk:", err);
+        });
+    }
+
+    return res.json({
+      valid: true,
+      referralCode: ref,
+    });
+  } catch (err: any) {
+    console.error("Error in referral click endpoint:", err);
+    return res.status(500).json({
+      error: { code: "INTERNAL_ERROR", message: "Internal server error" },
+    });
+  }
 });
 
 // Validate referral code (Public endpoint)

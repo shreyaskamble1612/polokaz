@@ -1,9 +1,11 @@
 import express from "express";
 import crypto from "crypto";
-import { and, db, deal, eq, or, redemptions, user, walletItems } from "@polokaz/db";
+import { and, db, deal, eq, or, redemptions, user, walletItems, referralConversions } from "@polokaz/db";
 import { DealsService } from "../services/deals";
 import { CoupontoolsService, type CoupontoolsCoupon } from "../services/coupontools";
 import { isWebhookProcessed, createWebhookEvent, updateWebhookEventStatus, logWebhookStep } from "../services/webhooks";
+import { dispatchReward as realDispatchReward } from "../services/rewards.service";
+import { TrackdeskService } from "../services/trackdesk";
 import { useWebhookLogger } from "../logger";
 
 const router = express.Router();
@@ -275,6 +277,65 @@ async function processRedemptionEvent(event: CoupontoolsWebhookBody) {
       });
     });
   });
+
+  // Check if redeeming user was referred
+  try {
+    const [referralRecord] = await db
+      .select()
+      .from(referralConversions)
+      .where(eq(referralConversions.referredUserId, redemptionRecord.userId))
+      .limit(1);
+
+    if (referralRecord && referralRecord.referrerId) {
+      const [referrer] = await db
+        .select()
+        .from(user)
+        .where(eq(user.id, referralRecord.referrerId))
+        .limit(1);
+
+      if (referrer) {
+        // Non-blocking: dispatch reward
+        setImmediate(() => {
+          realDispatchReward({
+            type: "referral_redemption",
+            userId: referrer.id,
+            referenceId: redemptionRecord.id,
+            amount: 0.50,
+          }).catch((err) => {
+            logger.error("Referrer redemption reward dispatch failed", {
+              redemptionId: redemptionRecord.id,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          });
+        });
+
+        // Non-blocking: trackdesk logConversion
+        if (referrer.trackdeskAffiliateId) {
+          setImmediate(() => {
+            const trackdeskService = new TrackdeskService();
+            trackdeskService
+              .logConversion(
+                referrer.trackdeskAffiliateId!,
+                "referral_redemption",
+                redemptionRecord.id,
+                0.50
+              )
+              .catch((err) => {
+                logger.error("Failed to log redemption conversion to Trackdesk", {
+                  redemptionId: redemptionRecord.id,
+                  error: err instanceof Error ? err.message : String(err),
+                });
+              });
+          });
+        }
+      }
+    }
+  } catch (err) {
+    logger.error("Error processing referral conversion for redemption", {
+      redemptionId: redemptionRecord.id,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 
   return { redemptionRecord };
 }

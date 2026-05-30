@@ -1,5 +1,5 @@
 import express from "express";
-import { authHandler } from "@polokaz/auth";
+import { authHandler, onSignUpCallbacks } from "@polokaz/auth";
 import cors from "cors";
 import authenticate from "./middleware/authenticate";
 import { createLogger, useLogger } from "./logger";
@@ -26,6 +26,133 @@ import fs from "fs";
 createLogger();
 
 const logger = useLogger();
+
+import { TrackdeskService } from "./services/trackdesk";
+import { dispatchReward } from "./services/rewards.service";
+import {
+  db,
+  eq,
+  and,
+  desc,
+  referral,
+  referralUse,
+  referralClicks,
+  referralConversions,
+  user as dbUser,
+} from "@polokaz/db";
+
+// Register the signup callback
+onSignUpCallbacks.push(async (newUser, body) => {
+  const trackdeskService = new TrackdeskService();
+
+  // 1. Register new user as a Trackdesk affiliate (non-blocking, fire-and-forget)
+  setImmediate(() => {
+    trackdeskService.registerAffiliate({
+      id: newUser.id,
+      email: newUser.email,
+      name: newUser.name,
+    }).catch(err => {
+      console.error("Failed to register Trackdesk affiliate:", err);
+    });
+  });
+
+  // 2. Check if they have a referral code (from signup request body as referralCode / referralId)
+  const referralCode = body?.referralCode || body?.referralId;
+  const trackdeskClickId = body?.trackdeskClickId;
+
+  if (referralCode) {
+    try {
+      // a. Look up the referral: SELECT * FROM referral WHERE id = referralCode
+      const [record] = await db
+        .select()
+        .from(referral)
+        .where(eq(referral.id, referralCode))
+        .limit(1);
+
+      if (record) {
+        // b. Get referrer: SELECT * FROM user WHERE id = referral.createdBy
+        const [referrer] = await db
+          .select()
+          .from(dbUser)
+          .where(eq(dbUser.id, record.createdBy))
+          .limit(1);
+
+        if (referrer) {
+          // Compatibility: insert into referralUse
+          await db
+            .insert(referralUse)
+            .values({
+              referralId: record.id,
+              usedBy: newUser.id,
+              trackdeskClickId: trackdeskClickId || null,
+              trackdeskStatus: trackdeskClickId ? "pending" : null,
+            });
+
+          // c. Insert into referral_conversions: { referrerId: referrer.id, referredUserId: newUser.id }
+          const [newConversion] = await db
+            .insert(referralConversions)
+            .values({
+              referrerId: referrer.id,
+              referredUserId: newUser.id,
+              rewardGranted: true,
+            })
+            .returning();
+
+          if (newConversion) {
+            // d. Mark referral_clicks as converted: UPDATE referral_clicks SET converted=true WHERE referralCode=code (latest unconverted click)
+            const [latestClick] = await db
+              .select()
+              .from(referralClicks)
+              .where(
+                and(
+                  eq(referralClicks.referralCode, referralCode),
+                  eq(referralClicks.converted, false)
+                )
+              )
+              .orderBy(desc(referralClicks.clickedAt))
+              .limit(1);
+
+            if (latestClick) {
+              await db
+                .update(referralClicks)
+                .set({ converted: true })
+                .where(eq(referralClicks.id, latestClick.id));
+            }
+
+            // e. Non-blocking: call rewardService.dispatchReward({ type: 'referral_signup', userId: referrer.id, referenceId: newConversion.id })
+            setImmediate(() => {
+              dispatchReward({
+                type: "referral_signup",
+                userId: referrer.id,
+                referenceId: newConversion.id,
+              }).catch((err) => {
+                console.error("Failed to dispatch reward:", err);
+              });
+            });
+
+            // f. Non-blocking: if referrer.trackdeskAffiliateId exists, call trackdeskService.logConversion(referrer.trackdeskAffiliateId, 'referral_signup', newUser.id, 5.00)
+            if (referrer.trackdeskAffiliateId) {
+              setImmediate(() => {
+                trackdeskService
+                  .logConversion(
+                    referrer.trackdeskAffiliateId!,
+                    "referral_signup",
+                    newUser.id,
+                    5.00
+                  )
+                  .catch((err) => {
+                    console.error("Failed to log conversion to Trackdesk:", err);
+                  });
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error processing referral in signup callback:", e);
+    }
+  }
+});
 
 const app = express();
 

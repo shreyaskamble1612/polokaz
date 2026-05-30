@@ -10,6 +10,25 @@ vi.mock("../logger", () => ({
   }),
 }));
 
+vi.mock("@polokaz/db", () => {
+  const mockDb = {
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+    where: vi.fn().mockResolvedValue([]),
+  };
+  return {
+    db: mockDb,
+    eq: vi.fn((col, val) => ({ col, val })),
+    user: {
+      id: "user.id",
+      trackdeskAffiliateId: "user.trackdesk_affiliate_id",
+      updatedAt: "user.updated_at",
+    },
+  };
+});
+
+import { db } from "@polokaz/db";
+
 // Set env vars before importing the service
 const MOCK_API_KEY = "test-api-key-123";
 const MOCK_CAMPAIGN_ID = "test-campaign-456";
@@ -312,4 +331,195 @@ describe("TrackdeskService", () => {
       expect(result).toBeNull();
     });
   });
+
+  describe("logClick", () => {
+    const referralCode = "ref-abc-123";
+    const affiliateId = "aff-456";
+    const ip = "127.0.0.1";
+    const userAgent = "Mozilla/5.0";
+
+    it("sends correct click event request to Trackdesk", async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: "click-id-123",
+          status: "success",
+        }),
+      });
+
+      const result = await service.logClick(referralCode, affiliateId, ip, userAgent);
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `${MOCK_BASE_URL}/clicks`,
+        expect.objectContaining({
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${MOCK_API_KEY}`,
+            "X-Campaign-ID": MOCK_CAMPAIGN_ID,
+          },
+          body: JSON.stringify({
+            affiliate_id: affiliateId,
+            campaign_id: MOCK_CAMPAIGN_ID,
+            ip_address: ip,
+            user_agent: userAgent,
+            referral_code: referralCode,
+          }),
+        }),
+      );
+
+      expect(result).toEqual({
+        id: "click-id-123",
+        status: "success",
+      });
+    });
+
+    it("returns null on error and does not throw", async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        text: async () => "Bad request",
+      });
+
+      const result = await service.logClick(referralCode, affiliateId, ip, userAgent);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("registerAffiliate", () => {
+    const userPayload = {
+      id: "user-123",
+      email: "test@example.com",
+      name: "Test User",
+    };
+
+    it("registers affiliate and returns affiliate ID on success", async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: "td-aff-001",
+        }),
+      });
+
+      const mockSet = vi.fn().mockReturnThis();
+      const mockWhere = vi.fn().mockResolvedValue([]);
+      vi.mocked(db.update).mockReturnValue({
+        set: mockSet,
+      } as any);
+      mockSet.mockReturnValue({
+        where: mockWhere,
+      } as any);
+
+      const result = await service.registerAffiliate(userPayload);
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `${MOCK_BASE_URL}/affiliates`,
+        expect.objectContaining({
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${MOCK_API_KEY}`,
+            "X-Campaign-ID": MOCK_CAMPAIGN_ID,
+          },
+          body: JSON.stringify({
+            email: userPayload.email,
+            name: userPayload.name,
+            externalId: userPayload.id,
+          }),
+        }),
+      );
+
+      expect(db.update).toHaveBeenCalled();
+      expect(mockSet).toHaveBeenCalledWith(
+        expect.objectContaining({
+          trackdeskAffiliateId: "td-aff-001",
+        }),
+      );
+      expect(result).toBe("td-aff-001");
+    });
+
+    it("returns null on API failure", async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        text: async () => "Bad request",
+      });
+
+      const result = await service.registerAffiliate(userPayload);
+
+      expect(result).toBeNull();
+    });
+
+    it("returns null on network/execution error", async () => {
+      fetchSpy.mockRejectedValueOnce(new Error("Connection error"));
+
+      const result = await service.registerAffiliate(userPayload);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("logConversion", () => {
+    const affiliateId = "aff-123";
+    const conversionType = "referral_signup";
+    const orderId = "order-456";
+    const value = 5.00;
+
+    it("logs conversion successfully", async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: "td-conv-001",
+        }),
+      });
+
+      await service.logConversion(affiliateId, conversionType, orderId, value);
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `${MOCK_BASE_URL}/conversions`,
+        expect.objectContaining({
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${MOCK_API_KEY}`,
+            "X-Campaign-ID": MOCK_CAMPAIGN_ID,
+          },
+          body: JSON.stringify({
+            affiliateId,
+            affiliate_id: affiliateId,
+            campaignId: MOCK_CAMPAIGN_ID,
+            campaign_id: MOCK_CAMPAIGN_ID,
+            conversionType,
+            conversion_type: conversionType,
+            orderId,
+            order_id: orderId,
+            commissionValue: value,
+            commission_value: value,
+          }),
+        }),
+      );
+    });
+
+    it("gracefully logs error on failure", async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => "Internal server error",
+      });
+
+      await expect(
+        service.logConversion(affiliateId, conversionType, orderId, value)
+      ).resolves.not.toThrow();
+    });
+
+    it("gracefully catches network errors", async () => {
+      fetchSpy.mockRejectedValueOnce(new Error("Network fail"));
+
+      await expect(
+        service.logConversion(affiliateId, conversionType, orderId, value)
+      ).resolves.not.toThrow();
+    });
+  });
 });
+

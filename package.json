@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@polokaz/db": "workspace:*",
+    "@rolldown/binding-win32-x64-msvc": "^1.0.3",
     "@types/node": "^24.10.1",
     "bcryptjs": "^3.0.3",
     "better-auth": "^1.4.4",

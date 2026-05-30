@@ -9,7 +9,14 @@ import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@polokaz/db";
 import "dotenv/config";
-import { consumeReferral, getReferral } from "./utils";
+import { getReferral } from "./utils";
+
+export type SignUpCallback = (
+  newUser: { id: string; email: string; name: string },
+  body: { referralCode?: string; referralId?: string; trackdeskClickId?: string; [key: string]: any }
+) => void | Promise<void>;
+
+export const onSignUpCallbacks: SignUpCallback[] = [];
 
 const instance = betterAuth({
   database: drizzleAdapter(db, {
@@ -27,24 +34,24 @@ const instance = betterAuth({
         return;
       }
 
-      const { referralId, trackdeskClickId } = ctx.body as {
-        referralId?: string;
-        trackdeskClickId?: string;
-        status: number;
-      };
+      const newUser = ctx.context.newSession?.user;
+      if (!newUser) return;
 
-      // If no referral was provided, continue normally (referral is optional)
-      if (!referralId) return;
-      if (!ctx.context.newSession?.user.id) return;
-
-      try {
-        await consumeReferral(
-          referralId,
-          ctx.context.newSession.user.id,
-          trackdeskClickId,
-        );
-      } catch (e) {
-        console.warn(`There was an error consuming the referral code: ${e}`);
+      // Execute registered callbacks (non-blocking)
+      for (const cb of onSignUpCallbacks) {
+        try {
+          const runCb = async () => {
+            await cb(
+              { id: newUser.id, email: newUser.email, name: newUser.name || "" },
+              ctx.body as any
+            );
+          };
+          runCb().catch((e: any) => {
+            console.error("Error in onSignUpCallback:", e);
+          });
+        } catch (e) {
+          console.error("Error executing signup callback:", e);
+        }
       }
 
       return;

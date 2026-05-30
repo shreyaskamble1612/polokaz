@@ -38,6 +38,14 @@ const loginSchema = z
     path: ["confirmPassword"],
   });
 
+function getCookie(name: string): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift();
+  return undefined;
+}
+
 export function SignUpForm({
   className,
   ...props
@@ -66,6 +74,7 @@ export function SignUpForm({
   const trackdeskClickId = searchParams.get("tdclid"); // Trackdesk click ID
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
+    const finalReferralId = referralId || getCookie("polokaz_ref");
     const signUpPayload = {
       trackdeskClickId: trackdeskClickId || undefined,
       name: values.name,
@@ -73,7 +82,7 @@ export function SignUpForm({
       password: values.password,
       birthdate: values.dateOfBirth,
       countryName: values.country,
-      ...(referralId ? { referralId } : {}),
+      ...(finalReferralId ? { referralId: finalReferralId } : {}),
     };
 
     // trackdeskClickId is transient signup metadata consumed by auth hooks,

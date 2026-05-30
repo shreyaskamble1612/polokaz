@@ -1,7 +1,9 @@
 import express from "express";
-import { db, eq, user } from "@polokaz/db";
+import { db, eq, user, referralConversions } from "@polokaz/db";
 import { useWebhookLogger } from "../logger";
 import { PRICE_IDS, stripe } from "../services/stripe.service";
+import { dispatchReward } from "../services/rewards.service";
+import { TrackdeskService } from "../services/trackdesk";
 
 const router = express.Router();
 const logger = useWebhookLogger();
@@ -72,6 +74,77 @@ router.post("/", (req: any, res) => {
             .update(user)
             .set({ tier, stripeCustomerId, stripeSubscriptionId, hasSelectedPlan: true })
             .where(eq(user.id, userId));
+
+          // 1. Check if this user was referred: SELECT * FROM referral_conversions WHERE referredUserId = userId
+          try {
+            const [referralRecord] = await db
+              .select()
+              .from(referralConversions)
+              .where(eq(referralConversions.referredUserId, userId))
+              .limit(1);
+
+            // 2. If a referral record exists:
+            if (referralRecord && referralRecord.referrerId) {
+              // a. Get the referrer: SELECT * FROM user WHERE id = referral_conversions.referrerId
+              const [referrer] = await db
+                .select()
+                .from(user)
+                .where(eq(user.id, referralRecord.referrerId))
+                .limit(1);
+
+              if (referrer) {
+                // b. Calculate commission value based on new tier: basic = ~$1.00, gold = ~$2.50, merchant = ~$5.00
+                let commissionValue = 0.00;
+                if (tier === "basic") commissionValue = 1.00;
+                else if (tier === "gold") commissionValue = 2.50;
+                else if (tier === "merchant") commissionValue = 5.00;
+
+                if (commissionValue > 0) {
+                  // c. Non-blocking: call dispatchReward
+                  setImmediate(() => {
+                    dispatchReward({
+                      type: "referral_subscription",
+                      userId: referrer.id,
+                      referenceId: userId,
+                      amount: commissionValue,
+                    }).catch((err) => {
+                      logger.error("Failed to dispatch subscription reward", {
+                        userId,
+                        referrerId: referrer.id,
+                        error: err instanceof Error ? err.message : String(err),
+                      });
+                    });
+                  });
+
+                  // d. Non-blocking: if referrer.trackdeskAffiliateId: call trackdeskService.logConversion
+                  if (referrer.trackdeskAffiliateId) {
+                    setImmediate(() => {
+                      const trackdeskService = new TrackdeskService();
+                      trackdeskService
+                        .logConversion(
+                          referrer.trackdeskAffiliateId!,
+                          "referral_subscription",
+                          userId,
+                          commissionValue
+                        )
+                        .catch((err) => {
+                          logger.error("Failed to log subscription conversion to Trackdesk", {
+                            userId,
+                            referrerId: referrer.id,
+                            error: err instanceof Error ? err.message : String(err),
+                          });
+                        });
+                    });
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            logger.error("Error processing referral conversion for subscription", {
+              userId,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
 
           break;
         }
