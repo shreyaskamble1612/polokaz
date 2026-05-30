@@ -1,19 +1,9 @@
 import type { Deal as BrowseDeal } from "@/lib/api/deals";
 import type { Deal, DealCategory, DealType } from "@/components/deals/types";
+import { formatCategoryName } from "@/lib/utils";
 
 function mapCategory(category: string | null): DealCategory {
-  switch (category) {
-    case "food":
-      return "Food & Dining";
-    case "retail":
-      return "Retail";
-    case "entertainment":
-      return "Entertainment";
-    case "travel":
-      return "Travel";
-    default:
-      return "Retail";
-  }
+  return formatCategoryName(category);
 }
 
 function mapDealType(dealType: string): DealType {

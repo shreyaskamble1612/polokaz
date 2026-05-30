@@ -82,6 +82,7 @@ export async function createMerchantDeal(input: {
   dealType: "coupon" | "voucher" | "loyalty";
   discountValue: string;
   expiresAt: string;
+  imageUrl?: string;
 }) {
   const response = await fetch(`${API_URL}/api/merchants/deals`, {
     method: "POST",

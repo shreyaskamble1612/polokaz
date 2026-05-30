@@ -32,6 +32,7 @@ const createDealSchema = z.object({
   dealType: z.enum(["coupon", "voucher", "loyalty"]),
   discountValue: z.union([z.string().min(1), z.number().positive()]),
   expiresAt: z.string().datetime().or(z.string().min(1)).optional().nullable(),
+  imageUrl: z.string().url().or(z.string().trim().length(0)).optional().nullable(),
 });
 
 async function getMerchantProfileForUser(userId: string) {
@@ -181,6 +182,9 @@ export async function createMerchantDeal(req: Request, res: Response) {
         category: parsed.data.category,
         dealType: parsed.data.dealType,
         discountValue: String(parsed.data.discountValue),
+        imageUrl: parsed.data.imageUrl || null,
+        thumbnailUrl: parsed.data.imageUrl || null,
+        merchantLogo: parsed.data.imageUrl || null,
         status: "pending_moderation",
         expiresAt,
         syncedAt: new Date(),
@@ -448,5 +452,3 @@ export async function listActiveMerchants(req: Request, res: Response) {
     return res.status(500).json({ error: "INTERNAL_ERROR" });
   }
 }
-
-

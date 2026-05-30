@@ -29,6 +29,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { formatCategoryName } from "@/lib/utils";
 
 type UserProfile = {
   name: string;
@@ -64,15 +65,7 @@ function formatDate(dateString: string | null) {
 }
 
 function mapDealCategory(category: string | null) {
-  const labels: Record<string, string> = {
-    food: "Food & Dining",
-    health: "Health & Wellness",
-    beauty: "Beauty & Fitness",
-    retail: "Retail & Shopping",
-  };
-
-  if (!category) return "Retail & Shopping";
-  return labels[category] ?? category;
+  return formatCategoryName(category);
 }
 
 const CATEGORIES_THEMES = [
@@ -113,9 +106,62 @@ const CATEGORIES_THEMES = [
   }
 ];
 
+const FALLBACK_THEME = {
+  id: "general",
+  title: "General",
+  color: "bg-[#64748b]",
+  borderColor: "border-[#e2e8f0]",
+  buttonColor: "bg-[#64748b] hover:bg-[#475569]"
+};
+
 function getCategoryTheme(category: string | null) {
-  const matched = CATEGORIES_THEMES.find(c => c.id === category);
-  return matched || CATEGORIES_THEMES[0];
+  if (!category) return FALLBACK_THEME;
+  const normalized = category.trim().toLowerCase();
+
+  if (normalized.includes("food") || normalized.includes("dining") || normalized.includes("restaurant") || normalized.includes("drink")) {
+    return CATEGORIES_THEMES.find(c => c.id === "food") || FALLBACK_THEME;
+  }
+  if (normalized.includes("health") || normalized.includes("wellness") || normalized.includes("spa") || normalized.includes("fitness")) {
+    return CATEGORIES_THEMES.find(c => c.id === "health") || FALLBACK_THEME;
+  }
+  if (normalized.includes("beauty") || normalized.includes("personal care") || normalized.includes("salon")) {
+    return CATEGORIES_THEMES.find(c => c.id === "beauty") || FALLBACK_THEME;
+  }
+  if (normalized.includes("retail") || normalized.includes("shop") || normalized.includes("store") || normalized.includes("boutique")) {
+    return CATEGORIES_THEMES.find(c => c.id === "retail") || FALLBACK_THEME;
+  }
+  if (normalized.includes("education") || normalized.includes("class") || normalized.includes("learn")) {
+    return CATEGORIES_THEMES.find(c => c.id === "education") || FALLBACK_THEME;
+  }
+
+  const matched = CATEGORIES_THEMES.find(c => c.id === normalized);
+  return matched || FALLBACK_THEME;
+}
+
+function matchesCategoryHelper(dealCategory: string | null, selected: string | null): boolean {
+  if (!selected || selected === "all") return true;
+  if (!dealCategory) return false;
+  
+  const dealLower = dealCategory.toLowerCase();
+  const selectedLower = selected.toLowerCase();
+
+  if (selectedLower === "food") {
+    return dealLower.includes("food") || dealLower.includes("dining") || dealLower.includes("restaurant") || dealLower.includes("drink") || dealLower.includes("beverage");
+  }
+  if (selectedLower === "health") {
+    return dealLower.includes("health") || dealLower.includes("wellness") || dealLower.includes("spa") || dealLower.includes("fitness") || dealLower.includes("gym") || dealLower.includes("yoga");
+  }
+  if (selectedLower === "beauty") {
+    return dealLower.includes("beauty") || dealLower.includes("salon") || dealLower.includes("hair") || dealLower.includes("personal care") || dealLower.includes("cosmetics");
+  }
+  if (selectedLower === "retail") {
+    return dealLower.includes("retail") || dealLower.includes("shopping") || dealLower.includes("shop") || dealLower.includes("store") || dealLower.includes("boutique") || dealLower.includes("goods") || dealLower.includes("hotels") || dealLower.includes("trips") || dealLower.includes("travel");
+  }
+  if (selectedLower === "education") {
+    return dealLower.includes("education") || dealLower.includes("class") || dealLower.includes("learn") || dealLower.includes("school");
+  }
+
+  return dealLower === selectedLower || dealLower.includes(selectedLower);
 }
 
 
@@ -250,8 +296,7 @@ export default function Page() {
         deal.merchantName.toLowerCase().includes(normalizedSearch) ||
         deal.description?.toLowerCase().includes(normalizedSearch);
 
-      const matchesCategory =
-        selectedCategory === "all" || deal.category === selectedCategory;
+      const matchesCategory = matchesCategoryHelper(deal.category, selectedCategory);
 
       const merchantObj = merchantsList.find((m) => m.id === deal.merchantId);
       const mAddress = merchantObj?.companyAddress || "Las Vegas, Nevada";
@@ -272,8 +317,7 @@ export default function Page() {
         deal.merchantName.toLowerCase().includes(normalizedSearch) ||
         deal.description?.toLowerCase().includes(normalizedSearch);
 
-      const matchesCategory =
-        selectedCategory === "all" || deal.category === selectedCategory;
+      const matchesCategory = matchesCategoryHelper(deal.category, selectedCategory);
 
       const merchantObj = merchantsList.find((m) => m.id === deal.merchantId);
       const mAddress = merchantObj?.companyAddress || "Las Vegas, Nevada";

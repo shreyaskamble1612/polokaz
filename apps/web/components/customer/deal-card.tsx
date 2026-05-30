@@ -3,6 +3,7 @@
 import { Deal } from "@/lib/api/deals";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { formatCategoryName } from "@/lib/utils";
 
 interface DealCardProps {
   deal: Deal;
@@ -29,8 +30,7 @@ export function DealCard({ deal, onGetNow }: DealCardProps) {
   };
 
   const getCategoryLabel = (category: string | null) => {
-    if (!category) return "General";
-    return category.charAt(0).toUpperCase() + category.slice(1);
+    return formatCategoryName(category);
   };
 
   return (

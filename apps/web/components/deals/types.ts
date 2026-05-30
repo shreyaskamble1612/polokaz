@@ -1,10 +1,6 @@
 export type DealType = "coupon" | "voucher" | "loyalty";
 
-export type DealCategory =
-  | "Food & Dining"
-  | "Retail"
-  | "Entertainment"
-  | "Travel";
+export type DealCategory = string;
 
 export type Deal = {
   id: string;

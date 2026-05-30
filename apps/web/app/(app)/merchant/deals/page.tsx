@@ -43,6 +43,7 @@ const dealSchema = z.object({
   dealType: z.enum(["coupon", "voucher", "loyalty"]),
   discountValue: z.coerce.number().positive("Enter a discount value"),
   expiryDate: z.string().min(1, "Choose an expiry date"),
+  imageUrl: z.string().url("Enter a valid image URL").or(z.string().trim().length(0)).optional().nullable(),
 });
 
 type DealFormValues = z.infer<typeof dealSchema>;
@@ -104,6 +105,7 @@ export default function Page() {
       dealType: "coupon",
       discountValue: 0,
       expiryDate: "",
+      imageUrl: "",
     },
   });
 
@@ -176,6 +178,7 @@ export default function Page() {
       dealType: "coupon",
       discountValue: 0,
       expiryDate: "",
+      imageUrl: "",
     });
     setDialogOpen(true);
   };
@@ -191,6 +194,7 @@ export default function Page() {
         dealType: values.dealType,
         discountValue: String(values.discountValue),
         expiresAt: new Date(`${values.expiryDate}T00:00:00.000Z`).toISOString(),
+        imageUrl: values.imageUrl || undefined,
       });
 
       setDeals((current) => [response.deal, ...current]);
@@ -430,6 +434,12 @@ export default function Page() {
                 <Label htmlFor="expiryDate">Expiry Date</Label>
                 <Input id="expiryDate" type="date" {...form.register("expiryDate")} />
                 <p className="text-xs text-rose-600">{form.formState.errors.expiryDate?.message}</p>
+              </div>
+
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="imageUrl">Product Image URL (Optional)</Label>
+                <Input id="imageUrl" {...form.register("imageUrl")} placeholder="https://images.unsplash.com/photo-..." />
+                <p className="text-xs text-rose-600">{form.formState.errors.imageUrl?.message}</p>
               </div>
             </div>
 

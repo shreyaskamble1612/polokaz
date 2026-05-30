@@ -1,23 +1,10 @@
 import type { Deal as UiDeal, DealCategory, DealType } from "@/components/deals/types";
+import { formatCategoryName } from "@/lib/utils";
 import type { ApiDeal, DealDetailResponse, DealsByCategoryResponse } from "@/lib/api/deals";
 import type { WalletApiItem } from "@/lib/api/wallet";
 
 function mapCategory(category: string | null): DealCategory {
-  switch ((category ?? "").trim().toLowerCase()) {
-    case "food":
-    case "food & dining":
-    case "dining":
-    case "restaurant":
-    case "restaurants":
-      return "Food & Dining";
-    case "entertainment":
-      return "Entertainment";
-    case "travel":
-      return "Travel";
-    case "retail":
-    default:
-      return "Retail";
-  }
+  return formatCategoryName(category);
 }
 
 function mapDiscount(deal: Pick<ApiDeal, "discountValue" | "dealType">) {

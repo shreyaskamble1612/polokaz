@@ -27,6 +27,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { formatCategoryName } from "@/lib/utils";
 
 type UserProfile = {
   name: string;
@@ -124,16 +125,33 @@ function formatDate(dateString: string | null) {
 }
 
 function mapDealCategory(category: string | null) {
-  const labels: Record<string, string> = {
-    food: "Food & Drinks",
-    health: "Wellness",
-    beauty: "Beauty & Fitness",
-    retail: "Hotels & Trips",
-    education: "Education",
-  };
+  return formatCategoryName(category);
+}
 
-  if (!category) return "General";
-  return labels[category] ?? category;
+function matchesCategoryHelper(dealCategory: string | null, selected: string | null): boolean {
+  if (!selected || selected === "all") return true;
+  if (!dealCategory) return false;
+  
+  const dealLower = dealCategory.toLowerCase();
+  const selectedLower = selected.toLowerCase();
+
+  if (selectedLower === "food") {
+    return dealLower.includes("food") || dealLower.includes("dining") || dealLower.includes("restaurant") || dealLower.includes("drink") || dealLower.includes("beverage");
+  }
+  if (selectedLower === "health") {
+    return dealLower.includes("health") || dealLower.includes("wellness") || dealLower.includes("spa") || dealLower.includes("fitness") || dealLower.includes("gym") || dealLower.includes("yoga");
+  }
+  if (selectedLower === "beauty") {
+    return dealLower.includes("beauty") || dealLower.includes("salon") || dealLower.includes("hair") || dealLower.includes("personal care") || dealLower.includes("cosmetics");
+  }
+  if (selectedLower === "retail") {
+    return dealLower.includes("retail") || dealLower.includes("shopping") || dealLower.includes("shop") || dealLower.includes("store") || dealLower.includes("boutique") || dealLower.includes("goods") || dealLower.includes("hotels") || dealLower.includes("trips") || dealLower.includes("travel");
+  }
+  if (selectedLower === "education") {
+    return dealLower.includes("education") || dealLower.includes("class") || dealLower.includes("learn") || dealLower.includes("school");
+  }
+
+  return dealLower === selectedLower || dealLower.includes(selectedLower);
 }
 
 function toDashboardCard(deal: Deal, location: string): DashboardCard {
@@ -235,8 +253,7 @@ export default function Page() {
           deal.merchantName.toLowerCase().includes(normalizedSearch) ||
           deal.description?.toLowerCase().includes(normalizedSearch);
 
-        const matchesCategory =
-          selectedCategory === "all" || deal.category === selectedCategory;
+        const matchesCategory = matchesCategoryHelper(deal.category, selectedCategory);
 
         return matchesSearch && matchesCategory && deal.dealType === "coupon";
       })
@@ -257,8 +274,7 @@ export default function Page() {
           deal.merchantName.toLowerCase().includes(normalizedSearch) ||
           deal.description?.toLowerCase().includes(normalizedSearch);
 
-        const matchesCategory =
-          selectedCategory === "all" || deal.category === selectedCategory;
+        const matchesCategory = matchesCategoryHelper(deal.category, selectedCategory);
 
         return matchesSearch && matchesCategory && (deal.dealType === "voucher" || deal.dealType === "loyalty");
       })
