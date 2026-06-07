@@ -7,6 +7,7 @@ import {
   ilike,
   or,
   sql,
+  merchants,
 } from "@polokaz/db";
 import { syncDeals } from "./coupontools.service";
 import type { CoupontoolsDealPayload } from "./coupontools";
@@ -47,6 +48,19 @@ export interface ListDealsResult {
     total: number;
     pages: number;
   };
+}
+
+function parseDecimal(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  let str = String(value).trim();
+  str = str.replace(/^[$\u00A2-\u00A5\u20AC\u20A0-\u20CF]/, "");
+  str = str.replace(/%$/, "");
+  str = str.trim();
+  const parsed = parseFloat(str);
+  if (/^[+-]?\d+(?:\.\d+)?$/.test(str)) {
+    return Number.isNaN(parsed) ? null : parsed.toFixed(2);
+  }
+  return null;
 }
 
 export class DealsService {
@@ -132,13 +146,39 @@ export class DealsService {
     const endDate = this.parseDate(payload.endDate) ?? expiresAt;
     const displayId = payload.coupontoolsId;
 
+    const discountRaw = payload.discount ?? payload.discountValue;
+    const parsedDiscountValue = parseDecimal(discountRaw);
+
+    let resolvedMerchantId: string | null | undefined = undefined;
+    if (payload.merchantId !== undefined) {
+      if (payload.merchantId === null) {
+        resolvedMerchantId = null;
+      } else {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.merchantId);
+        const condition = isUuid
+          ? or(
+              eq(merchants.id, payload.merchantId),
+              eq(merchants.coupontoolsMerchantId, payload.merchantId)
+            )
+          : eq(merchants.coupontoolsMerchantId, payload.merchantId);
+
+        const [matchedMerchant] = await db
+          .select({ id: merchants.id })
+          .from(merchants)
+          .where(condition)
+          .limit(1);
+
+        resolvedMerchantId = matchedMerchant ? matchedMerchant.id : null;
+      }
+    }
+
     await db
       .insert(deal)
       .values({
         coupontoolsId: payload.coupontoolsId,
         title: payload.title,
         description: payload.description ?? null,
-        merchantId: payload.merchantId ?? null,
+        merchantId: resolvedMerchantId ?? null,
         merchantName: payload.merchantName,
         category: payload.category ?? "Other",
         dealType: payload.dealType,
@@ -149,7 +189,8 @@ export class DealsService {
         coupontoolsCouponId: displayId,
         startDate,
         endDate,
-        discountValue: payload.discountValue ?? null,
+        discount: discountRaw ?? null,
+        discountValue: parsedDiscountValue ?? null,
         merchantLogo: payload.merchantLogo ?? null,
         merchantWebsite: payload.merchantWebsite ?? null,
         images: payload.images ?? null,
@@ -165,7 +206,7 @@ export class DealsService {
         set: {
           title: payload.title,
           description: payload.description ?? null,
-          merchantId: payload.merchantId ?? null,
+          merchantId: resolvedMerchantId,
           merchantName: payload.merchantName,
           category: payload.category ?? "Other",
           dealType: payload.dealType,
@@ -176,7 +217,8 @@ export class DealsService {
           coupontoolsCouponId: displayId,
           startDate,
           endDate,
-          discountValue: payload.discountValue ?? null,
+          discount: discountRaw ?? null,
+          discountValue: parsedDiscountValue ?? null,
           merchantLogo: payload.merchantLogo ?? null,
           merchantWebsite: payload.merchantWebsite ?? null,
           images: payload.images ?? null,

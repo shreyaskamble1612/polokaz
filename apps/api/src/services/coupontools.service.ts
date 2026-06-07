@@ -1,4 +1,4 @@
-import { and, db, deal, eq, inArray, notInArray } from "@polokaz/db";
+import { and, db, deal, eq, inArray, notInArray, merchants } from "@polokaz/db";
 import { useCoupontoolsLogger } from "../logger";
 
 const logger = useCoupontoolsLogger();
@@ -41,6 +41,7 @@ type LocalDealPayload = {
   coupontoolsCouponId: string | null;
   startDate: Date | null;
   endDate: Date | null;
+  discount: string | null;
   discountValue: string | null;
   merchantLogo: string | null;
   merchantWebsite: string | null;
@@ -96,6 +97,19 @@ const DEAL_TYPE_MAP: Record<string, LocalDealPayload["dealType"]> = {
 };
 
 let activeSyncPromise: Promise<SyncResult> | null = null;
+
+function parseDecimal(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  let str = String(value).trim();
+  str = str.replace(/^[$\u00A2-\u00A5\u20AC\u20A0-\u20CF]/, "");
+  str = str.replace(/%$/, "");
+  str = str.trim();
+  const parsed = parseFloat(str);
+  if (/^[+-]?\d+(?:\.\d+)?$/.test(str)) {
+    return Number.isNaN(parsed) ? null : parsed.toFixed(2);
+  }
+  return null;
+}
 
 function parseDate(value: unknown): Date | null {
   if (typeof value !== "string" || !value.trim()) return null;
@@ -210,6 +224,11 @@ export class CoupontoolsService {
         campaign_id?: string | number;
         coupon_id?: string | number;
         code?: string | number;
+        coupon_info?: {
+          ID?: string | number;
+          id?: string | number;
+          code?: string | number;
+        };
         data?: {
           id?: string | number;
           campaign_id?: string | number;
@@ -219,19 +238,16 @@ export class CoupontoolsService {
       }
     >(
       [
-        process.env.COUPONTOOLS_CREATE_CAMPAIGN_PATH?.trim(),
-        "/campaign/create",
         "/coupon/create",
       ],
       {
+        template: process.env.COUPONTOOLS_DEFAULT_TEMPLATE_ID || "1191621",
+        name: payload.title,
         title: payload.title,
-        description: payload.description,
-        category: payload.category,
-        type: payload.dealType === "loyalty" ? "loyalty_card" : payload.dealType,
-        discount_value: payload.discountValue,
-        expiry_date: payload.expiresAt,
-        merchant_id: payload.merchantExternalId,
-        subaccount: payload.merchantExternalId,
+        subtitle: payload.description || undefined,
+        expiry_date: payload.expiresAt
+          ? payload.expiresAt.replace("T", " ").substring(0, 16)
+          : undefined,
       },
     );
 
@@ -240,6 +256,8 @@ export class CoupontoolsService {
       response?.coupon_id,
       response?.id,
       response?.code,
+      response?.coupon_info?.ID,
+      response?.coupon_info?.id,
       response?.data?.campaign_id,
       response?.data?.coupon_id,
       response?.data?.id,
@@ -326,7 +344,8 @@ export class CoupontoolsService {
       endDate: parseDate(
         pickString(campaign.expirydate, campaign.expiry_date, campaign.expiration_date, campaign.end_date),
       ),
-      discountValue: pickString(campaign.coupon_value, campaign.discount_value),
+      discount: pickString(campaign.coupon_value, campaign.discount_value),
+      discountValue: parseDecimal(pickString(campaign.coupon_value, campaign.discount_value)),
       merchantLogo: pickString(campaign.logo_url, campaign.merchant_logo),
       merchantWebsite: pickString(campaign.website, campaign.merchant_website, campaign.poweredbylink),
       images: image ? [image] : null,
@@ -360,6 +379,17 @@ export class CoupontoolsService {
       .map((campaign) => this.mapCampaignToLocalDeal(campaign))
       .filter((dealPayload): dealPayload is LocalDealPayload => dealPayload !== null);
 
+    // Fetch all merchants to resolve CouponTools subaccount IDs to local merchant UUIDs
+    const merchantsList = await db
+      .select({ id: merchants.id, coupontoolsMerchantId: merchants.coupontoolsMerchantId })
+      .from(merchants);
+    const merchantMap = new Map<string, string>();
+    for (const m of merchantsList) {
+      if (m.coupontoolsMerchantId) {
+        merchantMap.set(m.coupontoolsMerchantId, m.id);
+      }
+    }
+
     const ids = mappedDeals.map((item) => item.coupontoolsId);
     const existingRows = ids.length
       ? await db
@@ -373,6 +403,10 @@ export class CoupontoolsService {
     let updated = 0;
 
     for (const payload of mappedDeals) {
+      // Resolve the CouponTools merchant ID to the local merchant UUID
+      if (payload.merchantId) {
+        payload.merchantId = merchantMap.get(payload.merchantId) || null;
+      }
       const existed = existingIds.has(payload.coupontoolsId);
 
       await db
@@ -394,6 +428,7 @@ export class CoupontoolsService {
             coupontoolsCouponId: payload.coupontoolsCouponId,
             startDate: payload.startDate,
             endDate: payload.endDate,
+            discount: payload.discount,
             discountValue: payload.discountValue,
             merchantLogo: payload.merchantLogo,
             merchantWebsite: payload.merchantWebsite,
@@ -478,13 +513,10 @@ export class CoupontoolsService {
   private buildHeaders() {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${this.apiKey}`,
-      "x-api-key": this.apiKey,
       "X-Client-Id": this.apiKey,
     };
 
     if (this.apiSecret) {
-      headers["x-api-secret"] = this.apiSecret;
       headers["X-Client-Secret"] = this.apiSecret;
     }
 

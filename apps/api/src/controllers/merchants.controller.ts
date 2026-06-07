@@ -121,6 +121,19 @@ export async function getMerchantProfile(req: Request, res: Response) {
   return res.json({ merchant });
 }
 
+function parseDecimal(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  let str = String(value).trim();
+  str = str.replace(/^[$\u00A2-\u00A5\u20AC\u20A0-\u20CF]/, "");
+  str = str.replace(/%$/, "");
+  str = str.trim();
+  const parsed = parseFloat(str);
+  if (/^[+-]?\d+(?:\.\d+)?$/.test(str)) {
+    return Number.isNaN(parsed) ? null : parsed.toFixed(2);
+  }
+  return null;
+}
+
 export async function createMerchantDeal(req: Request, res: Response) {
   const session = requireSession(req, res);
   if (!session) return;
@@ -181,7 +194,8 @@ export async function createMerchantDeal(req: Request, res: Response) {
         merchantWebsite: merchantProfile.website,
         category: parsed.data.category,
         dealType: parsed.data.dealType,
-        discountValue: String(parsed.data.discountValue),
+        discount: String(parsed.data.discountValue),
+        discountValue: parseDecimal(parsed.data.discountValue),
         imageUrl: parsed.data.imageUrl || null,
         thumbnailUrl: parsed.data.imageUrl || null,
         merchantLogo: parsed.data.imageUrl || null,

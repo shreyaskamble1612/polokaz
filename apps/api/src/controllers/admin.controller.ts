@@ -4,6 +4,7 @@ import { z } from "zod";
 import { useLogger } from "../logger";
 import { requireRole } from "../lib/authorization";
 import { CoupontoolsService, syncDeals } from "../services/coupontools.service";
+import { stripe } from "../services/stripe.service";
 
 const logger = useLogger(["api", "admin"]);
 const rejectDealSchema = z.object({
@@ -324,6 +325,7 @@ export async function listUsersForAdmin(req: Request, res: Response) {
         role: user.role,
         tier: user.tier,
         banned: user.banned,
+        stripeSubscriptionId: user.stripeSubscriptionId,
         createdAt: user.createdAt,
         referralCount: sql<number>`coalesce(${referralSubquery.referralCount}, 0)::int`,
       })
@@ -363,6 +365,58 @@ export async function updateUserTier(req: Request, res: Response) {
     return res.status(400).json({ error: "Invalid tier specified" });
   }
 
+  // Retrieve existing user to check subscription details
+  const [existingUser] = await db
+    .select({
+      id: user.id,
+      tier: user.tier,
+      stripeSubscriptionId: user.stripeSubscriptionId,
+    })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+
+  if (!existingUser) {
+    return res.status(404).json({ error: "User not found" });
+  }
+
+  // Prevent admin from changing tier if user has an active paid subscription
+  if (existingUser.stripeSubscriptionId) {
+    try {
+      const sub = await stripe.subscriptions.retrieve(existingUser.stripeSubscriptionId);
+
+      // If the Stripe subscription has ended, perform self-healing: set DB tier to free and clear subscription ID
+      if (sub && (sub.status === "canceled" || sub.status === "incomplete_expired")) {
+        await db
+          .update(user)
+          .set({ tier: "free", stripeSubscriptionId: null })
+          .where(eq(user.id, userId));
+
+        existingUser.tier = "free";
+        existingUser.stripeSubscriptionId = null;
+      } else if (sub) {
+        // Subscription is active/trialing/past_due/unpaid (not ended yet)
+        return res.status(400).json({
+          error: "FORBIDDEN_TIER_CHANGE",
+          message: "Cannot change tier for a user with an active paid Stripe subscription.",
+        });
+      }
+    } catch (stripeError: any) {
+      logger.error("Failed to retrieve Stripe subscription during tier update check", {
+        userId,
+        stripeSubscriptionId: existingUser.stripeSubscriptionId,
+        error: stripeError?.message || String(stripeError),
+      });
+      // Fallback: block manual updates if subscription ID is present and user is on a paid tier
+      if (existingUser.tier !== "free") {
+        return res.status(400).json({
+          error: "FORBIDDEN_TIER_CHANGE",
+          message: "Cannot change tier for a user with an active paid Stripe subscription (Stripe validation fallback).",
+        });
+      }
+    }
+  }
+
   const [updatedUser] = await db
     .update(user)
     .set({
@@ -371,10 +425,6 @@ export async function updateUserTier(req: Request, res: Response) {
     })
     .where(eq(user.id, userId))
     .returning();
-
-  if (!updatedUser) {
-    return res.status(404).json({ error: "User not found" });
-  }
 
   return res.json({ user: updatedUser });
 }

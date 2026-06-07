@@ -32,6 +32,7 @@ type AdminUser = {
   email: string;
   role: UserRole;
   tier: UserTier;
+  stripeSubscriptionId?: string | null;
   createdAt: string;
   banned: boolean;
   referralCount: number;
@@ -287,7 +288,14 @@ export default function Page() {
                     <TableCell className="font-medium text-slate-950">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{roleBadge(user.role)}</TableCell>
-                    <TableCell>{tierBadge(user.tier)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        {tierBadge(user.tier)}
+                        {user.stripeSubscriptionId && (
+                          <Badge variant="outline" className="rounded-full bg-indigo-50 text-indigo-700 border-indigo-200/50 text-[10px] px-1.5 py-0">Stripe</Badge>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{new Date(user.createdAt).toLocaleDateString("en-US")}</TableCell>
                     <TableCell>{user.referralCount || 0}</TableCell>
                     <TableCell>{statusBadge(user.banned)}</TableCell>
@@ -298,6 +306,7 @@ export default function Page() {
                         </Button>
                         <Select
                           value={user.tier}
+                          disabled={!!user.stripeSubscriptionId}
                           onValueChange={(value) =>
                             setPendingTierChange({ user, tier: value as UserTier })
                           }
@@ -401,8 +410,8 @@ export default function Page() {
                 </SelectTrigger>
                 <SelectContent>
                   {(data?.users || []).map((user: any) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.email})
+                    <SelectItem key={user.id} value={user.id} disabled={!!user.stripeSubscriptionId}>
+                      {user.name} ({user.email}){user.stripeSubscriptionId ? " (Paid via Stripe)" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>

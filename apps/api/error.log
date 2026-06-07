@@ -229,3 +229,17 @@ params: RNwB5lSgImK7hksWy6aKPMJJ0kEHIvZK,dfa20673-f40d-4f67-a9f8-73d5adf7c809,sa
     at <anonymous> (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
     at saveDealToWallet (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\apps\api\src\controllers\wallet.controller.ts:153:23)
 
+2026-06-07T14:56:52.195Z - Error: Failed query: insert into "redemptions" ("id", "user_id", "deal_id", "merchant_id", "coupontools_event_id", "redeemed_at", "reward_dispatched") values (default, $1, $2, $3, default, $4, $5) returning "id", "user_id", "deal_id", "merchant_id", "coupontools_event_id", "redeemed_at", "reward_dispatched"
+params: RNwB5lSgImK7hksWy6aKPMJJ0kEHIvZK,08870841-0585-41a5-ac94-322a460bf5fc,,2026-06-07T14:56:51.985Z,true
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at redeemDealInWallet (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\apps\api\src\controllers\wallet.controller.ts:342:30)
+
+2026-06-07T14:57:02.470Z - Error: Failed query: insert into "redemptions" ("id", "user_id", "deal_id", "merchant_id", "coupontools_event_id", "redeemed_at", "reward_dispatched") values (default, $1, $2, $3, default, $4, $5) returning "id", "user_id", "deal_id", "merchant_id", "coupontools_event_id", "redeemed_at", "reward_dispatched"
+params: RNwB5lSgImK7hksWy6aKPMJJ0kEHIvZK,2360f2e3-4b3c-4bd3-9dfe-ccc20e852559,,2026-06-07T14:57:02.257Z,true
+    at PostgresJsPreparedQuery.queryWithCache (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at <anonymous> (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
+    at redeemDealInWallet (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\apps\api\src\controllers\wallet.controller.ts:342:30)
+

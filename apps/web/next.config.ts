@@ -13,6 +13,14 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "hosting4images.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.hosting4images.com",
+      },
+      {
+        protocol: "https",
         hostname: "**.amazonaws.com",
       },
       {

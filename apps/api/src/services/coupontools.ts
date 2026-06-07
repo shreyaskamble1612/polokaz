@@ -36,6 +36,7 @@ export interface CoupontoolsDealPayload {
   syncedAt?: Date;
   startDate?: string;
   endDate?: string;
+  discount?: string;
   discountValue?: string;
   merchantLogo?: string;
   merchantWebsite?: string;
@@ -74,6 +75,19 @@ const CATEGORY_MAPPING: Record<string, string> = {
   services: "services",
   service: "services",
 };
+
+function parseDecimal(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  let str = String(value).trim();
+  str = str.replace(/^[$\u00A2-\u00A5\u20AC\u20A0-\u20CF]/, "");
+  str = str.replace(/%$/, "");
+  str = str.trim();
+  const parsed = parseFloat(str);
+  if (/^[+-]?\d+(?:\.\d+)?$/.test(str)) {
+    return Number.isNaN(parsed) ? null : parsed.toFixed(2);
+  }
+  return null;
+}
 
 export class CoupontoolsService {
   private apiKey: string;
@@ -204,7 +218,8 @@ export class CoupontoolsService {
       syncedAt: new Date(),
       startDate: startDate ?? undefined,
       endDate: expiry ?? undefined,
-      discountValue: this.pickString(raw.coupon_value, raw.discount_value),
+      discount: this.pickString(raw.coupon_value, raw.discount_value),
+      discountValue: parseDecimal(this.pickString(raw.coupon_value, raw.discount_value)) ?? undefined,
       merchantLogo: this.pickString(raw.merchant_logo, raw.logo_url) ?? undefined,
       merchantWebsite: this.pickString(raw.website, raw.merchant_website) ?? undefined,
       images: image ? [image] : undefined,
@@ -230,6 +245,7 @@ export class CoupontoolsService {
       coupontoolsId: normalizedId,
       title: coupon.title ?? coupon.friendly_name ?? "Deal",
       description: coupon.subtitle,
+      merchantId: coupon.customid ?? undefined,
       merchantName: "Merchant",
       category: this.mapCategory(coupon.tags),
       dealType: "coupon",
@@ -238,7 +254,8 @@ export class CoupontoolsService {
         coupon as unknown as Record<string, unknown>
       ),
       syncedAt: new Date(),
-      discountValue: coupon.coupon_value,
+      discount: coupon.coupon_value ?? undefined,
+      discountValue: parseDecimal(coupon.coupon_value) ?? undefined,
       metadata: coupon.tags
         ? {
             originalCategory: coupon.tags,

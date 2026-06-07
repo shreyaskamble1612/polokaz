@@ -16,6 +16,7 @@ import {
   walletItems,
   redemptions,
   referralConversions,
+  merchants,
   eq,
   and,
 } from "@polokaz/db";
@@ -337,22 +338,28 @@ async function handleCouponValidated(webhookEventId: string, event: Record<strin
       .returning();
   }
 
-  // Create redemption record
+  // Resolve merchantId fallback since it is required (NOT NULL) in the redemptions table
+  let merchantId = localDeal.merchantId;
+  if (!merchantId) {
+    const [firstMerchant] = await db.select({ id: merchants.id }).from(merchants).where(eq(merchants.status, "active")).limit(1);
+    merchantId = firstMerchant?.id || null;
+  }
+
+  if (!merchantId) {
+    await logWebhookStep(webhookEventId, "error", "Cannot record redemption: deal has no merchant, and no fallback active merchant was found.");
+    return;
+  }
+
+  // Create redemption record matching the new schema
   const [redemptionRecord] = await db
     .insert(redemptions)
     .values({
       userId: matchedUser.id,
       dealId: localDeal.id,
-      walletItemId: walletItemRow.id,
-      status: "completed",
-      redemptionCode: event.coupon_code || null,
-      redemptionMethod: "online",
-      coupontoolsRedemptionId: event.id || null,
-      coupontoolsData: JSON.stringify(event),
+      merchantId: merchantId,
+      coupontoolsEventId: event.id ? String(event.id) : `event-${crypto.randomUUID()}`,
       redeemedAt: new Date(),
-      validatedAt: new Date(),
-      completedAt: new Date(),
-      verified: true,
+      rewardDispatched: false,
     })
     .returning();
 
