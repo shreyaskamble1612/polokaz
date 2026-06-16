@@ -23,9 +23,11 @@ const instance = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
-  trustedOrigins: process.env.NEXT_PUBLIC_APP_URL
-    ? [process.env.NEXT_PUBLIC_APP_URL]
-    : [],
+  trustedOrigins: [
+    process.env.NEXT_PUBLIC_APP_URL,
+    "https://*.vercel.app",
+    "http://localhost:3000",
+  ].filter(Boolean) as string[],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,

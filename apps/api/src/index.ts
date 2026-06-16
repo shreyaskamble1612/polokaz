@@ -214,9 +214,19 @@ app.use(express.json({
   },
 }));
 
+const allowedOrigins = [
+  process.env.NEXT_PUBLIC_APP_URL,
+  "http://localhost:3000",
+  "https://polokaz-api.vercel.app",
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin: process.env.NEXT_PUBLIC_APP_URL, 
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const isAllowed = allowedOrigins.includes(origin) || origin.endsWith(".vercel.app");
+      callback(null, isAllowed);
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // Specify allowed HTTP methods
     credentials: true, // Allow credentials (cookies, authorization headers, etc.)
   }),
