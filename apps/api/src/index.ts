@@ -28,7 +28,8 @@ createLogger();
 const logger = useLogger();
 
 import { TrackdeskService } from "./services/trackdesk";
-import { dispatchReward } from "./services/rewards.service";
+import { dispatchReward, getActiveReferralCount, getAdminSettings } from "./services/rewards.service";
+
 import {
   db,
   eq,
@@ -39,11 +40,50 @@ import {
   referralClicks,
   referralConversions,
   user as dbUser,
+  merchants,
 } from "@polokaz/db";
+import { CoupontoolsService } from "./services/coupontools.service";
 
 // Register the signup callback
 onSignUpCallbacks.push(async (newUser, body) => {
   const trackdeskService = new TrackdeskService();
+
+  // If registering as a merchant, onboard them automatically on the backend
+  if (body?.companyName) {
+    try {
+      let coupontoolsMerchantId = null;
+      try {
+        const coupontools = new CoupontoolsService();
+        const createdMerchant = await coupontools.createMerchantAccount({
+          businessName: body.companyName,
+          contactEmail: body.companyEmail || newUser.email,
+        });
+        coupontoolsMerchantId = createdMerchant.coupontoolsMerchantId;
+      } catch (err) {
+        console.warn("Failed to create Coupontools merchant account in signup hook:", err);
+      }
+
+      // Ensure user role is updated to merchant
+      await db
+        .update(dbUser)
+        .set({ role: "merchant", tier: "merchant" })
+        .where(eq(dbUser.id, newUser.id));
+
+      // Insert merchant profile
+      await db.insert(merchants).values({
+        userId: newUser.id,
+        businessName: body.companyName,
+        businessCategory: body.businessType,
+        contactEmail: body.companyEmail || newUser.email,
+        website: body.companyWebsite || null,
+        coupontoolsMerchantId,
+        status: "active",
+      });
+      console.log(`[Merchant Onboarding Hook] Successfully onboarded merchant ${body.companyName} for user ${newUser.id}`);
+    } catch (err) {
+      console.error("Failed to onboard merchant inside signup callback:", err);
+    }
+  }
 
   // 1. Register new user as a Trackdesk affiliate (non-blocking, fire-and-forget)
   setImmediate(() => {
@@ -130,19 +170,25 @@ onSignUpCallbacks.push(async (newUser, body) => {
               });
             });
 
-            // f. Non-blocking: if referrer.trackdeskAffiliateId exists, call trackdeskService.logConversion(referrer.trackdeskAffiliateId, 'referral_signup', newUser.id, 5.00)
+            // f. Non-blocking: if referrer.trackdeskAffiliateId exists and qualified, call trackdeskService.logConversion(referrer.trackdeskAffiliateId, 'referral_signup', newUser.id, 5.00)
             if (referrer.trackdeskAffiliateId) {
-              setImmediate(() => {
-                trackdeskService
-                  .logConversion(
-                    referrer.trackdeskAffiliateId!,
-                    "referral_signup",
-                    newUser.id,
-                    5.00
-                  )
-                  .catch((err) => {
-                    console.error("Failed to log conversion to Trackdesk:", err);
-                  });
+              setImmediate(async () => {
+                try {
+                  const activeReferrals = await getActiveReferralCount(referrer.id);
+                  const settings = await getAdminSettings();
+                  const isQualified = activeReferrals >= settings.referralQualificationLimit;
+
+                  if (isQualified) {
+                    await trackdeskService.logConversion(
+                      referrer.trackdeskAffiliateId!,
+                      "referral_signup",
+                      newUser.id,
+                      5.00
+                    );
+                  }
+                } catch (err) {
+                  console.error("Failed to log conversion to Trackdesk:", err);
+                }
               });
             }
           }

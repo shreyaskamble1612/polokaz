@@ -8,3 +8,7 @@ export * from "./subscriptions";
 export * from "./deals";
 export * from "./rewards";
 export * from "./webhooks";
+export * from "./admin-settings";
+export * from "./admin";
+
+

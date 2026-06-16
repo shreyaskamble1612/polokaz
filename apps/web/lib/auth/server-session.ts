@@ -27,12 +27,17 @@ export async function requireRole(role: "admin" | "merchant" | "member") {
   const session = await requireServerSession();
   const sessionRole = getUserRole(session.user);
 
-  if (sessionRole !== role) {
+  const hasAccess =
+    sessionRole === role ||
+    (role === "admin" && sessionRole === "super_admin");
+
+  if (!hasAccess) {
     redirect(getRoleHomePath(session.user));
   }
 
   return session;
 }
+
 
 export function getSessionHomePath(session: ServerSessionData) {
   return getRoleHomePath(session?.user);

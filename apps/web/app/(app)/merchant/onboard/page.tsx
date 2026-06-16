@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
 
 import { clientFetch } from "@/lib/api/client-fetch";
+import useSWR from "swr";
 
 const connectionNotes = [
   "Your merchant business profile is already saved during sign up.",
@@ -70,10 +71,16 @@ function ConfettiBurst() {
 }
 
 export default function Page() {
+  const { data: profileData, error: profileError, mutate } = useSWR<any>(
+    "/api/merchants/me",
+    clientFetch
+  );
+
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [progress, setProgress] = useState(25);
   const [error, setError] = useState<string | null>(null);
+
+  const isConnected = !!profileData?.merchant?.coupontoolsMerchantId;
+  const progress = isConnected ? 100 : (isConnecting ? 50 : 25);
 
   const statusText = isConnected
     ? "Connected"
@@ -92,21 +99,29 @@ export default function Page() {
 
     setIsConnecting(true);
     setError(null);
-    setProgress(50);
 
     try {
       await clientFetch("/api/merchant/coupontools/connect", {
         method: "POST",
       });
-      setProgress(100);
-      setIsConnected(true);
+      await mutate();
     } catch (err: any) {
       setError(err.message || "Failed to connect Coupontools");
-      setProgress(25);
     } finally {
       setIsConnecting(false);
     }
   };
+
+  if (!profileData && !profileError) {
+    return (
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,#eef6ff_0%,#f8fafc_45%,#ffffff_100%)] px-4 py-8 text-slate-900 sm:px-6 lg:px-8 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-slate-500 font-medium">Checking integration status...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,#eef6ff_0%,#f8fafc_45%,#ffffff_100%)] px-4 py-8 text-slate-900 sm:px-6 lg:px-8">

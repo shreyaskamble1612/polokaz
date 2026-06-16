@@ -11,6 +11,25 @@ import {
   updateUserBan,
   listPayoutsForAdmin,
   approvePayout,
+  getAdminSettingsEndpoint,
+  updateAdminSettingsEndpoint,
+  // New Moderation & Analytics Endpoints
+  suspendMember,
+  reinstateMember,
+  cancelMember,
+  terminateMember,
+  reviewMember,
+  waiveSignupFee,
+  grantRewardManually,
+  getAuditLogs,
+  getAnalyticsOverview,
+  getAnalyticsGrowth,
+  getAnalyticsChurn,
+  getAnalyticsAtRisk,
+  getAnalyticsRevenue,
+  getAnalyticsAffiliates,
+  getAnalyticsOrgs,
+  exportAnalyticsData,
 } from "../controllers/admin.controller";
 
 const router = express.Router();
@@ -20,6 +39,10 @@ router.get("/deals", listAllDealsForAdmin);
 router.get("/deals/pending", listPendingDeals);
 router.post("/deals/:id/approve", approveDeal);
 router.post("/deals/:id/reject", rejectDeal);
+
+// Settings
+router.get("/settings", getAdminSettingsEndpoint);
+router.post("/settings", updateAdminSettingsEndpoint);
 
 // Metrics & platform overview
 router.get("/metrics", getAdminMetrics);
@@ -39,4 +62,25 @@ router.patch("/payouts/:userId/approve", approvePayout);
 router.post("/payouts/:userId/approve", approvePayout);
 router.post("/payouts/:id/approve", approvePayout);
 
+// --- Advanced Member Moderation Endpoints ---
+router.put("/member/:id/suspend", suspendMember);
+router.put("/member/:id/reinstate", reinstateMember);
+router.put("/member/:id/cancel", cancelMember);
+router.put("/member/:id/terminate", terminateMember);
+router.put("/member/:id/review", reviewMember);
+router.put("/member/:id/waive-fee", waiveSignupFee);
+router.post("/member/:id/grant-reward", grantRewardManually);
+router.get("/audit-log", getAuditLogs);
+
+// --- Analytics Endpoints ---
+router.get("/analytics/overview", getAnalyticsOverview);
+router.get("/analytics/growth", getAnalyticsGrowth);
+router.get("/analytics/churn", getAnalyticsChurn);
+router.get("/analytics/at-risk", getAnalyticsAtRisk);
+router.get("/analytics/revenue", getAnalyticsRevenue);
+router.get("/analytics/affiliates", getAnalyticsAffiliates);
+router.get("/analytics/orgs", getAnalyticsOrgs);
+router.get("/analytics/export", exportAnalyticsData);
+
 export { router as adminRouter };
+

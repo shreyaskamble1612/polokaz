@@ -33,7 +33,12 @@ export async function upgradeTier(req: Request, res: Response) {
 
   const { tier } = req.body;
 
-  if (!tier || !["free", "basic", "gold", "merchant"].includes(tier)) {
+  const validTiers = [
+    "free", "basic", "gold", "merchant",
+    "regular", "premium", "organization", "small_vendor", "premium_vendor"
+  ];
+
+  if (!tier || !validTiers.includes(tier)) {
     return res.status(400).json({
       error: { code: "INVALID_REQUEST", message: "Invalid tier specified" },
     });
@@ -41,7 +46,8 @@ export async function upgradeTier(req: Request, res: Response) {
 
   const updates: Record<string, any> = { tier, hasSelectedPlan: true };
   if (session.user.role !== "admin") {
-    updates.role = tier === "merchant" ? "merchant" : "member";
+    const isMerchantTier = ["merchant", "small_vendor", "premium_vendor"].includes(tier);
+    updates.role = isMerchantTier ? "merchant" : "member";
   }
 
   await db

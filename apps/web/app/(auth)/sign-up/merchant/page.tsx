@@ -16,6 +16,7 @@ import {
   Globe,
   Loader2,
   Mail,
+  MailCheck,
   Phone,
   Sparkles,
   Store,
@@ -107,6 +108,8 @@ export default function Page() {
   const [step, setStep] = useState<Step>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [signupEmail, setSignupEmail] = useState("");
 
   const {
     register,
@@ -221,6 +224,11 @@ export default function Page() {
       birthdate: new Date(values.dateOfBirth),
       countryName: values.countryName,
       tier: "merchant",
+      // Pass onboarding business data inside custom signup payload
+      companyName: values.companyName,
+      businessType: values.businessType,
+      companyEmail: values.companyEmail,
+      companyWebsite: values.companyWebsite || undefined,
     } as Record<string, unknown>;
 
     const { error: authError, data } = await authClient.signUp.email(signUpPayload as never);
@@ -237,25 +245,33 @@ export default function Page() {
       return;
     }
 
-    try {
-      await onboardMerchant({
-        businessName: values.companyName,
-        businessCategory: values.businessType,
-        contactEmail: values.companyEmail,
-        website: values.companyWebsite || undefined,
-      });
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Account created, but merchant onboarding failed. Please retry from the merchant dashboard.",
-      );
-      setIsSubmitting(false);
-      return;
-    }
-
-    router.push(getRoleHomePath({ role: "merchant" }));
+    router.push(getRoleHomePath(data.user));
   };
+
+  if (isSuccess) {
+    return (
+      <main className="min-h-screen bg-[#05070b] px-4 py-4 text-white sm:px-6 lg:px-8 flex items-center justify-center">
+        <div className="mx-auto max-w-md w-full rounded-[28px] border border-white/10 bg-slate-900/60 p-8 shadow-[0_30px_90px_rgba(0,0,0,0.35)] text-center backdrop-blur-xl flex flex-col items-center gap-6">
+          <div className="h-16 w-16 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-full flex items-center justify-center shadow-lg">
+            <MailCheck className="h-8 w-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight text-white">Verify merchant account</h2>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              We&apos;ve sent a verification link to <span className="font-semibold text-cyan-400">{signupEmail}</span>. Please click the link to activate your merchant account before signing in.
+            </p>
+          </div>
+          <div className="w-full pt-2">
+            <Button asChild className="w-full rounded-full bg-white hover:bg-slate-200 text-slate-950 font-bold h-11">
+              <Link href="/sign-in">
+                Continue to Sign In
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#05070b] px-4 py-4 text-white sm:px-6 lg:px-8">

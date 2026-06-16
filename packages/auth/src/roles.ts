@@ -1,4 +1,4 @@
-export type AppRole = "admin" | "merchant" | "member";
+export type AppRole = "super_admin" | "admin" | "merchant" | "member";
 
 type MaybeRole = Record<string, unknown> | null | undefined;
 
@@ -24,6 +24,10 @@ export function getUserRole(user?: MaybeRole | null): AppRole {
   const role = readRole(user);
   const tier = readTier(user);
 
+  if (role === "super_admin") {
+    return "super_admin";
+  }
+
   if (role === "admin") {
     return "admin";
   }
@@ -35,8 +39,10 @@ export function getUserRole(user?: MaybeRole | null): AppRole {
   return "member";
 }
 
+
 export function isAdminRole(user?: MaybeRole | null) {
-  return getUserRole(user) === "admin";
+  const role = getUserRole(user);
+  return role === "admin" || role === "super_admin";
 }
 
 export function isMerchantRole(user?: MaybeRole | null) {
@@ -46,7 +52,7 @@ export function isMerchantRole(user?: MaybeRole | null) {
 export function getRoleHomePath(user?: MaybeRole | null) {
   const role = getUserRole(user);
 
-  if (role === "admin") {
+  if (role === "admin" || role === "super_admin") {
     return "/admin";
   }
 
@@ -56,3 +62,4 @@ export function getRoleHomePath(user?: MaybeRole | null) {
 
   return "/customer/dashboard";
 }
+

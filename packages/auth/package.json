@@ -19,10 +19,12 @@
   "dependencies": {
     "@polokaz/db": "workspace:*",
     "better-auth": "^1.4.4",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "nodemailer": "^6.9.13"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "@types/nodemailer": "^6.4.14",
     "typescript": "^5.9.3"
   }
 }

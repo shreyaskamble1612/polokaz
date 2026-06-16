@@ -4,9 +4,10 @@ import { and, db, deal, eq, or, redemptions, user, walletItems, referralConversi
 import { DealsService } from "../services/deals";
 import { CoupontoolsService, type CoupontoolsCoupon } from "../services/coupontools";
 import { isWebhookProcessed, createWebhookEvent, updateWebhookEventStatus, logWebhookStep } from "../services/webhooks";
-import { dispatchReward as realDispatchReward } from "../services/rewards.service";
+import { dispatchReward as realDispatchReward, getActiveReferralCount, getAdminSettings } from "../services/rewards.service";
 import { TrackdeskService } from "../services/trackdesk";
 import { useWebhookLogger } from "../logger";
+
 
 const router = express.Router();
 const logger = useWebhookLogger();
@@ -294,38 +295,58 @@ async function processRedemptionEvent(event: CoupontoolsWebhookBody) {
         .limit(1);
 
       if (referrer) {
-        // Non-blocking: dispatch reward
-        setImmediate(() => {
-          realDispatchReward({
-            type: "referral_redemption",
-            userId: referrer.id,
-            referenceId: redemptionRecord.id,
-            amount: 0.50,
-          }).catch((err) => {
-            logger.error("Referrer redemption reward dispatch failed", {
-              redemptionId: redemptionRecord.id,
-              error: err instanceof Error ? err.message : String(err),
+        const activeReferrals = await getActiveReferralCount(referrer.id);
+        const settings = await getAdminSettings();
+        const isQualified = activeReferrals >= settings.referralQualificationLimit;
+
+        if (isQualified) {
+          // Non-blocking: dispatch reward
+          setImmediate(() => {
+            realDispatchReward({
+              type: "referral_redemption",
+              userId: referrer.id,
+              referenceId: redemptionRecord.id,
+              amount: 0.50,
+            }).catch((err) => {
+              logger.error("Referrer redemption reward dispatch failed", {
+                redemptionId: redemptionRecord.id,
+                error: err instanceof Error ? err.message : String(err),
+              });
             });
           });
-        });
 
-        // Non-blocking: trackdesk logConversion
-        if (referrer.trackdeskAffiliateId) {
-          setImmediate(() => {
-            const trackdeskService = new TrackdeskService();
-            trackdeskService
-              .logConversion(
-                referrer.trackdeskAffiliateId!,
-                "referral_redemption",
-                redemptionRecord.id,
-                0.50
-              )
-              .catch((err) => {
-                logger.error("Failed to log redemption conversion to Trackdesk", {
-                  redemptionId: redemptionRecord.id,
-                  error: err instanceof Error ? err.message : String(err),
+          // Non-blocking: trackdesk logConversion
+          if (referrer.trackdeskAffiliateId) {
+            setImmediate(() => {
+              const trackdeskService = new TrackdeskService();
+              trackdeskService
+                .logConversion(
+                  referrer.trackdeskAffiliateId!,
+                  "referral_redemption",
+                  redemptionRecord.id,
+                  0.50
+                )
+                .catch((err) => {
+                  logger.error("Failed to log redemption conversion to Trackdesk", {
+                    redemptionId: redemptionRecord.id,
+                    error: err instanceof Error ? err.message : String(err),
+                  });
                 });
+            });
+          }
+        } else {
+          // Not qualified: dispatch points instead
+          setImmediate(() => {
+            realDispatchReward({
+              type: "referral_redemption",
+              userId: referrer.id,
+              referenceId: redemptionRecord.id,
+            }).catch((err) => {
+              logger.error("Referrer redemption points dispatch failed", {
+                redemptionId: redemptionRecord.id,
+                error: err instanceof Error ? err.message : String(err),
               });
+            });
           });
         }
       }

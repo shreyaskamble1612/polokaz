@@ -14,8 +14,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { authClient } from "@polokaz/auth/client";
 import { getRoleHomePath } from "@polokaz/auth/roles";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, MailCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import Link from "next/link";
 import { Spinner } from "../ui/spinner";
 import { DateOfBirthPicker } from "../ui/date-of-birth-picker";
 import { CountryDropdown } from "../ui/country-dropdown";
@@ -50,6 +52,9 @@ export function SignUpForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [signupEmail, setSignupEmail] = useState("");
+
   const {
     register,
     handleSubmit,
@@ -119,6 +124,29 @@ export function SignUpForm({
 
       router.push(getRoleHomePath(data.user));
     }
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-6 bg-slate-900/40 border border-white/10 rounded-[28px] gap-6 max-w-md mx-auto shadow-2xl backdrop-blur-xl">
+        <div className="h-16 w-16 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-full flex items-center justify-center shadow-lg">
+          <MailCheck className="h-8 w-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold tracking-tight text-white">Verify your email</h2>
+          <p className="text-sm text-slate-300 leading-relaxed">
+            We've sent a verification link to <span className="font-semibold text-cyan-400">{signupEmail}</span>. Please click the link in your inbox to verify your account before logging in.
+          </p>
+        </div>
+        <div className="w-full pt-2">
+          <Button asChild className="w-full rounded-2xl bg-white hover:bg-slate-200 text-slate-950 font-bold h-11">
+            <Link href="/sign-in">
+              Continue to Sign In
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

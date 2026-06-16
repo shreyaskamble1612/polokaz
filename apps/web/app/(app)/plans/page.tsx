@@ -8,12 +8,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ShieldCheck, Store, X } from "lucide-react";
+import { Check, ShieldCheck, Store, X, Building, Users, Minus, Plus } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-type ConsumerTier = "free" | "basic" | "gold";
-type MembershipTier = ConsumerTier | "merchant";
+type ConsumerTier = "basic" | "regular" | "premium";
+type MembershipTier =
+  | ConsumerTier
+  | "organization"
+  | "small_vendor"
+  | "premium_vendor"
+  | "free"
+  | "gold"
+  | "merchant";
 
 type PlanCard = {
   id: ConsumerTier;
@@ -26,8 +33,8 @@ type PlanCard = {
 
 const CONSUMER_PLANS: PlanCard[] = [
   {
-    id: "free",
-    name: "Free",
+    id: "basic",
+    name: "Basic (Free)",
     price: "$0/mo",
     cta: "Current Plan",
     features: [
@@ -38,81 +45,88 @@ const CONSUMER_PLANS: PlanCard[] = [
     ],
   },
   {
-    id: "basic",
-    name: "Basic",
-    price: "$9.99/mo",
-    cta: "Upgrade to Basic",
+    id: "regular",
+    name: "Regular",
+    price: "$5/mo",
+    cta: "Upgrade to Regular",
     features: [
-      "Everything in Free",
+      "Everything in Basic",
       "Priority access to new drops",
       "Bonus points on redemptions",
       "Enhanced referral earning rate",
     ],
+    highlighted: true,
   },
   {
-    id: "gold",
-    name: "Gold",
-    price: "$49.99/mo",
-    cta: "Upgrade to Gold",
+    id: "premium",
+    name: "Premium",
+    price: "$15/mo",
+    cta: "Upgrade to Premium",
     features: [
-      "Everything in Basic",
+      "Everything in Regular",
       "Guaranteed access to all premium offers",
       "Double points on all activities",
       "Unlock recurring affiliate payouts",
+      "Requires one-time $25 activation fee",
     ],
   },
-];
-
-const MERCHANT_FEATURES = [
-  "Create and manage campaigns",
-  "Track coupon performance and conversions",
-  "Merchant redemption workflow",
-  "Audience growth and referral visibility",
 ];
 
 const COMPARISON_ROWS = [
   {
     label: "Browse member deals",
-    free: true,
     basic: true,
-    gold: true,
+    regular: true,
+    premium: true,
   },
   {
     label: "Save to wallet",
-    free: true,
     basic: true,
-    gold: true,
+    regular: true,
+    premium: true,
   },
   {
     label: "Priority access to new offers",
-    free: false,
-    basic: true,
-    gold: true,
+    basic: false,
+    regular: true,
+    premium: true,
   },
   {
     label: "Bonus points multiplier",
-    free: false,
-    basic: true,
-    gold: true,
+    basic: false,
+    regular: true,
+    premium: true,
   },
   {
     label: "Premium exclusive campaigns",
-    free: false,
     basic: false,
-    gold: true,
+    regular: false,
+    premium: true,
   },
 ];
 
-function getCtaLabel(currentTier: MembershipTier, tier: ConsumerTier) {
-  if (tier === currentTier) return "Current Plan";
+function getCtaLabel(currentTier: MembershipTier, planId: MembershipTier) {
+  const isCurrent = planId === "basic"
+    ? (currentTier === "basic" || currentTier === "free")
+    : currentTier === planId;
 
-  if (currentTier === "gold") {
-    if (tier === "basic" || tier === "free") return "Downgrade";
-  }
+  if (isCurrent) return "Current Plan";
 
-  if (currentTier === "basic" && tier === "free") return "Downgrade";
+  const hierarchy: Record<string, number> = {
+    free: 0,
+    basic: 0,
+    regular: 1,
+    premium: 2,
+    organization: 2,
+    small_vendor: 3,
+    premium_vendor: 4,
+  };
 
-  return tier === "basic" ? "Upgrade to Basic" : "Upgrade to Gold";
+  const currentLvl = hierarchy[currentTier as string] ?? 0;
+  const targetLvl = hierarchy[planId as string] ?? 0;
+
+  if (targetLvl < currentLvl) return "Downgrade";
+  return `Upgrade to ${planId.replace("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())}`;
 }
 
 function PlanAvailability({
@@ -133,20 +147,26 @@ export default function PlansPage() {
   const session = authClient.useSession();
   const [toast, setToast] = useState<string | null>(null);
   const [loadingTier, setLoadingTier] = useState<MembershipTier | null>(null);
+  const [premiumLocations, setPremiumLocations] = useState<number>(2);
 
   const currentTier = useMemo<MembershipTier>(() => {
     const sessionTier = (session.data?.user as { tier?: string | null } | undefined)?.tier;
 
     if (
       sessionTier === "basic" ||
+      sessionTier === "regular" ||
+      sessionTier === "premium" ||
+      sessionTier === "organization" ||
+      sessionTier === "small_vendor" ||
+      sessionTier === "premium_vendor" ||
+      sessionTier === "free" ||
       sessionTier === "gold" ||
-      sessionTier === "merchant" ||
-      sessionTier === "free"
+      sessionTier === "merchant"
     ) {
-      return sessionTier;
+      return sessionTier as MembershipTier;
     }
 
-    return "free";
+    return "basic";
   }, [session.data?.user]);
 
   useEffect(() => {
@@ -165,16 +185,27 @@ export default function PlansPage() {
     router.replace("/plans");
   }, [router, searchParams]);
 
-  const handleUpgrade = async (tier: MembershipTier) => {
-    const planName =
-      tier === "merchant"
-        ? "Merchant"
-        : CONSUMER_PLANS.find((plan) => plan.id === tier)?.name ?? tier;
+  const handleUpgrade = async (tier: MembershipTier, locations?: number) => {
+    const isCurrent = tier === "basic"
+      ? (currentTier === "basic" || currentTier === "free")
+      : currentTier === tier;
+
+    if (isCurrent) return;
+
+    const planNames: Record<string, string> = {
+      basic: "Basic",
+      regular: "Regular",
+      premium: "Premium",
+      organization: "Organization",
+      small_vendor: "Small Vendor",
+      premium_vendor: "Premium Vendor",
+    };
+    const planName = planNames[tier] ?? tier;
 
     setLoadingTier(tier);
 
-    if (tier === "free") {
-      setToast(`Downgrading to Free plan...`);
+    if (tier === "basic") {
+      setToast(`Switching to Basic (Free) plan...`);
       try {
         const data = await clientFetch<{ success: boolean; tier: string }>("/api/plans/upgrade", {
           method: "POST",
@@ -182,14 +213,14 @@ export default function PlansPage() {
         });
 
         if (data.success) {
-          setToast(`Successfully downgraded to Free!`);
+          setToast(`Successfully switched to Basic (Free)!`);
           await authClient.getSession();
           router.refresh();
         } else {
-          throw new Error("Failed to downgrade tier.");
+          throw new Error("Failed to switch tier.");
         }
       } catch (error: any) {
-        setToast(error.message || "Failed to downgrade plan.");
+        setToast(error.message || "Failed to switch plan.");
       } finally {
         setLoadingTier(null);
       }
@@ -202,7 +233,7 @@ export default function PlansPage() {
       // 1. Attempt to create a Stripe checkout session
       const stripeRes = await clientFetch<{ url: string }>("/api/stripe/create-checkout", {
         method: "POST",
-        body: JSON.stringify({ tier }),
+        body: JSON.stringify({ tier, locations }),
       });
 
       if (stripeRes?.url) {
@@ -269,9 +300,12 @@ export default function PlansPage() {
 
         <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-8">
+            {/* Consumer Plans */}
             <section className="grid gap-5 lg:grid-cols-3">
               {CONSUMER_PLANS.map((plan) => {
-                const isCurrent = plan.id === currentTier;
+                const isCurrent = plan.id === "basic"
+                  ? (currentTier === "basic" || currentTier === "free")
+                  : currentTier === plan.id;
                 const isLoading = loadingTier === plan.id;
 
                 return (
@@ -339,6 +373,7 @@ export default function PlansPage() {
               })}
             </section>
 
+            {/* Comparison Table */}
             <section className="rounded-[30px] border border-white/10 bg-white/[0.04] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.3)] sm:p-8">
               <div className="mb-6 flex items-center gap-3">
                 <ShieldCheck className="size-5 text-cyan-300" />
@@ -352,9 +387,9 @@ export default function PlansPage() {
                   <thead>
                     <tr className="text-zinc-400">
                       <th className="px-4 py-3 text-left font-medium">Feature</th>
-                      <th className="px-4 py-3 text-center font-medium">Free</th>
-                      <th className="px-4 py-3 text-center font-medium">Basic</th>
-                      <th className="px-4 py-3 text-center font-medium">Gold</th>
+                      <th className="px-4 py-3 text-center font-medium">Basic (Free)</th>
+                      <th className="px-4 py-3 text-center font-medium">Regular ($5)</th>
+                      <th className="px-4 py-3 text-center font-medium">Premium ($15)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -364,13 +399,13 @@ export default function PlansPage() {
                           {row.label}
                         </td>
                         <td className="border-y border-white/8 bg-black/20 px-4 py-4 text-center">
-                          <PlanAvailability available={row.free} />
-                        </td>
-                        <td className="border-y border-white/8 bg-black/20 px-4 py-4 text-center">
                           <PlanAvailability available={row.basic} />
                         </td>
+                        <td className="border-y border-white/8 bg-black/20 px-4 py-4 text-center">
+                          <PlanAvailability available={row.regular} />
+                        </td>
                         <td className="rounded-r-2xl border border-white/8 bg-black/20 px-4 py-4 text-center">
-                          <PlanAvailability available={row.gold} />
+                          <PlanAvailability available={row.premium} />
                         </td>
                       </tr>
                     ))}
@@ -379,60 +414,161 @@ export default function PlansPage() {
               </div>
             </section>
 
+            {/* Business Plans Section */}
             <section className="rounded-[30px] border border-amber-300/18 bg-[linear-gradient(180deg,rgba(46,32,12,0.92)_0%,rgba(13,13,18,0.98)_100%)] p-6 shadow-[0_20px_70px_rgba(245,208,97,0.12)] sm:p-8">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                <div className="max-w-2xl">
-                  <div className="flex items-center gap-3">
-                    <Store className="size-5 text-amber-200" />
-                    <p className="text-xs font-semibold uppercase tracking-[0.34em] text-amber-200/80">
-                      For Businesses
-                    </p>
-                  </div>
-                  <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white">
-                    Merchant Plan
-                  </h2>
-                  <p className="mt-3 text-sm leading-7 text-zinc-300">
-                    Launch campaigns, convert members into paying customers, and
-                    manage performance from one polished merchant dashboard.
+              <div className="mb-8">
+                <div className="flex items-center gap-3">
+                  <Building className="size-5 text-amber-200" />
+                  <p className="text-xs font-semibold uppercase tracking-[0.34em] text-amber-200/80">
+                    For Businesses & Organizations
                   </p>
-                  <div className="mt-6 space-y-3">
-                    {MERCHANT_FEATURES.map((feature) => (
-                      <div key={feature} className="flex items-start gap-3">
-                        <div className="mt-0.5 rounded-full bg-amber-500/16 p-1 text-amber-200">
-                          <Check className="size-3.5" />
-                        </div>
-                        <p className="text-sm leading-7 text-zinc-300">
-                          {feature}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
                 </div>
+                <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white">
+                  Grow Your Community & Business
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-zinc-300">
+                  Fundraise for your community or drive high-intent foot traffic to your retail locations.
+                </p>
+              </div>
 
-                <div className="w-full max-w-sm rounded-[26px] border border-white/10 bg-black/25 p-5">
-                  <Badge className="border-transparent bg-white/12 text-white">
-                    Merchant
-                  </Badge>
-                  <p className="mt-4 text-4xl font-semibold tracking-tight text-white">
-                    Custom
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-zinc-400">
-                    Tailored pricing based on campaigns, merchants, and support
-                    needs.
-                  </p>
-                  <Button
-                    type="button"
-                    disabled={currentTier === "merchant" || loadingTier === "merchant"}
-                    onClick={() => handleUpgrade("merchant")}
-                    className="mt-6 w-full rounded-full bg-[linear-gradient(135deg,#f5d061_0%,#dca93b_100%)] text-zinc-950 hover:brightness-105"
-                  >
-                    {currentTier === "merchant"
-                      ? "Current Plan"
-                      : loadingTier === "merchant"
-                        ? "Redirecting..."
-                        : "Get Started as Merchant"}
-                  </Button>
-                </div>
+              <div className="grid gap-6 md:grid-cols-3">
+                {/* Organization Card */}
+                <Card className="border-white/10 bg-black/25 flex flex-col justify-between">
+                  <CardContent className="p-6 flex flex-col h-full justify-between gap-6">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Users className="size-5 text-cyan-400" />
+                        <h3 className="text-xl font-bold text-white">Organization</h3>
+                      </div>
+                      <p className="mt-3 text-3xl font-semibold text-white">$15<span className="text-sm font-normal text-zinc-400">/mo</span></p>
+                      <p className="mt-2 text-xs text-zinc-400">Perfect for schools, non-profits, or community groups</p>
+                      <ul className="mt-4 space-y-2.5">
+                        <li className="flex items-start gap-2 text-sm text-zinc-300">
+                          <Check className="size-4 text-emerald-400 mt-0.5 shrink-0" />
+                          <span>Run fundraising campaigns</span>
+                        </li>
+                        <li className="flex items-start gap-2 text-sm text-zinc-300">
+                          <Check className="size-4 text-emerald-400 mt-0.5 shrink-0" />
+                          <span>Share referral links</span>
+                        </li>
+                        <li className="flex items-start gap-2 text-sm text-zinc-300">
+                          <Check className="size-4 text-emerald-400 mt-0.5 shrink-0" />
+                          <span>Earn recurring commissions</span>
+                        </li>
+                      </ul>
+                    </div>
+                    <Button
+                      type="button"
+                      disabled={currentTier === "organization" || loadingTier === "organization"}
+                      onClick={() => handleUpgrade("organization")}
+                      className="w-full rounded-full bg-white text-zinc-950 hover:bg-zinc-200"
+                    >
+                      {loadingTier === "organization" ? "Loading..." : getCtaLabel(currentTier, "organization")}
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Small Vendor Card */}
+                <Card className="border-white/10 bg-black/25 flex flex-col justify-between">
+                  <CardContent className="p-6 flex flex-col h-full justify-between gap-6">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Store className="size-5 text-amber-400" />
+                        <h3 className="text-xl font-bold text-white">Small Vendor</h3>
+                      </div>
+                      <p className="mt-3 text-3xl font-semibold text-white">$35<span className="text-sm font-normal text-zinc-400">/mo</span></p>
+                      <p className="mt-2 text-xs text-zinc-400">Plus $80 one-time setup fee. Ideal for single local shops</p>
+                      <ul className="mt-4 space-y-2.5">
+                        <li className="flex items-start gap-2 text-sm text-zinc-300">
+                          <Check className="size-4 text-emerald-400 mt-0.5 shrink-0" />
+                          <span>1 Physical location</span>
+                        </li>
+                        <li className="flex items-start gap-2 text-sm text-zinc-300">
+                          <Check className="size-4 text-emerald-400 mt-0.5 shrink-0" />
+                          <span>Create coupon campaigns</span>
+                        </li>
+                        <li className="flex items-start gap-2 text-sm text-zinc-300">
+                          <Check className="size-4 text-emerald-400 mt-0.5 shrink-0" />
+                          <span>Track real-time redemptions</span>
+                        </li>
+                      </ul>
+                    </div>
+                    <Button
+                      type="button"
+                      disabled={currentTier === "small_vendor" || loadingTier === "small_vendor"}
+                      onClick={() => handleUpgrade("small_vendor")}
+                      className="w-full rounded-full bg-white text-zinc-950 hover:bg-zinc-200"
+                    >
+                      {loadingTier === "small_vendor" ? "Loading..." : getCtaLabel(currentTier, "small_vendor")}
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Premium Vendor Card */}
+                <Card className="border-amber-300/20 bg-amber-500/5 flex flex-col justify-between">
+                  <CardContent className="p-6 flex flex-col h-full justify-between gap-6">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Store className="size-5 text-amber-300" />
+                        <h3 className="text-xl font-bold text-amber-100">Premium Vendor</h3>
+                      </div>
+                      <p className="mt-3 text-3xl font-semibold text-white">
+                        ${premiumLocations * 25}
+                        <span className="text-sm font-normal text-zinc-400">/mo</span>
+                      </p>
+                      <p className="mt-2 text-xs text-zinc-400">
+                        $25/location/mo + $80 one-time setup fee
+                      </p>
+
+                      {/* Locations selector */}
+                      <div className="flex items-center justify-between mt-4 mb-2 p-2 bg-black/30 rounded-xl border border-white/5">
+                        <span className="text-xs text-zinc-300">Locations:</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPremiumLocations((prev) => Math.max(1, prev - 1))}
+                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-white"
+                          >
+                            <Minus className="size-3" />
+                          </button>
+                          <span className="text-sm font-semibold text-white w-6 text-center">
+                            {premiumLocations}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPremiumLocations((prev) => prev + 1)}
+                            className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-white"
+                          >
+                            <Plus className="size-3" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <ul className="mt-4 space-y-2.5">
+                        <li className="flex items-start gap-2 text-sm text-zinc-300">
+                          <Check className="size-4 text-emerald-400 mt-0.5 shrink-0" />
+                          <span>Multi-location setup</span>
+                        </li>
+                        <li className="flex items-start gap-2 text-sm text-zinc-300">
+                          <Check className="size-4 text-emerald-400 mt-0.5 shrink-0" />
+                          <span>Advanced targeting & analytics</span>
+                        </li>
+                        <li className="flex items-start gap-2 text-sm text-zinc-300">
+                          <Check className="size-4 text-emerald-400 mt-0.5 shrink-0" />
+                          <span>Priority support & API keys</span>
+                        </li>
+                      </ul>
+                    </div>
+                    <Button
+                      type="button"
+                      disabled={currentTier === "premium_vendor" || loadingTier === "premium_vendor"}
+                      onClick={() => handleUpgrade("premium_vendor", premiumLocations)}
+                      className="w-full rounded-full bg-[linear-gradient(135deg,#f5d061_0%,#dca93b_100%)] text-zinc-950 hover:brightness-105"
+                    >
+                      {loadingTier === "premium_vendor" ? "Loading..." : getCtaLabel(currentTier, "premium_vendor")}
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
             </section>
           </div>

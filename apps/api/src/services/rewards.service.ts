@@ -1,4 +1,4 @@
-import { db, pointsLedger, commissions, user, eq, referralConversions, redemptions, sql } from "@polokaz/db";
+import { db, pointsLedger, commissions, user, eq, referralConversions, redemptions, sql, adminSettings, and } from "@polokaz/db";
 
 // REWARD CONFIG (top of file, easy to tweak):
 const POINTS_CONFIG = {
@@ -21,6 +21,37 @@ export interface RewardEvent {
   amount?: number;       // override for subscription commissions
 }
 
+export async function getAdminSettings() {
+  let [settings] = await db.select().from(adminSettings).where(eq(adminSettings.id, "default")).limit(1);
+  if (!settings) {
+    try {
+      [settings] = await db
+        .insert(adminSettings)
+        .values({ id: "default" })
+        .returning();
+    } catch (e) {
+      [settings] = await db.select().from(adminSettings).where(eq(adminSettings.id, "default")).limit(1);
+    }
+  }
+  return settings;
+}
+
+export async function getActiveReferralCount(referrerId: string): Promise<number> {
+  const [result] = await db
+    .select({
+      count: sql<number>`count(distinct ${referralConversions.referredUserId})::int`
+    })
+    .from(referralConversions)
+    .innerJoin(user, eq(referralConversions.referredUserId, user.id))
+    .where(
+      and(
+        eq(referralConversions.referrerId, referrerId),
+        eq(user.banned, false)
+      )
+    );
+  return result?.count ?? 0;
+}
+
 /**
  * Main function: dispatchReward
  */
@@ -39,18 +70,18 @@ export async function dispatchReward(event: RewardEvent): Promise<{ pointsEarned
   const tier = userData.tier || "free";
   let rewardResult: { pointsEarned?: number; commissionEarned?: number } = {};
 
-  // 2. If user.tier === 'gold': call grantCommission(user, event)
-  if (tier === "gold") {
-    rewardResult = await grantCommission(userData, event);
+  // 2. Check referral qualification (minimum 5 active referrals)
+  const activeReferralCount = await getActiveReferralCount(event.userId);
+  const settings = await getAdminSettings();
+  const isQualified = activeReferralCount >= settings.referralQualificationLimit;
+
+  // If qualified: grant commission
+  if (isQualified) {
+    rewardResult = await grantCommission(userData, event, activeReferralCount, settings);
   }
-  // 3. Else if tier is 'free' or 'basic': call grantPoints(user, event)
-  else if (tier === "free" || tier === "basic") {
+  // Else if tier is 'free' or 'basic' or 'regular' or 'premium' (not qualified): grant points
+  else if (tier !== "merchant" && tier !== "premium_vendor" && tier !== "small_vendor") {
     rewardResult = await grantPoints(userData, event);
-  }
-  // 4. Else if tier is 'merchant': skip (merchants don't earn consumer rewards)
-  else if (tier === "merchant") {
-    console.log(`Skipping reward dispatch for merchant user: ${event.userId}`);
-    return {};
   }
 
   // 5. Mark the source record as reward-dispatched:
@@ -72,6 +103,7 @@ export async function dispatchReward(event: RewardEvent): Promise<{ pointsEarned
   return rewardResult;
 }
 
+
 /**
  * Function: grantPoints
  */
@@ -81,8 +113,13 @@ async function grantPoints(
 ): Promise<{ pointsEarned: number }> {
   // Look up points value from POINTS_CONFIG[event.type]
   const basePoints = POINTS_CONFIG[event.type as keyof typeof POINTS_CONFIG] || 0;
-  const multiplier = userData.tier === "basic" ? 2 : 1;
-  const pointsValue = basePoints * multiplier;
+  let multiplier = 1.0;
+  if (userData.tier === "premium" || userData.tier === "gold") {
+    multiplier = 2.0;
+  } else if (userData.tier === "regular") {
+    multiplier = 1.5;
+  }
+  const pointsValue = Math.round(basePoints * multiplier);
 
   const ledgerReason = event.type === "referral_subscription" ? "referral_redemption" : event.type;
 
@@ -111,20 +148,42 @@ async function grantPoints(
  */
 async function grantCommission(
   userData: { id: string; tier: string },
-  event: RewardEvent
+  event: RewardEvent,
+  activeReferrals: number,
+  settings: any
 ): Promise<{ commissionEarned: number }> {
   // Determine commission amount: event.amount ?? COMMISSION_CONFIG[event.type]
   let amountValue: number = 0;
 
-  if (event.amount !== undefined) {
+  if (event.type === "referral_subscription" && event.amount !== undefined) {
+    // If the event override amount is passed (which is calculated from transaction total percentage), use it
     amountValue = event.amount;
+  } else if (event.type === "referral_subscription") {
+    // Fallback: calculate using referred subscription price (e.g. Regular $5.00, Premium $15.00)
+    // Assume basic gold tier equivalent as default or gold price ($5.00)
+    const baseSubscriptionPrice = 5.00;
+    
+    // Find percentage
+    let percentage = 0;
+    const tiers = settings.referralTiers || [];
+    for (const tier of tiers) {
+      if (activeReferrals >= tier.minReferrals && (tier.maxReferrals === null || activeReferrals <= tier.maxReferrals)) {
+        percentage = tier.commissionPercentage;
+        break;
+      }
+    }
+    amountValue = baseSubscriptionPrice * (percentage / 100);
   } else {
-    const configVal = COMMISSION_CONFIG[event.type as keyof typeof COMMISSION_CONFIG];
-    if (typeof configVal === "number") {
-      amountValue = configVal;
-    } else if (typeof configVal === "object" && configVal !== null) {
-      // It's referral_subscription config: { basic: 1.00, gold: 2.50, merchant: 5.00 }
-      amountValue = configVal.basic; 
+    // For signup or redemption, use the configuration values
+    if (event.amount !== undefined) {
+      amountValue = event.amount;
+    } else {
+      const configVal = COMMISSION_CONFIG[event.type as keyof typeof COMMISSION_CONFIG];
+      if (typeof configVal === "number") {
+        amountValue = configVal;
+      } else if (typeof configVal === "object" && configVal !== null) {
+        amountValue = configVal.basic; 
+      }
     }
   }
 
@@ -142,3 +201,4 @@ async function grantCommission(
 
   return { commissionEarned: amountValue };
 }
+

@@ -1,5 +1,5 @@
 import { Session } from "@polokaz/auth";
-import { db, referral, eq } from "@polokaz/db";
+import { db, referral, user, eq } from "@polokaz/db";
 import { desc } from "drizzle-orm";
 import { ForbiddenError, InvalidPayloadError } from "@polokaz/errors";
 import { referralCreateSchema } from "../validations/referrals";
@@ -50,8 +50,18 @@ export class ReferralsService {
     try {
       const trackdeskService = new TrackdeskService();
       const destinationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/sign-up/onboarding?referralId=${newReferral.id}`;
+      
+      const [dbUserRecord] = await db
+        .select({ trackdeskAffiliateId: user.trackdeskAffiliateId })
+        .from(user)
+        .where(eq(user.id, this.session.user.id))
+        .limit(1);
+
       const trackdeskUrl =
-        await trackdeskService.createTrackingLink(destinationUrl);
+        await trackdeskService.createTrackingLink(
+          destinationUrl,
+          dbUserRecord?.trackdeskAffiliateId || undefined
+        );
 
       if (trackdeskUrl) {
         // Update referral with Trackdesk URL

@@ -307,7 +307,6 @@ export class CoupontoolsService {
       normalized.includes("inactive") ||
       normalized.includes("expired") ||
       normalized.includes("removed") ||
-      normalized.includes("example") ||
       normalized.includes("draft")
     ) {
       return "inactive";
@@ -332,7 +331,11 @@ export class CoupontoolsService {
 
     const redemptionData: Record<string, unknown> = {};
 
-    if (redemptionUrl) redemptionData.url = redemptionUrl;
+    if (redemptionUrl) {
+      redemptionData.url = redemptionUrl;
+    } else if (couponCode) {
+      redemptionData.url = `https://digicpn.com/p/${couponCode}`;
+    }
     if (qrCode) redemptionData.qrCode = qrCode;
     if (couponCode) redemptionData.couponCode = couponCode;
 

@@ -2,19 +2,34 @@ import express from "express";
 import { db, eq, user, referralConversions } from "@polokaz/db";
 import { useWebhookLogger } from "../logger";
 import { PRICE_IDS, stripe } from "../services/stripe.service";
-import { dispatchReward } from "../services/rewards.service";
+import { dispatchReward, getActiveReferralCount, getAdminSettings } from "../services/rewards.service";
 import { TrackdeskService } from "../services/trackdesk";
+
 
 const router = express.Router();
 const logger = useWebhookLogger();
 
-type MembershipTier = "free" | "basic" | "gold" | "merchant";
+type MembershipTier =
+  | "free"
+  | "basic"
+  | "gold"
+  | "merchant"
+  | "regular"
+  | "premium"
+  | "organization"
+  | "small_vendor"
+  | "premium_vendor";
 
 function mapPriceIdToTier(priceId: string | undefined | null): MembershipTier {
   if (priceId) {
     if (priceId === PRICE_IDS.basic.monthly || priceId === PRICE_IDS.basic.yearly) return "basic";
     if (priceId === PRICE_IDS.gold.monthly || priceId === PRICE_IDS.gold.yearly) return "gold";
     if (priceId === PRICE_IDS.merchant.monthly || priceId === PRICE_IDS.merchant.yearly) return "merchant";
+    if (priceId === PRICE_IDS.regular.monthly || priceId === PRICE_IDS.regular.yearly) return "regular";
+    if (priceId === PRICE_IDS.premium.monthly || priceId === PRICE_IDS.premium.yearly) return "premium";
+    if (priceId === PRICE_IDS.organization.monthly || priceId === PRICE_IDS.organization.yearly) return "organization";
+    if (priceId === PRICE_IDS.small_vendor.monthly || priceId === PRICE_IDS.small_vendor.yearly) return "small_vendor";
+    if (priceId === PRICE_IDS.premium_vendor.monthly || priceId === PRICE_IDS.premium_vendor.yearly) return "premium_vendor";
   }
   return "free";
 }
@@ -93,14 +108,26 @@ router.post("/", (req: any, res) => {
                 .limit(1);
 
               if (referrer) {
-                // b. Calculate commission value based on new tier: basic = ~$1.00, gold = ~$2.50, merchant = ~$5.00
+                const amountPaid = session.amount_total ? session.amount_total / 100 : 0.00;
+                const activeReferrals = await getActiveReferralCount(referrer.id);
+                const settings = await getAdminSettings();
+                const isQualified = activeReferrals >= settings.referralQualificationLimit;
+
                 let commissionValue = 0.00;
-                if (tier === "basic") commissionValue = 1.00;
-                else if (tier === "gold") commissionValue = 2.50;
-                else if (tier === "merchant") commissionValue = 5.00;
+                if (isQualified && amountPaid > 0) {
+                  let percentage = 0;
+                  const tiers = settings.referralTiers || [];
+                  for (const t of tiers) {
+                    if (activeReferrals >= t.minReferrals && (t.maxReferrals === null || activeReferrals <= t.maxReferrals)) {
+                      percentage = t.commissionPercentage;
+                      break;
+                    }
+                  }
+                  commissionValue = amountPaid * (percentage / 100);
+                }
 
                 if (commissionValue > 0) {
-                  // c. Non-blocking: call dispatchReward
+                  // Qualified: dispatch commission
                   setImmediate(() => {
                     dispatchReward({
                       type: "referral_subscription",
@@ -108,7 +135,7 @@ router.post("/", (req: any, res) => {
                       referenceId: userId,
                       amount: commissionValue,
                     }).catch((err) => {
-                      logger.error("Failed to dispatch subscription reward", {
+                      logger.error("Failed to dispatch subscription commission reward", {
                         userId,
                         referrerId: referrer.id,
                         error: err instanceof Error ? err.message : String(err),
@@ -116,7 +143,7 @@ router.post("/", (req: any, res) => {
                     });
                   });
 
-                  // d. Non-blocking: if referrer.trackdeskAffiliateId: call trackdeskService.logConversion
+                  // Non-blocking: if referrer.trackdeskAffiliateId: call trackdeskService.logConversion
                   if (referrer.trackdeskAffiliateId) {
                     setImmediate(() => {
                       const trackdeskService = new TrackdeskService();
@@ -136,6 +163,21 @@ router.post("/", (req: any, res) => {
                         });
                     });
                   }
+                } else {
+                  // Not qualified: dispatch points instead
+                  setImmediate(() => {
+                    dispatchReward({
+                      type: "referral_subscription",
+                      userId: referrer.id,
+                      referenceId: userId,
+                    }).catch((err) => {
+                      logger.error("Failed to dispatch subscription points reward", {
+                        userId,
+                        referrerId: referrer.id,
+                        error: err instanceof Error ? err.message : String(err),
+                      });
+                    });
+                  });
                 }
               }
             }

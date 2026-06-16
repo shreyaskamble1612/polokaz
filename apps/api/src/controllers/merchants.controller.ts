@@ -162,6 +162,7 @@ export async function createMerchantDeal(req: Request, res: Response) {
   try {
     let coupontoolsId = null;
     let coupontoolsData = null;
+    let createdCampaignResult: any = null;
 
     try {
       const coupontools = new CoupontoolsService();
@@ -176,12 +177,23 @@ export async function createMerchantDeal(req: Request, res: Response) {
       });
       coupontoolsId = createdCampaign.coupontoolsId;
       coupontoolsData = createdCampaign.payload as Record<string, unknown>;
+      createdCampaignResult = createdCampaign;
     } catch (error) {
       logger.warn("Failed to create Coupontools campaign, using mock UUID.", {
         error: error instanceof Error ? error.message : String(error),
       });
       coupontoolsId = `mock-deal-${crypto.randomUUID()}`;
     }
+
+    const code =
+      createdCampaignResult?.payload?.coupon_info?.code ??
+      createdCampaignResult?.payload?.data?.code;
+    const redemptionData = code
+      ? {
+          url: `https://digicpn.com/p/${code}`,
+          couponCode: code,
+        }
+      : null;
 
     const [createdDeal] = await db
       .insert(deal)
@@ -202,6 +214,7 @@ export async function createMerchantDeal(req: Request, res: Response) {
         status: "pending_moderation",
         expiresAt,
         syncedAt: new Date(),
+        redemptionData,
         coupontoolsData,
       })
       .returning();
@@ -355,6 +368,13 @@ export async function getMerchantAnalytics(req: Request, res: Response) {
     );
   const totalRedemptions = totalQuery?.count ?? 0;
 
+  // 1b. Total redemptions all time
+  const [totalAllTimeQuery] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(redemptions)
+    .where(eq(redemptions.merchantId, merchant.id));
+  const totalRedemptionsAllTime = totalAllTimeQuery?.count ?? 0;
+
   // 2. Unique customers who redeemed
   const [uniqueQuery] = await db
     .select({ count: sql<number>`count(distinct ${redemptions.userId})::int` })
@@ -394,7 +414,7 @@ export async function getMerchantAnalytics(req: Request, res: Response) {
     .innerJoin(redemptions, eq(redemptions.dealId, deal.id))
     .where(
       and(
-        eq(deal.merchantId, merchant.id),
+        eq(redemptions.merchantId, merchant.id),
         sql`${redemptions.redeemedAt} >= ${startDate.toISOString()}`
       )
     )
@@ -413,7 +433,7 @@ export async function getMerchantAnalytics(req: Request, res: Response) {
     .from(redemptions)
     .innerJoin(deal, eq(redemptions.dealId, deal.id))
     .innerJoin(user, eq(redemptions.userId, user.id))
-    .where(eq(deal.merchantId, merchant.id))
+    .where(eq(redemptions.merchantId, merchant.id))
     .orderBy(desc(redemptions.redeemedAt))
     .limit(5);
 
@@ -421,6 +441,7 @@ export async function getMerchantAnalytics(req: Request, res: Response) {
 
   return res.json({
     totalRedemptions,
+    totalRedemptionsAllTime,
     uniqueCustomers,
     redemptionsPerDay,
     topDeals,

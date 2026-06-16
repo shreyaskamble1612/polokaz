@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpDown, Ban, Search, UserCog, Loader2 } from "lucide-react";
+import { ArrowUpDown, Ban, Search, UserCog, Loader2, MoreHorizontal, Settings, ShieldAlert, Award, Play, Scale } from "lucide-react";
 import useSWR from "swr";
 import { clientFetch } from "@/lib/api/client-fetch";
+import { authClient } from "@polokaz/auth/client";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,9 +21,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { Textarea } from "@/components/ui/textarea";
 
 type UserRole = "admin" | "merchant" | "customer";
-type UserTier = "free" | "basic" | "gold" | "merchant";
+type UserTier = "free" | "basic" | "gold" | "merchant" | "regular" | "premium" | "organization" | "small_vendor" | "premium_vendor";
 type UserStatus = "active" | "banned";
 type SortKey = "name" | "email" | "role" | "tier" | "createdAt";
 
@@ -36,6 +46,13 @@ type AdminUser = {
   createdAt: string;
   banned: boolean;
   referralCount: number;
+  status: "active" | "suspended" | "cancelled" | "terminated" | "under_review";
+  setupFeeWaived: boolean;
+  lastLoginAt?: string | null;
+  cancellationReason?: string | null;
+  suspensionReason?: string | null;
+  suspensionNotes?: string | null;
+  terminationReason?: string | null;
 };
 
 function tierBadge(tier: string) {
@@ -43,7 +60,17 @@ function tierBadge(tier: string) {
     case "gold":
       return <Badge className="rounded-full bg-amber-500/14 text-amber-700 hover:bg-amber-500/14">Gold</Badge>;
     case "basic":
-      return <Badge className="rounded-full bg-cyan-500/14 text-cyan-700 hover:bg-cyan-500/14">Basic</Badge>;
+      return <Badge className="rounded-full bg-slate-500/14 text-slate-700 hover:bg-slate-500/14">Basic</Badge>;
+    case "regular":
+      return <Badge className="rounded-full bg-sky-500/14 text-sky-700 hover:bg-sky-500/14">Regular</Badge>;
+    case "premium":
+      return <Badge className="rounded-full bg-indigo-500/14 text-indigo-700 hover:bg-indigo-500/14">Premium</Badge>;
+    case "organization":
+      return <Badge className="rounded-full bg-pink-500/14 text-pink-700 hover:bg-pink-500/14">Organization</Badge>;
+    case "small_vendor":
+      return <Badge className="rounded-full bg-violet-500/14 text-violet-700 hover:bg-violet-500/14">Small Vendor</Badge>;
+    case "premium_vendor":
+      return <Badge className="rounded-full bg-fuchsia-500/14 text-fuchsia-700 hover:bg-fuchsia-500/14">Premium Vendor</Badge>;
     case "merchant":
       return <Badge className="rounded-full bg-violet-500/14 text-violet-700 hover:bg-violet-500/14">Merchant</Badge>;
     default:
@@ -51,10 +78,12 @@ function tierBadge(tier: string) {
   }
 }
 
-function roleBadge(role: UserRole) {
+function roleBadge(role: string) {
   switch (role) {
+    case "super_admin":
+      return <Badge className="rounded-full bg-slate-950 text-white hover:bg-slate-950">Super Admin</Badge>;
     case "admin":
-      return <Badge className="rounded-full bg-slate-950 text-white hover:bg-slate-950">Admin</Badge>;
+      return <Badge className="rounded-full bg-slate-800 text-white hover:bg-slate-800">Admin</Badge>;
     case "merchant":
       return <Badge className="rounded-full bg-violet-500/14 text-violet-700 hover:bg-violet-500/14">Merchant</Badge>;
     default:
@@ -62,15 +91,26 @@ function roleBadge(role: UserRole) {
   }
 }
 
-function statusBadge(banned: boolean) {
-  return !banned ? (
-    <Badge className="rounded-full bg-emerald-500/14 text-emerald-700 hover:bg-emerald-500/14">Active</Badge>
-  ) : (
-    <Badge className="rounded-full bg-rose-500/14 text-rose-700 hover:bg-rose-500/14">Banned</Badge>
-  );
+function statusBadge(status?: string | null) {
+  const normalized = (status || "active").toLowerCase();
+  switch (normalized) {
+    case "active":
+      return <Badge className="rounded-full bg-emerald-500/14 text-emerald-700 hover:bg-emerald-500/14">Active</Badge>;
+    case "suspended":
+      return <Badge className="rounded-full bg-amber-500/14 text-amber-700 hover:bg-amber-500/14">Suspended</Badge>;
+    case "cancelled":
+      return <Badge className="rounded-full bg-slate-500/14 text-slate-700 hover:bg-slate-500/14">Cancelled</Badge>;
+    case "terminated":
+      return <Badge className="rounded-full bg-rose-500/14 text-rose-700 hover:bg-rose-500/14">Terminated</Badge>;
+    case "under_review":
+      return <Badge className="rounded-full bg-indigo-500/14 text-indigo-700 hover:bg-indigo-500/14">Review</Badge>;
+    default:
+      return <Badge variant="outline" className="rounded-full">{status}</Badge>;
+  }
 }
 
 export default function Page() {
+  const { data: session } = authClient.useSession();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [tierFilter, setTierFilter] = useState("all");
@@ -84,12 +124,35 @@ export default function Page() {
   const [targetTier, setTargetTier] = useState<UserTier>("basic");
   const [pendingTierChange, setPendingTierChange] = useState<{ user: AdminUser; tier: UserTier } | null>(null);
 
+  // New Moderation States
+  const [suspensionUser, setSuspensionUser] = useState<AdminUser | null>(null);
+  const [suspensionReason, setSuspensionReason] = useState("Payment Dispute");
+  const [suspensionNotes, setSuspensionNotes] = useState("");
+
+  const [cancellationUser, setCancellationUser] = useState<AdminUser | null>(null);
+  const [cancellationReason, setCancellationReason] = useState("Voluntary");
+  const [cancellationNotes, setCancellationNotes] = useState("");
+  const [cancellationImmediate, setCancellationImmediate] = useState(false);
+
+  const [terminationUser, setTerminationUser] = useState<AdminUser | null>(null);
+  const [terminationReason, setTerminationReason] = useState("TOS Violation");
+  const [terminationNotes, setTerminationNotes] = useState("");
+
+  const [reviewUser, setReviewUser] = useState<AdminUser | null>(null);
+  const [reviewReason, setReviewReason] = useState("Fraud Investigation");
+  const [reviewNotes, setReviewNotes] = useState("");
+
+  const [rewardUser, setRewardUser] = useState<AdminUser | null>(null);
+  const [rewardType, setRewardType] = useState<"points" | "commission">("points");
+  const [rewardAmount, setRewardAmount] = useState(0);
+  const [rewardReason, setRewardReason] = useState("");
+
   const queryParams = new URLSearchParams({
     page: String(page),
     limit: "10",
     role: roleFilter,
     tier: tierFilter,
-    banned: statusFilter,
+    status: statusFilter,
     search: search,
   });
 
@@ -117,9 +180,9 @@ export default function Page() {
 
   const handleTierChange = async (userId: string, tier: string) => {
     try {
-      await clientFetch(`/api/admin/users/${userId}/tier`, {
-        method: "POST",
-        body: JSON.stringify({ tier }),
+      await clientFetch(`/api/admin/member/${userId}/tier`, {
+        method: "PUT",
+        body: JSON.stringify({ new_tier: tier }),
       });
       mutate();
     } catch (err: any) {
@@ -127,15 +190,110 @@ export default function Page() {
     }
   };
 
-  const handleBanToggle = async (userId: string, currentlyBanned: boolean) => {
+  const handleSuspend = async () => {
+    if (!suspensionUser) return;
     try {
-      await clientFetch(`/api/admin/users/${userId}/ban`, {
-        method: "POST",
-        body: JSON.stringify({ banned: !currentlyBanned }),
+      await clientFetch(`/api/admin/member/${suspensionUser.id}/suspend`, {
+        method: "PUT",
+        body: JSON.stringify({ reason: suspensionReason, notes: suspensionNotes }),
+      });
+      setSuspensionUser(null);
+      setSuspensionReason("Payment Dispute");
+      setSuspensionNotes("");
+      mutate();
+    } catch (err: any) {
+      alert(err.message || "Failed to suspend member");
+    }
+  };
+
+  const handleReinstate = async (userObj: AdminUser) => {
+    try {
+      await clientFetch(`/api/admin/member/${userObj.id}/reinstate`, {
+        method: "PUT",
       });
       mutate();
     } catch (err: any) {
-      alert(err.message || "Failed to update ban status");
+      alert(err.message || "Failed to reinstate member");
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!cancellationUser) return;
+    try {
+      await clientFetch(`/api/admin/member/${cancellationUser.id}/cancel`, {
+        method: "PUT",
+        body: JSON.stringify({
+          reason: cancellationReason,
+          notes: cancellationNotes,
+          immediate: cancellationImmediate,
+        }),
+      });
+      setCancellationUser(null);
+      setCancellationReason("Voluntary");
+      setCancellationNotes("");
+      mutate();
+    } catch (err: any) {
+      alert(err.message || "Failed to cancel membership");
+    }
+  };
+
+  const handleTerminate = async () => {
+    if (!terminationUser) return;
+    try {
+      await clientFetch(`/api/admin/member/${terminationUser.id}/terminate`, {
+        method: "PUT",
+        body: JSON.stringify({ reason: terminationReason, notes: terminationNotes }),
+      });
+      setTerminationUser(null);
+      setTerminationReason("TOS Violation");
+      setTerminationNotes("");
+      mutate();
+    } catch (err: any) {
+      alert(err.message || "Failed to terminate member");
+    }
+  };
+
+  const handleReview = async () => {
+    if (!reviewUser) return;
+    try {
+      await clientFetch(`/api/admin/member/${reviewUser.id}/review`, {
+        method: "PUT",
+        body: JSON.stringify({ reason: reviewReason, notes: reviewNotes }),
+      });
+      setReviewUser(null);
+      setReviewReason("Fraud Investigation");
+      setReviewNotes("");
+      mutate();
+    } catch (err: any) {
+      alert(err.message || "Failed to place under review");
+    }
+  };
+
+  const handleToggleFeeWaive = async (userObj: AdminUser) => {
+    try {
+      await clientFetch(`/api/admin/member/${userObj.id}/waive-fee`, {
+        method: "PUT",
+        body: JSON.stringify({ waive: !userObj.setupFeeWaived }),
+      });
+      mutate();
+    } catch (err: any) {
+      alert(err.message || "Failed to waive signup fee");
+    }
+  };
+
+  const handleGrantReward = async () => {
+    if (!rewardUser) return;
+    try {
+      await clientFetch(`/api/admin/member/${rewardUser.id}/grant-reward`, {
+        method: "POST",
+        body: JSON.stringify({ rewardType, amount: Number(rewardAmount), reason: rewardReason }),
+      });
+      setRewardUser(null);
+      setRewardAmount(0);
+      setRewardReason("");
+      mutate();
+    } catch (err: any) {
+      alert(err.message || "Failed to grant reward");
     }
   };
 
@@ -201,6 +359,11 @@ export default function Page() {
                 <SelectItem value="all">All Tiers</SelectItem>
                 <SelectItem value="free">Free</SelectItem>
                 <SelectItem value="basic">Basic</SelectItem>
+                <SelectItem value="regular">Regular</SelectItem>
+                <SelectItem value="premium">Premium</SelectItem>
+                <SelectItem value="organization">Organization</SelectItem>
+                <SelectItem value="small_vendor">Small Vendor</SelectItem>
+                <SelectItem value="premium_vendor">Premium Vendor</SelectItem>
                 <SelectItem value="gold">Gold</SelectItem>
                 <SelectItem value="merchant">Merchant</SelectItem>
               </SelectContent>
@@ -212,8 +375,11 @@ export default function Page() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="false">Active</SelectItem>
-                <SelectItem value="true">Banned</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="terminated">Terminated</SelectItem>
+                <SelectItem value="under_review">Under Review</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>
@@ -298,12 +464,13 @@ export default function Page() {
                     </TableCell>
                     <TableCell>{new Date(user.createdAt).toLocaleDateString("en-US")}</TableCell>
                     <TableCell>{user.referralCount || 0}</TableCell>
-                    <TableCell>{statusBadge(user.banned)}</TableCell>
+                    <TableCell>{statusBadge(user.status)}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm" className="rounded-full" onClick={() => setViewedUser(user)}>
-                          View Profile
+                          Profile
                         </Button>
+                        
                         <Select
                           value={user.tier}
                           disabled={!!user.stripeSubscriptionId}
@@ -317,19 +484,78 @@ export default function Page() {
                           <SelectContent>
                             <SelectItem value="free">Free</SelectItem>
                             <SelectItem value="basic">Basic</SelectItem>
+                            <SelectItem value="regular">Regular</SelectItem>
+                            <SelectItem value="premium">Premium</SelectItem>
+                            <SelectItem value="organization">Organization</SelectItem>
+                            <SelectItem value="small_vendor">Small Vendor</SelectItem>
+                            <SelectItem value="premium_vendor">Premium Vendor</SelectItem>
                             <SelectItem value="gold">Gold</SelectItem>
                             <SelectItem value="merchant">Merchant</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button
-                          variant={!user.banned ? "destructive" : "default"}
-                          size="sm"
-                          className="rounded-full"
-                          onClick={() => handleBanToggle(user.id, user.banned)}
-                        >
-                          <Ban className="mr-2 h-4 w-4" />
-                          {!user.banned ? "Ban" : "Unban"}
-                        </Button>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="rounded-full h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="rounded-2xl border-slate-200">
+                            <DropdownMenuLabel>Moderation Controls</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            
+                            {user.status !== "suspended" && user.status !== "terminated" && (
+                              <DropdownMenuItem className="text-amber-600 focus:text-amber-700" onClick={() => setSuspensionUser(user)}>
+                                Suspend Account
+                              </DropdownMenuItem>
+                            )}
+
+                            {user.status !== "cancelled" && user.status !== "terminated" && (
+                              <DropdownMenuItem className="text-slate-700" onClick={() => setCancellationUser(user)}>
+                                Cancel Membership
+                              </DropdownMenuItem>
+                            )}
+
+                            {user.status !== "terminated" && (
+                              <DropdownMenuItem 
+                                className="text-rose-600 focus:text-rose-700" 
+                                onClick={() => {
+                                  if (session?.user?.role === "super_admin") {
+                                    setTerminationUser(user);
+                                  } else {
+                                    setReviewUser(user);
+                                  }
+                                }}
+                              >
+                                {session?.user?.role === "super_admin" ? "Terminate Account (Ban)" : "Flag for Super Admin review"}
+                              </DropdownMenuItem>
+                            )}
+
+                            {user.status !== "active" && (user.status !== "terminated" || session?.user?.role === "super_admin") && (
+                              <DropdownMenuItem className="text-emerald-600 focus:text-emerald-700" onClick={() => handleReinstate(user)}>
+                                Reinstate Account
+                              </DropdownMenuItem>
+                            )}
+
+                            {user.status === "active" && (
+                              <DropdownMenuItem className="text-indigo-600 focus:text-indigo-700" onClick={() => setReviewUser(user)}>
+                                Place Under Investigation
+                              </DropdownMenuItem>
+                            )}
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem onClick={() => handleToggleFeeWaive(user)}>
+                              {user.setupFeeWaived ? "Charge setup fee" : "Waive signup fee"}
+                              {user.setupFeeWaived && <Badge variant="outline" className="ml-2 bg-cyan-50 border-cyan-200 text-[10px]">Waived</Badge>}
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem className="text-purple-600 focus:text-purple-700" onClick={() => setRewardUser(user)}>
+                              Grant Points/Commissions
+                            </DropdownMenuItem>
+
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -382,7 +608,9 @@ export default function Page() {
               <p><span className="font-semibold">Role:</span> {viewedUser.role}</p>
               <p><span className="font-semibold">Tier:</span> {viewedUser.tier}</p>
               <p><span className="font-semibold">Referrals Count:</span> {viewedUser.referralCount || 0}</p>
-              <p><span className="font-semibold">Status:</span> {viewedUser.banned ? "Banned" : "Active"}</p>
+              <p><span className="font-semibold">Status:</span> {statusBadge(viewedUser.status)}</p>
+              {viewedUser.setupFeeWaived && <p><span className="font-semibold">Setup Fee:</span> Waived</p>}
+              {viewedUser.lastLoginAt && <p><span className="font-semibold">Last Login:</span> {new Date(viewedUser.lastLoginAt).toLocaleString()}</p>}
             </div>
           ) : null}
           <DialogFooter>
@@ -426,6 +654,11 @@ export default function Page() {
                 <SelectContent>
                   <SelectItem value="free">Free</SelectItem>
                   <SelectItem value="basic">Basic</SelectItem>
+                  <SelectItem value="regular">Regular</SelectItem>
+                  <SelectItem value="premium">Premium</SelectItem>
+                  <SelectItem value="organization">Organization</SelectItem>
+                  <SelectItem value="small_vendor">Small Vendor</SelectItem>
+                  <SelectItem value="premium_vendor">Premium Vendor</SelectItem>
                   <SelectItem value="gold">Gold</SelectItem>
                   <SelectItem value="merchant">Merchant</SelectItem>
                 </SelectContent>
@@ -443,20 +676,257 @@ export default function Page() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(pendingTierChange)} onOpenChange={(open) => !open && setPendingTierChange(null)}>
-        <DialogContent className="sm:max-w-md">
+       <Dialog open={Boolean(suspensionUser)} onOpenChange={(open) => !open && setSuspensionUser(null)}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
           <DialogHeader>
-            <DialogTitle>Confirm Tier Change</DialogTitle>
+            <DialogTitle>Suspend Member Account</DialogTitle>
             <DialogDescription>
-              Update {pendingTierChange?.user.name ?? "this user"} to {pendingTierChange?.tier ?? "selected tier"}?
+              Temporarily lock {suspensionUser?.name}&apos;s account access.
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid gap-2">
+              <Label>Suspension Reason</Label>
+              <Select value={suspensionReason} onValueChange={setSuspensionReason}>
+                <SelectTrigger className="rounded-2xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Payment Dispute">Payment Dispute</SelectItem>
+                  <SelectItem value="Rule Violation">Rule Violation</SelectItem>
+                  <SelectItem value="Fraud Investigation">Fraud Investigation</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Notes (Optional)</Label>
+              <Textarea
+                placeholder="Details of suspension..."
+                value={suspensionNotes}
+                onChange={(e) => setSuspensionNotes(e.target.value)}
+                className="rounded-2xl min-h-20"
+              />
+            </div>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPendingTierChange(null)} className="rounded-full">
+            <Button variant="outline" onClick={() => setSuspensionUser(null)} className="rounded-full">
               Cancel
             </Button>
-            <Button className="rounded-full bg-slate-950 text-white hover:bg-slate-800" onClick={confirmRowTierChange}>
-              Confirm
+            <Button onClick={handleSuspend} className="rounded-full bg-amber-600 text-white hover:bg-amber-700">
+              Confirm Suspension
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(cancellationUser)} onOpenChange={(open) => !open && setCancellationUser(null)}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Cancel Membership</DialogTitle>
+            <DialogDescription>
+              Terminate subscription and active residuals for {cancellationUser?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid gap-2">
+              <Label>Cancellation Reason</Label>
+              <Select value={cancellationReason} onValueChange={setCancellationReason}>
+                <SelectTrigger className="rounded-2xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Voluntary">Voluntary / Member-requested</SelectItem>
+                  <SelectItem value="Non-Payment">Non-payment (Stripe failure)</SelectItem>
+                  <SelectItem value="Rule Violation">Rule violation</SelectItem>
+                  <SelectItem value="Inactivity">Inactivity</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Notes (Optional)</Label>
+              <Textarea
+                placeholder="Reason details..."
+                value={cancellationNotes}
+                onChange={(e) => setCancellationNotes(e.target.value)}
+                className="rounded-2xl min-h-20"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                id="immediate-cancel"
+                type="checkbox"
+                checked={cancellationImmediate}
+                onChange={(e) => setCancellationImmediate(e.target.checked)}
+                className="rounded text-cyan-600 focus:ring-cyan-500"
+              />
+              <Label htmlFor="immediate-cancel" className="cursor-pointer">Cancel immediately (instead of end of period)</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancellationUser(null)} className="rounded-full">
+              Cancel
+            </Button>
+            <Button onClick={handleCancel} className="rounded-full bg-slate-900 text-white hover:bg-slate-800">
+              Confirm Cancellation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(terminationUser)} onOpenChange={(open) => !open && setTerminationUser(null)}>
+        <DialogContent className="sm:max-w-md rounded-3xl border-red-200">
+          <DialogHeader>
+            <DialogTitle className="text-red-700 flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-red-600" />
+              Permanently Terminate Member Account
+            </DialogTitle>
+            <DialogDescription>
+              This action is permanent, deactivates the Trackdesk affiliate profile, blocks their email, and forfeits all pending commissions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid gap-2">
+              <Label>Termination Reason</Label>
+              <Select value={terminationReason} onValueChange={setTerminationReason}>
+                <SelectTrigger className="rounded-2xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Fraud">Fraud / Fake Referrals</SelectItem>
+                  <SelectItem value="Harassment">Harassment</SelectItem>
+                  <SelectItem value="TOS Violation">TOS Violation</SelectItem>
+                  <SelectItem value="Financial Abuse">Financial Abuse</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Notes / Evidence (Mandatory)</Label>
+              <Textarea
+                placeholder="Provide details/evidence for permanent ban..."
+                value={terminationNotes}
+                onChange={(e) => setTerminationNotes(e.target.value)}
+                className="rounded-2xl min-h-24 border-red-200"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTerminationUser(null)} className="rounded-full">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleTerminate} 
+              disabled={!terminationNotes.trim()}
+              className="rounded-full bg-red-600 text-white hover:bg-red-700"
+            >
+              Confirm Permanent Ban
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(reviewUser)} onOpenChange={(open) => !open && setReviewUser(null)}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Place Under Investigation</DialogTitle>
+            <DialogDescription>
+              Restrict {reviewUser?.name}&apos;s account capabilities while keeping them active.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid gap-2">
+              <Label>Investigation Category</Label>
+              <Select value={reviewReason} onValueChange={setReviewReason}>
+                <SelectTrigger className="rounded-2xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Fraud Investigation">Referral Fraud Suspected</SelectItem>
+                  <SelectItem value="Chargeback Warning">Chargeback / Payment Dispute</SelectItem>
+                  <SelectItem value="TOS Audit">TOS Audit</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Notes</Label>
+              <Textarea
+                placeholder="Details of audit..."
+                value={reviewNotes}
+                onChange={(e) => setReviewNotes(e.target.value)}
+                className="rounded-2xl min-h-20"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReviewUser(null)} className="rounded-full">
+              Cancel
+            </Button>
+            <Button onClick={handleReview} className="rounded-full bg-indigo-600 text-white hover:bg-indigo-700">
+              Submit Review Flag
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(rewardUser)} onOpenChange={(open) => !open && setRewardUser(null)}>
+        <DialogContent className="sm:max-w-md rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Award className="h-5 w-5 text-purple-600" />
+              Override & Grant Reward Manually
+            </DialogTitle>
+            <DialogDescription>
+              Directly grant points or cash commissions to {rewardUser?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Reward Type</Label>
+                <Select value={rewardType} onValueChange={(v) => setRewardType(v as any)}>
+                  <SelectTrigger className="rounded-2xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="points">Points Ledger</SelectItem>
+                    <SelectItem value="commission">Cash Commission</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Amount</Label>
+                <Input
+                  type="number"
+                  placeholder="e.g. 500"
+                  value={rewardAmount || ""}
+                  onChange={(e) => setRewardAmount(Number(e.target.value))}
+                  className="rounded-2xl"
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label>Grant Reason (Required)</Label>
+              <Input
+                placeholder="e.g. Customer support bonus / manual override"
+                value={rewardReason}
+                onChange={(e) => setRewardReason(e.target.value)}
+                className="rounded-2xl"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRewardUser(null)} className="rounded-full">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleGrantReward} 
+              disabled={!rewardReason.trim() || rewardAmount <= 0}
+              className="rounded-full bg-purple-600 text-white hover:bg-purple-700"
+            >
+              Grant Reward
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -5,10 +5,7 @@ const logger = useTrackdeskLogger();
 
 const TRACKDESK_API_KEY = process.env.TRACKDESK_API_KEY;
 const TRACKDESK_CAMPAIGN_ID = process.env.TRACKDESK_CAMPAIGN_ID;
-const TRACKDESK_BASE_URL =
-  process.env.TRACKDESK_API_URL ||
-  process.env.TRACKDESK_BASE_URL ||
-  "https://api.trackdesk.com/v1";
+const TRACKDESK_TENANT_ID = process.env.TRACKDESK_TENANT_ID || "testingpolo";
 
 export interface TrackdeskConversionData {
   clickId: string; // Trackdesk click ID from URL parameter
@@ -38,6 +35,7 @@ export class TrackdeskService {
   private apiKey: string;
   private campaignId: string;
   private baseUrl: string;
+  private tenantId: string;
 
   constructor() {
     if (!TRACKDESK_API_KEY) {
@@ -49,7 +47,8 @@ export class TrackdeskService {
 
     this.apiKey = TRACKDESK_API_KEY;
     this.campaignId = TRACKDESK_CAMPAIGN_ID;
-    this.baseUrl = TRACKDESK_BASE_URL;
+    this.tenantId = TRACKDESK_TENANT_ID;
+    this.baseUrl = `https://${this.tenantId}.trackdesk.com`;
   }
 
   /**
@@ -69,19 +68,17 @@ export class TrackdeskService {
         userAgent,
       });
 
-      const response = await fetch(`${this.baseUrl}/clicks`, {
+      const response = await fetch(`${this.baseUrl}/api/node/clicks/v1`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-          "X-Campaign-ID": this.campaignId,
+          "X-Api-Key": this.apiKey,
         },
         body: JSON.stringify({
-          affiliate_id: affiliateId,
-          campaign_id: this.campaignId,
-          ip_address: ip,
-          user_agent: userAgent,
-          referral_code: referralCode,
+          linkId: referralCode,
+          sourceId: affiliateId,
+          ipAddress: ip,
+          userAgent: userAgent,
         }),
       });
 
@@ -121,21 +118,19 @@ export class TrackdeskService {
         conversionId: data.conversionId,
       });
 
-      const response = await fetch(`${this.baseUrl}/conversions`, {
+      const response = await fetch(`${this.baseUrl}/tracking/conversion/v1`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-          "X-Campaign-ID": this.campaignId,
+          "X-Api-Key": this.apiKey,
         },
         body: JSON.stringify({
-          click_id: data.clickId,
-          conversion_id: data.conversionId,
-          amount: data.amount,
-          currency: data.currency || "USD",
-          customer_id: data.customerId,
-          customer_email: data.customerEmail,
-          metadata: data.metadata,
+          cid: data.clickId,
+          externalId: data.conversionId,
+          amount: data.amount ? { value: String(data.amount) } : undefined,
+          currency: data.currency ? { code: data.currency } : { code: "USD" },
+          customerId: data.customerId,
+          customParams: data.metadata,
         }),
       });
 
@@ -158,13 +153,13 @@ export class TrackdeskService {
       });
 
       return {
-        id: result.id,
-        clickId: result.click_id,
-        conversionId: result.conversion_id,
-        status: result.status,
-        amount: result.amount,
-        currency: result.currency,
-        createdAt: result.created_at,
+        id: result.id || "",
+        clickId: result.click_id || result.cid || data.clickId,
+        conversionId: result.conversion_id || result.external_id || data.conversionId,
+        status: result.status === "CONVERSION_STATUS_APPROVED" ? "approved" : "pending",
+        amount: result.amount?.value ? parseFloat(result.amount.value) : data.amount,
+        currency: result.currency?.code || data.currency,
+        createdAt: result.created_at || new Date().toISOString(),
       };
     } catch (error) {
       logger.error("Error reporting conversion to Trackdesk", {
@@ -183,12 +178,18 @@ export class TrackdeskService {
   ): Promise<TrackdeskConversionResponse | null> {
     try {
       const response = await fetch(
-        `${this.baseUrl}/conversions/${trackdeskConversionId}`,
+        `${this.baseUrl}/api/reports/conversion-report/v1`,
         {
+          method: "POST",
           headers: {
-            Authorization: `Bearer ${this.apiKey}`,
-            "X-Campaign-ID": this.campaignId,
+            "Content-Type": "application/json",
+            "X-Api-Key": this.apiKey,
           },
+          body: JSON.stringify({
+            filters: {
+              ids: [trackdeskConversionId]
+            }
+          })
         },
       );
 
@@ -201,15 +202,17 @@ export class TrackdeskService {
       }
 
       const result = (await response.json()) as any;
+      const conv = result?.conversions?.[0];
+      if (!conv) return null;
 
       return {
-        id: result.id,
-        clickId: result.click_id,
-        conversionId: result.conversion_id,
-        status: result.status,
-        amount: result.amount,
-        currency: result.currency,
-        createdAt: result.created_at,
+        id: conv.id,
+        clickId: conv.click_id || conv.cid || "",
+        conversionId: conv.conversion_id || conv.external_id || "",
+        status: conv.status === "CONVERSION_STATUS_APPROVED" ? "approved" : "pending",
+        amount: conv.amount?.value ? parseFloat(conv.amount.value) : 0,
+        currency: conv.currency?.code || "USD",
+        createdAt: conv.created_at || new Date().toISOString(),
       };
     } catch (error) {
       logger.error("Error getting conversion from Trackdesk", {
@@ -224,45 +227,110 @@ export class TrackdeskService {
    * Create a Trackdesk tracking link for a referral URL
    * This wraps your referral URL so Trackdesk can track clicks
    */
-  async createTrackingLink(destinationUrl: string): Promise<string | null> {
-    try {
-      logger.info("Creating Trackdesk tracking link", { destinationUrl });
+  async createTrackingLink(destinationUrl: string, affiliatePublicId?: string): Promise<string | null> {
+    const fallbackUrl = `https://${this.tenantId}.trackdesk.com/click?id=${affiliatePublicId || "test-affiliate"}`;
+    
+    if (!affiliatePublicId) {
+      return fallbackUrl;
+    }
 
-      const response = await fetch(`${this.baseUrl}/links`, {
+    try {
+      logger.info("Creating Trackdesk tracking link", { destinationUrl, affiliatePublicId });
+
+      // 1. Fetch affiliate to get sourceId (UUID)
+      const listRes = await fetch(`${this.baseUrl}/api/node/affiliates/v1`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-          "X-Campaign-ID": this.campaignId,
+          "X-Api-Key": this.apiKey,
         },
         body: JSON.stringify({
-          destination_url: destinationUrl,
+          filters: {
+            publicIds: [affiliatePublicId]
+          }
+        })
+      });
+
+      if (!listRes.ok) {
+        logger.warn("Failed to fetch affiliate details, using fallback link", { status: listRes.status });
+        return fallbackUrl;
+      }
+
+      const listData = await listRes.json();
+      const affiliate = listData?.affiliates?.[0];
+      if (!affiliate || !affiliate.sourceId) {
+        logger.warn("Affiliate not found in Trackdesk, using fallback link", { affiliatePublicId });
+        return fallbackUrl;
+      }
+
+      const sourceId = affiliate.sourceId;
+
+      // 2. Fetch offers to get default landingPageId
+      const offerRes = await fetch(`${this.baseUrl}/api/node/offers/v1/list-with-landing-pages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": this.apiKey,
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!offerRes.ok) {
+        logger.warn("Failed to fetch offers, using fallback link", { status: offerRes.status });
+        return fallbackUrl;
+      }
+
+      const offerData = await offerRes.json();
+      const offer = offerData?.offers?.find((o: any) => o.id === this.campaignId);
+      if (!offer || !offer.landingPages || offer.landingPages.length === 0) {
+        logger.warn("Offer or landing pages not found, using fallback link", { campaignId: this.campaignId });
+        return fallbackUrl;
+      }
+
+      const landingPageId = offer.landingPages[0].id;
+
+      // 3. Build tracking link
+      const response = await fetch(`${this.baseUrl}/api/node/tracking-links/v1/build`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": this.apiKey,
+        },
+        body: JSON.stringify({
+          sourceId: sourceId,
+          offerId: this.campaignId,
+          target: {
+            systemRedirect: {
+              landingPageId: landingPageId,
+              deepLinkUrl: destinationUrl
+            }
+          }
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error("Failed to create Trackdesk tracking link", {
+        // If building failed (e.g. landing page targeting disabled), use direct fallback click link
+        logger.info("Trackdesk link build API returned error, falling back to direct click link", {
           status: response.status,
           error: errorText,
         });
-        return null;
+        return fallbackUrl;
       }
 
       const result = (await response.json()) as any;
-
       logger.info("Trackdesk tracking link created", {
-        trackingUrl: result.tracking_url,
+        trackingUrl: result.linkUrl,
         destinationUrl,
       });
 
-      return result.tracking_url; // e.g., https://track.trackdesk.com/click?...
+      return result.linkUrl;
     } catch (error) {
-      logger.error("Error creating Trackdesk tracking link", {
+      logger.error("Error creating Trackdesk tracking link, using fallback link", {
         error: error instanceof Error ? error.message : String(error),
         destinationUrl,
       });
-      return null;
+      return fallbackUrl;
     }
   }
 
@@ -277,17 +345,23 @@ export class TrackdeskService {
         name: user.name,
       });
 
-      const response = await fetch(`${this.baseUrl}/affiliates`, {
+      // Generate a lowercase alphanumeric publicId from user's id
+      const publicId = user.id.replace(/-/g, "").toLowerCase();
+
+      const response = await fetch(`${this.baseUrl}/api/node/affiliates/v1/register-with-user`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-          "X-Campaign-ID": this.campaignId,
+          "X-Api-Key": this.apiKey,
         },
         body: JSON.stringify({
           email: user.email,
           name: user.name,
-          externalId: user.id,
+          status: "ACCOUNT_STATUS_ENABLED",
+          publicId: {
+            value: publicId
+          },
+          shouldSendWelcomeEmail: false
         }),
       });
 
@@ -301,30 +375,21 @@ export class TrackdeskService {
         return null;
       }
 
-      const result = (await response.json()) as any;
-      const affiliateId = result?.id || null;
+      // Update the user record with the registered publicId
+      await db
+        .update(dbUser)
+        .set({
+          trackdeskAffiliateId: publicId,
+          updatedAt: new Date(),
+        })
+        .where(eq(dbUser.id, user.id));
 
-      if (affiliateId) {
-        await db
-          .update(dbUser)
-          .set({
-            trackdeskAffiliateId: affiliateId,
-            updatedAt: new Date(),
-          })
-          .where(eq(dbUser.id, user.id));
+      logger.info("Affiliate registered and stored successfully", {
+        userId: user.id,
+        trackdeskAffiliateId: publicId,
+      });
 
-        logger.info("Affiliate registered and stored successfully", {
-          userId: user.id,
-          trackdeskAffiliateId: affiliateId,
-        });
-      } else {
-        logger.error("Trackdesk response did not return an affiliate ID", {
-          result,
-          userId: user.id,
-        });
-      }
-
-      return affiliateId;
+      return publicId;
     } catch (error) {
       logger.error("Error registering affiliate in Trackdesk", {
         error: error instanceof Error ? error.message : String(error),
@@ -351,24 +416,40 @@ export class TrackdeskService {
         value,
       });
 
-      const response = await fetch(`${this.baseUrl}/conversions`, {
+      // Fetch sourceId (UUID) for this affiliate
+      const listRes = await fetch(`${this.baseUrl}/api/node/affiliates/v1`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-          "X-Campaign-ID": this.campaignId,
+          "X-Api-Key": this.apiKey,
         },
         body: JSON.stringify({
-          affiliateId,
-          affiliate_id: affiliateId,
-          campaignId: this.campaignId,
-          campaign_id: this.campaignId,
-          conversionType,
-          conversion_type: conversionType,
-          orderId,
-          order_id: orderId,
-          commissionValue: value,
-          commission_value: value,
+          filters: {
+            publicIds: [affiliateId]
+          }
+        })
+      });
+
+      let sourceId = "";
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        sourceId = listData?.affiliates?.[0]?.sourceId || "";
+      }
+
+      const response = await fetch(`${this.baseUrl}/tracking/conversion/v1`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": this.apiKey,
+        },
+        body: JSON.stringify({
+          externalClientId: sourceId || undefined,
+          revenueOriginId: sourceId ? "caf8dd2a-2346-431a-8c52-65478f60080c" : undefined,
+          conversionTypeCode: conversionType,
+          externalId: orderId,
+          customerId: orderId,
+          amount: { value: String(value) },
+          currency: { code: "USD" },
         }),
       });
 
@@ -391,6 +472,84 @@ export class TrackdeskService {
         error: error instanceof Error ? error.message : String(error),
         affiliateId,
       });
+    }
+  }
+
+  /**
+   * Deactivate a Trackdesk affiliate
+   */
+  async deactivateAffiliate(affiliateId: string): Promise<boolean> {
+    try {
+      logger.info("Deactivating affiliate in Trackdesk", { affiliateId });
+
+      const response = await fetch(`${this.baseUrl}/api/node/affiliates/v1/${affiliateId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": this.apiKey,
+        },
+        body: JSON.stringify({
+          status: "ACCOUNT_STATUS_DISABLED",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error("Failed to deactivate affiliate in Trackdesk", {
+          status: response.status,
+          error: errorText,
+          affiliateId,
+        });
+        return false;
+      }
+
+      logger.info("Affiliate deactivated successfully in Trackdesk", { affiliateId });
+      return true;
+    } catch (error) {
+      logger.error("Error deactivating affiliate in Trackdesk", {
+        error: error instanceof Error ? error.message : String(error),
+        affiliateId,
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Reactivate a Trackdesk affiliate
+   */
+  async reactivateAffiliate(affiliateId: string): Promise<boolean> {
+    try {
+      logger.info("Reactivating affiliate in Trackdesk", { affiliateId });
+
+      const response = await fetch(`${this.baseUrl}/api/node/affiliates/v1/${affiliateId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": this.apiKey,
+        },
+        body: JSON.stringify({
+          status: "ACCOUNT_STATUS_ENABLED",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error("Failed to reactivate affiliate in Trackdesk", {
+          status: response.status,
+          error: errorText,
+          affiliateId,
+        });
+        return false;
+      }
+
+      logger.info("Affiliate reactivated successfully in Trackdesk", { affiliateId });
+      return true;
+    } catch (error) {
+      logger.error("Error reactivating affiliate in Trackdesk", {
+        error: error instanceof Error ? error.message : String(error),
+        affiliateId,
+      });
+      return false;
     }
   }
 }

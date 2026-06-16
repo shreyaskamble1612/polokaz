@@ -114,19 +114,28 @@ function SavedWalletCard({
 
         <div className="flex items-center gap-3">
           <Button
-            onClick={() => onRedeem(item.dealId)}
-            disabled={isRedeeming || isRemoving}
-            className="flex-1 rounded-full bg-[linear-gradient(135deg,#f5d061_0%,#dca93b_100%)] text-zinc-950 hover:brightness-105 disabled:opacity-60"
+            asChild
+            className={`flex-1 rounded-full bg-[linear-gradient(135deg,#f5d061_0%,#dca93b_100%)] text-zinc-950 hover:brightness-105 ${
+              isRemoving ? "pointer-events-none opacity-60" : ""
+            }`}
           >
-            {isRedeeming ? (
-              <LoaderCircle className="size-4 animate-spin mr-2" />
-            ) : null}
-            Redeem
+            <Link
+              href={
+                deal.coupontoolsCouponId
+                  ? `/deals/${deal.id}#coupontools-widget`
+                  : `/deals/${deal.id}`
+              }
+            >
+              Redeem
+            </Link>
           </Button>
           <Button
             asChild
             variant="outline"
-            className="rounded-full border-white/10 bg-white/5 text-white hover:bg-white/10"
+            disabled={isRemoving}
+            className={`rounded-full border-white/10 bg-white/5 text-white hover:bg-white/10 ${
+              isRemoving ? "pointer-events-none opacity-60" : ""
+            }`}
           >
             <Link href={`/deals/${deal.id}`}>
               Details

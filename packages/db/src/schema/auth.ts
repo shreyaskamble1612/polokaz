@@ -2,6 +2,9 @@ import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, boolean, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { MembershipTier } from "./users-extended";
 
+export const userStatusValues = ["active", "suspended", "cancelled", "terminated", "under_review"] as const;
+export type UserStatus = (typeof userStatusValues)[number];
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -25,7 +28,22 @@ export const user = pgTable("user", {
   referralId: text("referral_id"),
   birthdate: timestamp("birthdate").notNull(),
   countryName: text("country_name").notNull(),
+  status: text("status").$type<UserStatus>().default("active").notNull(),
+  lastLoginAt: timestamp("last_login_at").defaultNow().notNull(),
+  setupFeeWaived: boolean("setup_fee_waived").default(false).notNull(),
+  cancellationReason: text("cancellation_reason"),
+  cancellationDate: timestamp("cancellation_date"),
+  cancellationInitiatedBy: text("cancellation_initiated_by"),
+  suspensionReason: text("suspension_reason"),
+  suspensionNotes: text("suspension_notes"),
+  suspensionDate: timestamp("suspension_date"),
+  suspensionInitiatedBy: text("suspension_initiated_by"),
+  terminationReason: text("termination_reason"),
+  terminationNotes: text("termination_notes"),
+  terminationDate: timestamp("termination_date"),
+  terminationInitiatedBy: text("termination_initiated_by"),
 });
+
 
 export const session = pgTable(
   "session",

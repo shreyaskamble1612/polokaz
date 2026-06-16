@@ -33,10 +33,15 @@ export function requireRole(req: Request, res: Response, allowedRoles: AllowedRo
 
   const role = getUserRole(session.user);
 
-  if (!allowedRoles.includes(role)) {
+  const hasAccess =
+    allowedRoles.includes(role) ||
+    (role === "super_admin" && allowedRoles.includes("admin"));
+
+  if (!hasAccess) {
     sendForbidden(res);
     return null;
   }
 
   return session;
 }
+

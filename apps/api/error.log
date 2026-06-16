@@ -243,3 +243,7 @@ params: RNwB5lSgImK7hksWy6aKPMJJ0kEHIvZK,2360f2e3-4b3c-4bd3-9dfe-ccc20e852559,,2
     at <anonymous> (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\node_modules\.pnpm\drizzle-orm@0.44.7_@types+pg@8.15.6_kysely@0.28.8_postgres@3.4.7\node_modules\src\postgres-js\session.ts:58:17)
     at redeemDealInWallet (C:\Users\HP\Desktop\Freelancing\Freelancing\Polokaz\apps\api\src\controllers\wallet.controller.ts:342:30)
 
+2026-06-13T13:53:24.474Z - APIError: Failed to get session
+
+2026-06-13T13:53:24.495Z - APIError: Failed to get session
+

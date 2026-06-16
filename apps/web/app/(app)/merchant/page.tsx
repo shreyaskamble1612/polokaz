@@ -117,10 +117,7 @@ export default function Page() {
   const activeDeals = dealsData?.deals?.filter((d: any) => d.status === "active") || [];
   const activeDealsCount = activeDeals.length;
 
-  const totalRedemptionsCount = dealsData?.deals?.reduce(
-    (sum: number, d: any) => sum + (d.redemptionCount || 0),
-    0
-  ) || 0;
+  const totalRedemptionsCount = analyticsData?.totalRedemptionsAllTime ?? 0;
 
   const redemptions30d = analyticsData?.totalRedemptions ?? 0;
   const uniqueCustomers30d = analyticsData?.uniqueCustomers ?? 0;

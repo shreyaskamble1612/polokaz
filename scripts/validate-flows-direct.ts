@@ -16,8 +16,7 @@ import {
   inArray,
 } from "@polokaz/db";
 import { hashPassword } from "better-auth/crypto";
-import { spawn, ChildProcess } from "child_process";
-import path from "path";
+import crypto from "crypto";
 
 const API_PORT = 3001;
 const API_URL = `http://127.0.0.1:${API_PORT}`;
@@ -40,7 +39,7 @@ function getCookieString(headers: Headers): string {
 }
 
 async function runTests() {
-  console.log("🚀 Starting E2E validation script...");
+  console.log("🚀 Starting Direct E2E validation script...");
 
   // Setup unique emails for E2E tests
   const adminEmail = "e2e_admin@example.com";
@@ -175,44 +174,7 @@ async function runTests() {
   });
 
   console.log("Seeding completed successfully.");
-
-  // Spawning the server
-  console.log("\n🌐 Spawning Express API server on port 3001...");
-  const serverProcess = spawn("pnpm", ["--filter", "@polokaz/api", "dev"], {
-    shell: true,
-    stdio: "pipe",
-    env: { ...process.env, PORT: String(API_PORT) },
-  });
-
-  // Handle server output
-  let serverStarted = false;
-  serverProcess.stdout.on("data", (data) => {
-    const output = data.toString();
-    console.log(`[Server Output] ${output.trim()}`);
-    if (output.includes("Server is running") || output.includes("http://127.0.0.1:3001")) {
-      serverStarted = true;
-    }
-  });
-
-  serverProcess.stderr.on("data", (data) => {
-    console.error(`[Server Error] ${data.toString().trim()}`);
-  });
-
-  // Wait for server to start
-  let attempts = 0;
-  while (!serverStarted && attempts < 15) {
-    process.stdout.write(".");
-    await wait(1000);
-    attempts++;
-  }
-  console.log("");
-
-  if (!serverStarted) {
-    console.error("❌ Failed to start the API server.");
-    serverProcess.kill();
-    process.exit(1);
-  }
-  console.log("✅ Express API server started and listening!");
+  console.log("✅ Using currently active API server on port 3001!");
 
   const results: Record<string, boolean> = {};
 
@@ -515,12 +477,6 @@ async function runTests() {
   } catch (error) {
     console.error("❌ E2E execution error:", error);
   } finally {
-    // ----------------------------------------------------
-    // TEAR DOWN
-    // ----------------------------------------------------
-    console.log("\n🛑 Stopping API server...");
-    serverProcess.kill("SIGTERM");
-    
     // Clean up E2E records
     console.log("🧹 Cleaning up created E2E records from database...");
     const oldUsers = await db.query.user.findMany({

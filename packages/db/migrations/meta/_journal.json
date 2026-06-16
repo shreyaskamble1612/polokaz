@@ -36,6 +36,20 @@
       "when": 1779943773401,
       "tag": "0004_platform_step1",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781357860334,
+      "tag": "0005_small_metal_master",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781507796532,
+      "tag": "0006_hot_talisman",
+      "breakpoints": true
     }
   ]
 }
