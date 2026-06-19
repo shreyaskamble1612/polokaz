@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Input } from "@/components/ui/input";
-import { Copy, Check, AlertTriangle } from "lucide-react";
+import { API_URL } from "@/lib/api/config";
+import { AlertTriangle, Copy, Check } from "lucide-react";
 
 const availableDates = [
   {

@@ -56,6 +56,7 @@ export function LoginForm({
     }
 
     if (data.user) {
+      router.refresh();
       router.push(getRoleHomePath(data.user));
     }
   }

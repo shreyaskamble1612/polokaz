@@ -245,6 +245,7 @@ export default function Page() {
       return;
     }
 
+    router.refresh();
     router.push(getRoleHomePath(data.user));
   };
 

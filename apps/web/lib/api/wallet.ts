@@ -1,6 +1,6 @@
 import type { ApiDeal } from "@/lib/api/deals";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { API_URL } from "./config";
 
 export type WalletStatus = "saved" | "redeemed";
 

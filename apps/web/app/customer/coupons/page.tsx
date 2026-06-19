@@ -112,7 +112,7 @@ const LOCATION_OPTIONS = [
   "Los Angeles, USA",
 ];
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { API_URL } from "@/lib/api/config";
 
 function formatDate(dateString: string | null) {
   if (!dateString) return "N/A";

@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { API_URL } from "./config";
 
 export async function clientFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headersInit = new Headers(options.headers);
