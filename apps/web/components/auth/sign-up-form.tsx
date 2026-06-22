@@ -80,8 +80,9 @@ export function SignUpForm({
 
   async function onSubmit(values: z.infer<typeof loginSchema>) {
     const finalReferralId = referralId || getCookie("polokaz_ref");
+    const finalTrackdeskClickId = trackdeskClickId || getCookie("polokaz_tdclid");
     const signUpPayload = {
-      trackdeskClickId: trackdeskClickId || undefined,
+      trackdeskClickId: finalTrackdeskClickId || undefined,
       name: values.name,
       email: values.email,
       password: values.password,
@@ -104,7 +105,7 @@ export function SignUpForm({
 
     if (data.user) {
       // If user signed up with a Trackdesk click ID, report the conversion
-      if (trackdeskClickId) {
+      if (finalTrackdeskClickId) {
         try {
           await fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/api/trackdesk/report-conversion`,

@@ -1,4 +1,4 @@
-import { and, db, deal, desc, eq, ilike, merchants, or, sql, walletItems } from "@polokaz/db";
+import { and, db, deal, desc, eq, ilike, merchants, or, sql, walletItems, merchantApplication } from "@polokaz/db";
 import { Request, Response } from "express";
 import { requireSession } from "../lib/authorization";
 
@@ -69,9 +69,11 @@ export async function listDeals(req: Request, res: Response) {
         thumbnailUrl: deal.thumbnailUrl,
         featured: deal.featured,
         coupontoolsCouponId: deal.coupontoolsCouponId,
+        merchantLocation: sql<string>`coalesce(${merchantApplication.companyAddress}, 'Las Vegas, Nevada')`,
       })
       .from(deal)
       .leftJoin(merchants, eq(deal.merchantId, merchants.id))
+      .leftJoin(merchantApplication, eq(merchants.userId, merchantApplication.userId))
       .where(whereClause)
       .orderBy(desc(deal.priority), desc(deal.createdAt))
       .limit(limit)
@@ -128,9 +130,11 @@ export async function listDealsByCategory(req: Request, res: Response) {
       thumbnailUrl: deal.thumbnailUrl,
       featured: deal.featured,
       coupontoolsCouponId: deal.coupontoolsCouponId,
+      merchantLocation: sql<string>`coalesce(${merchantApplication.companyAddress}, 'Las Vegas, Nevada')`,
     })
     .from(deal)
     .leftJoin(merchants, eq(deal.merchantId, merchants.id))
+    .leftJoin(merchantApplication, eq(merchants.userId, merchantApplication.userId))
     .where(eq(deal.status, "active" as const))
     .orderBy(desc(deal.priority), desc(deal.createdAt));
 
@@ -191,6 +195,7 @@ export async function getDealDetail(req: Request, res: Response) {
         thumbnailUrl: deal.thumbnailUrl,
         metadata: deal.metadata,
         coupontoolsCouponId: deal.coupontoolsCouponId,
+        merchantLocation: sql<string>`coalesce(${merchantApplication.companyAddress}, 'Las Vegas, Nevada')`,
       },
       merchant: {
         id: merchants.id,
@@ -202,11 +207,13 @@ export async function getDealDetail(req: Request, res: Response) {
         coupontoolsMerchantId: merchants.coupontoolsMerchantId,
         status: merchants.status,
         createdAt: merchants.createdAt,
+        companyAddress: sql<string>`coalesce(${merchantApplication.companyAddress}, 'Las Vegas, Nevada')`,
       },
       walletStatus: walletItems.status,
     })
     .from(deal)
     .leftJoin(merchants, eq(deal.merchantId, merchants.id))
+    .leftJoin(merchantApplication, eq(merchants.userId, merchantApplication.userId))
     .leftJoin(
       walletItems,
       and(eq(walletItems.dealId, deal.id), eq(walletItems.userId, session.user.id)),
@@ -262,9 +269,11 @@ export async function listFeaturedDeals(req: Request, res: Response) {
       thumbnailUrl: deal.thumbnailUrl,
       featured: deal.featured,
       coupontoolsCouponId: deal.coupontoolsCouponId,
+      merchantLocation: sql<string>`coalesce(${merchantApplication.companyAddress}, 'Las Vegas, Nevada')`,
     })
     .from(deal)
     .leftJoin(merchants, eq(deal.merchantId, merchants.id))
+    .leftJoin(merchantApplication, eq(merchants.userId, merchantApplication.userId))
     .where(and(eq(deal.status, "active" as const), eq(deal.featured, true)))
     .orderBy(desc(deal.priority), desc(deal.createdAt))
     .limit(6);

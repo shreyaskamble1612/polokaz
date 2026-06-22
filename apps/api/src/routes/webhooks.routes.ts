@@ -131,6 +131,9 @@ function extractRedemptionDetails(event: CoupontoolsWebhookBody) {
   );
 
   const consumerIdentifier = pickString(
+    event.customid as string | undefined,
+    customer?.customid as string | undefined,
+    data?.customid as string | undefined,
     event.consumerIdentifier,
     event.consumer,
     data?.consumerIdentifier,
@@ -177,9 +180,7 @@ function isRedemptionEvent(event: CoupontoolsWebhookBody): boolean {
   return Boolean(details.coupontoolsCampaignId && details.consumerIdentifier);
 }
 
-async function dispatchReward(redemption: Redemption) {
-  console.log("[REWARD] Dispatch triggered for redemption:", redemption.id);
-}
+
 
 async function processRedemptionEvent(event: CoupontoolsWebhookBody) {
   const eventId = extractEventId(event);
@@ -271,8 +272,12 @@ async function processRedemptionEvent(event: CoupontoolsWebhookBody) {
   });
 
   setImmediate(() => {
-    void dispatchReward(redemptionRecord).catch((error) => {
-      logger.error("Reward dispatch failed", {
+    void realDispatchReward({
+      type: "deal_redemption",
+      userId: userRow.id,
+      referenceId: redemptionRecord.id,
+    }).catch((error) => {
+      logger.error("User deal redemption reward dispatch failed", {
         redemptionId: redemptionRecord.id,
         error: error instanceof Error ? error.message : String(error),
       });

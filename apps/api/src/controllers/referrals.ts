@@ -38,6 +38,51 @@ router.get("/my-link", async (req, res) => {
       .returning();
   }
 
+  // 2.5 Ensure Trackdesk tracking URL is generated if missing
+  if (!userReferral.trackdeskUrl) {
+    try {
+      const trackdeskService = new TrackdeskService();
+      const destinationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/sign-up/onboarding?referralId=${userReferral.id}`;
+      
+      const [dbUserRecord] = await db
+        .select({ trackdeskAffiliateId: user.trackdeskAffiliateId })
+        .from(user)
+        .where(eq(user.id, userId))
+        .limit(1);
+
+      let affiliateId = dbUserRecord?.trackdeskAffiliateId;
+
+      if (!affiliateId) {
+        // Register affiliate on the fly
+        const userEmail = req.session.user.email;
+        const userName = req.session.user.name || "Polokaz User";
+        affiliateId = await trackdeskService.registerAffiliate({
+          id: userId,
+          email: userEmail,
+          name: userName,
+        }) || undefined;
+      }
+
+      if (affiliateId) {
+        const trackdeskUrl = await trackdeskService.createTrackingLink(
+          destinationUrl,
+          affiliateId
+        );
+
+        if (trackdeskUrl) {
+          const [updatedReferral] = await db
+            .update(referral)
+            .set({ trackdeskUrl })
+            .where(eq(referral.id, userReferral.id))
+            .returning();
+          userReferral = updatedReferral;
+        }
+      }
+    } catch (err) {
+      console.error("Failed to generate Trackdesk link in my-link endpoint:", err);
+    }
+  }
+
   const referralId = userReferral.id;
 
   // 3. Gather stats

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -103,8 +103,19 @@ function ProgressPill({ index, active, done }: { index: number; active: boolean;
   );
 }
 
-export default function Page() {
+function getCookie(name: string): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift();
+  return undefined;
+}
+
+function MerchantSignUpContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const referralId = searchParams.get("referralId") || searchParams.get("ref") || searchParams.get("code");
+  const trackdeskClickId = searchParams.get("tdclid");
   const [step, setStep] = useState<Step>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -217,6 +228,9 @@ export default function Page() {
     setIsSubmitting(true);
     setError(null);
 
+    const finalReferralId = referralId || getCookie("polokaz_ref");
+    const finalTrackdeskClickId = trackdeskClickId || getCookie("polokaz_tdclid");
+
     const signUpPayload = {
       name: values.name,
       email: values.email,
@@ -224,6 +238,8 @@ export default function Page() {
       birthdate: new Date(values.dateOfBirth),
       countryName: values.countryName,
       tier: "merchant",
+      trackdeskClickId: finalTrackdeskClickId || undefined,
+      ...(finalReferralId ? { referralId: finalReferralId } : {}),
       // Pass onboarding business data inside custom signup payload
       companyName: values.companyName,
       businessType: values.businessType,
@@ -518,5 +534,17 @@ export default function Page() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#05070b] text-white">
+        <Loader2 className="h-10 w-10 text-amber-500 animate-spin" />
+      </div>
+    }>
+      <MerchantSignUpContent />
+    </Suspense>
   );
 }

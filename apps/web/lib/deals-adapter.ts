@@ -43,7 +43,7 @@ export function mapApiDealToUiDeal(deal: ApiDeal): UiDeal {
     merchantName: deal.merchantName,
     merchantSummary:
       "Featured Polokaz partner offering member-focused experiences, exclusive value, and premium local perks.",
-    merchantLocation: "Partner location details available after redemption.",
+    merchantLocation: deal.merchantLocation || "Partner location details available after redemption.",
     discount: mapDiscount(deal),
     expiresAt: deal.endDate ?? deal.expiresAt ?? new Date(Date.now() + 14 * 86400000).toISOString(),
     imageUrl: deal.thumbnailUrl || deal.images?.[0] || "/customer/thumbnail.png",
@@ -72,7 +72,7 @@ export function mapDealDetailToUiDeal(response: DealDetailResponse): UiDeal {
       merchant?.businessCategory
         ? `${merchant.businessCategory} partner on Polokaz with curated member-only savings.`
         : "Featured Polokaz partner offering exclusive value and premium local perks.",
-    merchantLocation: merchant?.website ?? merchant?.contactEmail ?? "Merchant details coming soon.",
+    merchantLocation: merchant?.companyAddress || merchant?.website || merchant?.contactEmail || "Merchant details coming soon.",
     discount: mapDiscount({
       discountValue: deal.discountValue,
       dealType: deal.dealType,

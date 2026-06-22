@@ -166,7 +166,7 @@ function toDashboardCard(deal: Deal, location: string): DashboardCard {
     merchant: deal.merchantName,
     liveDate: formatDate(deal.startDate),
     endDate: formatDate(deal.endDate),
-    location,
+    location: deal.merchantLocation || location,
     imageSrc:
       deal.thumbnailUrl ||
       deal.images?.[0] ||
@@ -255,7 +255,13 @@ export default function Page() {
 
         const matchesCategory = matchesCategoryHelper(deal.category, selectedCategory);
 
-        return matchesSearch && matchesCategory && deal.dealType === "coupon";
+        const matchesLocation =
+          selectedLocation === "Select location" ||
+          (deal.merchantLocation || "Las Vegas, Nevada")
+            .toLowerCase()
+            .includes(selectedLocation.split(",")[0].toLowerCase());
+
+        return matchesSearch && matchesCategory && matchesLocation && deal.dealType === "coupon";
       })
       .map((deal) => toDashboardCard(deal, location));
   }, [deals, normalizedSearch, selectedCategory, selectedLocation]);
@@ -276,7 +282,13 @@ export default function Page() {
 
         const matchesCategory = matchesCategoryHelper(deal.category, selectedCategory);
 
-        return matchesSearch && matchesCategory && (deal.dealType === "voucher" || deal.dealType === "loyalty");
+        const matchesLocation =
+          selectedLocation === "Select location" ||
+          (deal.merchantLocation || "Las Vegas, Nevada")
+            .toLowerCase()
+            .includes(selectedLocation.split(",")[0].toLowerCase());
+
+        return matchesSearch && matchesCategory && matchesLocation && (deal.dealType === "voucher" || deal.dealType === "loyalty");
       })
       .map((deal) => toDashboardCard(deal, location));
   }, [deals, normalizedSearch, selectedCategory, selectedLocation]);

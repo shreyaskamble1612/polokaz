@@ -18,6 +18,7 @@ export interface ApiDeal {
   thumbnailUrl: string | null;
   featured: boolean;
   coupontoolsCouponId: string | null;
+  merchantLocation?: string | null;
 }
 
 export type Deal = ApiDeal;
@@ -63,6 +64,7 @@ export interface DealDetailResponse {
     coupontoolsMerchantId: string | null;
     status: string;
     createdAt: string | null;
+    companyAddress?: string | null;
   } | null;
   isSaved: boolean;
   isRedeemed: boolean;

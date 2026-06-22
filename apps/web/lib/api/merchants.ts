@@ -83,6 +83,7 @@ export async function createMerchantDeal(input: {
   discountValue: string;
   expiresAt: string;
   imageUrl?: string;
+  templateType?: "default" | "scratch" | "wheel";
 }) {
   const response = await fetch(`${API_URL}/api/merchants/deals`, {
     method: "POST",

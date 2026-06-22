@@ -1,6 +1,6 @@
 import express from "express";
 import crypto from "crypto";
-import { db, eq, referralUse } from "@polokaz/db";
+import { db, eq, and, referralUse, referral, referralConversions, commissions } from "@polokaz/db";
 import {
   isWebhookProcessed,
   createWebhookEvent,
@@ -141,6 +141,114 @@ async function handleConversionCreated(webhookEventId: string, data: any) {
 }
 
 /**
+ * Helper to synchronize Trackdesk status with local commissions and referral use
+ */
+async function updateLocalCommissionStatus(
+  webhookEventId: string,
+  conversionId: string,
+  status: "approved" | "rejected" | "pending"
+) {
+  await logWebhookStep(webhookEventId, "info", `Updating local commission for conversion ${conversionId} to ${status}`);
+
+  // 1. Try to find if conversionId corresponds to a referralUse record (Signup conversion)
+  const [useRecord] = await db
+    .select()
+    .from(referralUse)
+    .where(eq(referralUse.id, conversionId))
+    .limit(1);
+
+  if (useRecord) {
+    // Update referralUse status
+    await db
+      .update(referralUse)
+      .set({
+        trackdeskStatus: status,
+        updatedAt: new Date(),
+      })
+      .where(eq(referralUse.id, useRecord.id));
+
+    // Look up the referrer
+    const [referralRecord] = await db
+      .select({ createdBy: referral.createdBy })
+      .from(referral)
+      .where(eq(referral.id, useRecord.referralId))
+      .limit(1);
+
+    if (referralRecord) {
+      const referrerId = referralRecord.createdBy;
+
+      // Find the referralConversions record linking referrer and referred user
+      const [conversionRecord] = await db
+        .select({ id: referralConversions.id })
+        .from(referralConversions)
+        .where(
+          and(
+            eq(referralConversions.referrerId, referrerId),
+            eq(referralConversions.referredUserId, useRecord.usedBy)
+          )
+        )
+        .limit(1);
+
+      if (conversionRecord) {
+        // Update local commission status
+        const updatedCommissions = await db
+          .update(commissions)
+          .set({
+            status: status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending",
+          })
+          .where(
+            and(
+              eq(commissions.referenceId, conversionRecord.id),
+              eq(commissions.userId, referrerId)
+            )
+          )
+          .returning();
+
+        await logWebhookStep(webhookEventId, "info", `Updated signup commission status`, {
+          referralConversionId: conversionRecord.id,
+          referrerId,
+          count: updatedCommissions.length,
+        });
+      }
+    }
+  } else {
+    // 2. If not found in referralUse, conversionId is likely a referred user's ID (Subscription conversion)
+    const [conversionRecord] = await db
+      .select({ id: referralConversions.id, referrerId: referralConversions.referrerId })
+      .from(referralConversions)
+      .where(eq(referralConversions.referredUserId, conversionId))
+      .limit(1);
+
+    if (conversionRecord && conversionRecord.referrerId) {
+      const referrerId = conversionRecord.referrerId;
+
+      // Update subscription commission status where referenceId = referred user ID
+      const updatedCommissions = await db
+        .update(commissions)
+        .set({
+          status: status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending",
+        })
+        .where(
+          and(
+            eq(commissions.referenceId, conversionId),
+            eq(commissions.userId, referrerId),
+            eq(commissions.reason, "referral_subscription")
+          )
+        )
+        .returning();
+
+      await logWebhookStep(webhookEventId, "info", `Updated subscription commission status`, {
+        referredUserId: conversionId,
+        referrerId,
+        count: updatedCommissions.length,
+      });
+    } else {
+      await logWebhookStep(webhookEventId, "warn", `No referralUse or referralConversions record matches conversionId ${conversionId}`);
+    }
+  }
+}
+
+/**
  * Handle conversion.updated event
  */
 async function handleConversionUpdated(webhookEventId: string, data: any) {
@@ -149,16 +257,17 @@ async function handleConversionUpdated(webhookEventId: string, data: any) {
     status: data.status,
   });
 
-  // Update our referral_use record with the new status
-  const conversionId = data.conversion_id; // This is our referral_use.id
+  const conversionId = data.conversion_id;
+  const rawStatus = data.status;
+  
+  let mappedStatus: "approved" | "rejected" | "pending" = "pending";
+  if (rawStatus === "approved" || rawStatus === "CONVERSION_STATUS_APPROVED") {
+    mappedStatus = "approved";
+  } else if (rawStatus === "rejected" || rawStatus === "CONVERSION_STATUS_REJECTED") {
+    mappedStatus = "rejected";
+  }
 
-  await db
-    .update(referralUse)
-    .set({
-      trackdeskStatus: data.status,
-      updatedAt: new Date(),
-    })
-    .where(eq(referralUse.id, conversionId));
+  await updateLocalCommissionStatus(webhookEventId, conversionId, mappedStatus);
 }
 
 /**
@@ -170,16 +279,7 @@ async function handleCommissionApproved(webhookEventId: string, data: any) {
   });
 
   const conversionId = data.conversion_id;
-
-  await db
-    .update(referralUse)
-    .set({
-      trackdeskStatus: "approved",
-      updatedAt: new Date(),
-    })
-    .where(eq(referralUse.id, conversionId));
-
-  // TODO: Create reward ledger entry for the referrer
+  await updateLocalCommissionStatus(webhookEventId, conversionId, "approved");
 }
 
 /**
@@ -191,14 +291,7 @@ async function handleCommissionRejected(webhookEventId: string, data: any) {
   });
 
   const conversionId = data.conversion_id;
-
-  await db
-    .update(referralUse)
-    .set({
-      trackdeskStatus: "rejected",
-      updatedAt: new Date(),
-    })
-    .where(eq(referralUse.id, conversionId));
+  await updateLocalCommissionStatus(webhookEventId, conversionId, "rejected");
 }
 
 export { router as trackdeskWebhookRouter };

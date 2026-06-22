@@ -17,6 +17,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { authClient } from "@polokaz/auth/client";
 
 const dealTypeLabel: Record<Deal["dealType"], string> = {
   coupon: "Coupon",
@@ -70,6 +71,23 @@ export function DealDetailView({
   onSave?: () => void | Promise<void>;
   onRedeem?: () => void | Promise<void>;
 }) {
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
+
+  const redemptionUrl = useMemo(() => {
+    if (!deal.redemptionData?.url) return "";
+    const urlStr = deal.redemptionData.url as string;
+    if (!userId) return urlStr;
+    try {
+      const url = new URL(urlStr);
+      url.searchParams.set("customid", userId);
+      return url.toString();
+    } catch {
+      const separator = urlStr.includes("?") ? "&" : "?";
+      return `${urlStr}${separator}customid=${userId}`;
+    }
+  }, [deal.redemptionData?.url, userId]);
+
   const [termsOpen, setTermsOpen] = useState(false);
 
   const daysRemaining = useMemo(() => getDaysRemaining(deal.expiresAt), [deal.expiresAt]);
@@ -130,7 +148,7 @@ export function DealDetailView({
                 </h3>
                 <div className="relative w-full h-[650px] rounded-[20px] overflow-hidden bg-black/40 border border-white/5">
                   <iframe
-                    src={deal.redemptionData.url as string}
+                    src={redemptionUrl}
                     title="Interactive Coupon/Voucher"
                     className="absolute inset-0 w-full h-full border-none"
                     allow="geolocation; camera; microphone"

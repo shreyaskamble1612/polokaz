@@ -299,7 +299,7 @@ export default function Page() {
       const matchesCategory = matchesCategoryHelper(deal.category, selectedCategory);
 
       const merchantObj = merchantsList.find((m) => m.id === deal.merchantId);
-      const mAddress = merchantObj?.companyAddress || "Las Vegas, Nevada";
+      const mAddress = deal.merchantLocation || merchantObj?.companyAddress || "Las Vegas, Nevada";
       const matchesLocation =
         selectedLocation === "Select location" ||
         mAddress.toLowerCase().includes(selectedLocation.split(",")[0].toLowerCase());
@@ -320,7 +320,7 @@ export default function Page() {
       const matchesCategory = matchesCategoryHelper(deal.category, selectedCategory);
 
       const merchantObj = merchantsList.find((m) => m.id === deal.merchantId);
-      const mAddress = merchantObj?.companyAddress || "Las Vegas, Nevada";
+      const mAddress = deal.merchantLocation || merchantObj?.companyAddress || "Las Vegas, Nevada";
       const matchesLocation =
         selectedLocation === "Select location" ||
         mAddress.toLowerCase().includes(selectedLocation.split(",")[0].toLowerCase());
@@ -603,7 +603,7 @@ export default function Page() {
               {visibleRows.map((row) => {
                 const theme = getCategoryTheme(row.category);
                 const merchantObj = merchantsList.find((m) => m.id === row.merchantId);
-                const mAddress = merchantObj?.companyAddress || "Las Vegas, Nevada";
+                const mAddress = row.merchantLocation || merchantObj?.companyAddress || "Las Vegas, Nevada";
 
                 return (
                   <article

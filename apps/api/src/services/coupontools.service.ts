@@ -18,6 +18,7 @@ type CoupontoolsCreateCampaignPayload = {
   dealType: "coupon" | "voucher" | "loyalty";
   discountValue: string;
   expiresAt: string | null;
+  templateId?: string | null;
 };
 
 type SyncResult = {
@@ -281,7 +282,7 @@ export class CoupontoolsService {
         "/coupon/create",
       ],
       {
-        template: process.env.COUPONTOOLS_DEFAULT_TEMPLATE_ID || "1191621",
+        template: payload.templateId || process.env.COUPONTOOLS_DEFAULT_TEMPLATE_ID || "1191621",
         name: payload.title,
         title: payload.title,
         subtitle: payload.description || undefined,

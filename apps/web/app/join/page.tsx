@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 function JoinRedirectContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const refCode = searchParams.get("ref") || searchParams.get("code");
+  const refCode = searchParams.get("ref") || searchParams.get("code") || "";
   const [status, setStatus] = useState<"verifying" | "valid" | "invalid">("verifying");
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -30,12 +30,24 @@ function JoinRedirectContent() {
           // Set 30-day cookie
           const expirationDate = new Date();
           expirationDate.setDate(expirationDate.getDate() + 30);
-          document.cookie = `polokaz_ref=${refCode}; path=/; expires=${expirationDate.toUTCString()}; SameSite=Lax; Secure`;
+          const secureFlag = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
+
+          document.cookie = `polokaz_ref=${refCode}; path=/; expires=${expirationDate.toUTCString()}; SameSite=Lax${secureFlag}`;
+
+          const tdclid = searchParams.get("tdclid");
+          if (tdclid) {
+            document.cookie = `polokaz_tdclid=${tdclid}; path=/; expires=${expirationDate.toUTCString()}; SameSite=Lax${secureFlag}`;
+          }
 
           setStatus("valid");
           // Redirect after a brief moment to show success
           setTimeout(() => {
-            router.push(`/sign-up/onboarding?referralId=${refCode}`);
+            const redirectParams = new URLSearchParams();
+            redirectParams.set("referralId", refCode);
+            if (tdclid) {
+              redirectParams.set("tdclid", tdclid);
+            }
+            router.push(`/sign-up/onboarding?${redirectParams.toString()}`);
           }, 1500);
         } else {
           setStatus("invalid");

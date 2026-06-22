@@ -44,6 +44,7 @@ const dealSchema = z.object({
   discountValue: z.coerce.number().positive("Enter a discount value"),
   expiryDate: z.string().min(1, "Choose an expiry date"),
   imageUrl: z.string().url("Enter a valid image URL").or(z.string().trim().length(0)).optional().nullable(),
+  templateType: z.enum(["default", "scratch", "wheel"]),
 });
 
 type DealFormValues = z.infer<typeof dealSchema>;
@@ -106,6 +107,7 @@ export default function Page() {
       discountValue: 0,
       expiryDate: "",
       imageUrl: "",
+      templateType: "default",
     },
   });
 
@@ -179,6 +181,7 @@ export default function Page() {
       discountValue: 0,
       expiryDate: "",
       imageUrl: "",
+      templateType: "default",
     });
     setDialogOpen(true);
   };
@@ -195,6 +198,7 @@ export default function Page() {
         discountValue: String(values.discountValue),
         expiresAt: new Date(`${values.expiryDate}T00:00:00.000Z`).toISOString(),
         imageUrl: values.imageUrl || undefined,
+        templateType: values.templateType,
       });
 
       setDeals((current) => [response.deal, ...current]);
@@ -434,6 +438,21 @@ export default function Page() {
                 <Label htmlFor="expiryDate">Expiry Date</Label>
                 <Input id="expiryDate" type="date" {...form.register("expiryDate")} />
                 <p className="text-xs text-rose-600">{form.formState.errors.expiryDate?.message}</p>
+              </div>
+
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="templateType">Interactive Style</Label>
+                <Select value={form.watch("templateType")} onValueChange={(value) => form.setValue("templateType", value as DealFormValues["templateType"], { shouldValidate: true })}>
+                  <SelectTrigger id="templateType">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Standard Coupon</SelectItem>
+                    <SelectItem value="scratch">Scratch-Card Game (Interactive)</SelectItem>
+                    <SelectItem value="wheel">Spin the Wheel Game (Interactive)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-rose-600">{form.formState.errors.templateType?.message}</p>
               </div>
 
               <div className="grid gap-2 sm:col-span-2">

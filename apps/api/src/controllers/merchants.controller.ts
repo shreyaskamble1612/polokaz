@@ -33,6 +33,7 @@ const createDealSchema = z.object({
   discountValue: z.union([z.string().min(1), z.number().positive()]),
   expiresAt: z.string().datetime().or(z.string().min(1)).optional().nullable(),
   imageUrl: z.string().url().or(z.string().trim().length(0)).optional().nullable(),
+  templateType: z.enum(["default", "scratch", "wheel"]).optional().default("default"),
 });
 
 async function getMerchantProfileForUser(userId: string) {
@@ -164,6 +165,16 @@ export async function createMerchantDeal(req: Request, res: Response) {
     let coupontoolsData = null;
     let createdCampaignResult: any = null;
 
+    const templateType = parsed.data.templateType;
+    let templateId = "1191621";
+    if (templateType === "scratch") {
+      templateId = process.env.COUPONTOOLS_SCRATCH_TEMPLATE_ID || "1191622";
+    } else if (templateType === "wheel") {
+      templateId = process.env.COUPONTOOLS_SPIN_TEMPLATE_ID || "1191623";
+    } else {
+      templateId = process.env.COUPONTOOLS_DEFAULT_TEMPLATE_ID || "1191621";
+    }
+
     try {
       const coupontools = new CoupontoolsService();
       const createdCampaign = await coupontools.createCampaign({
@@ -174,6 +185,7 @@ export async function createMerchantDeal(req: Request, res: Response) {
         dealType: parsed.data.dealType,
         discountValue: String(parsed.data.discountValue),
         expiresAt: expiresAt?.toISOString() || "",
+        templateId,
       });
       coupontoolsId = createdCampaign.coupontoolsId;
       coupontoolsData = createdCampaign.payload as Record<string, unknown>;
@@ -216,6 +228,10 @@ export async function createMerchantDeal(req: Request, res: Response) {
         syncedAt: new Date(),
         redemptionData,
         coupontoolsData,
+        metadata: {
+          templateType,
+          templateId,
+        },
       })
       .returning();
 

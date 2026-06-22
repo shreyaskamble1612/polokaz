@@ -119,14 +119,39 @@ onSignUpCallbacks.push(async (newUser, body) => {
 
         if (referrer) {
           // Compatibility: insert into referralUse
-          await db
+          const [newReferralUse] = await db
             .insert(referralUse)
             .values({
               referralId: record.id,
               usedBy: newUser.id,
               trackdeskClickId: trackdeskClickId || null,
               trackdeskStatus: trackdeskClickId ? "pending" : null,
+            })
+            .returning();
+
+          if (trackdeskClickId && newReferralUse) {
+            setImmediate(async () => {
+              try {
+                const conversion = await trackdeskService.reportConversion({
+                  clickId: trackdeskClickId,
+                  conversionId: newReferralUse.id,
+                  customerId: newUser.id,
+                });
+                if (conversion) {
+                  await db
+                    .update(referralUse)
+                    .set({
+                      trackdeskConversionId: conversion.id,
+                      trackdeskStatus: conversion.status,
+                      updatedAt: new Date(),
+                    })
+                    .where(eq(referralUse.id, newReferralUse.id));
+                }
+              } catch (err) {
+                console.error("Failed to report conversion to Trackdesk in signup callback:", err);
+              }
             });
+          }
 
           // c. Insert into referral_conversions: { referrerId: referrer.id, referredUserId: newUser.id }
           const [newConversion] = await db
