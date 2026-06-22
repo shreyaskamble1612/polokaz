@@ -55,6 +55,9 @@ router.post("/users/:userId/tier", updateUserTier);
 router.post("/users/:userId/ban", updateUserBan);
 router.post("/users/:id/tier", updateUserTier);
 router.post("/users/:id/ban", updateUserBan);
+router.put("/member/:userId/tier", updateUserTier);
+router.put("/member/:id/tier", updateUserTier);
+router.put("/users/:userId/tier", updateUserTier);
 
 // Payouts
 router.get("/payouts", listPayoutsForAdmin);

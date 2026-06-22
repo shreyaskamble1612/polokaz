@@ -47,17 +47,17 @@ export function SubscriptionModal() {
     }
 
     // Show popup if the user has not chosen a subscription tier yet
-    const hasSelectedPlan = currentUser.hasSelectedPlan === true || currentUser.tier !== "free";
+    const hasSelectedPlan = currentUser.hasSelectedPlan === true || (currentUser.tier !== "free" && currentUser.tier !== null && currentUser.tier !== undefined);
     setIsOpen(!hasSelectedPlan);
   }, [currentUser, isExcludedRoute, pathname]);
 
-  if (!isOpen || !currentUser) {
+  if (!currentUser) {
     return null;
   }
 
   // Handle clicking the close (X) button
   const handleClose = async () => {
-    const hasPlan = currentUser.hasSelectedPlan === true || currentUser.tier !== "free";
+    const hasPlan = currentUser.hasSelectedPlan === true || (currentUser.tier !== "free" && currentUser.tier !== null && currentUser.tier !== undefined);
     
     if (hasPlan) {
       setIsOpen(false);
@@ -77,7 +77,7 @@ export function SubscriptionModal() {
     }
   };
 
-  const handleChoosePlan = async (tier: "free" | "basic" | "gold") => {
+  const handleChoosePlan = async (tier: "free" | "regular" | "premium") => {
     setLoadingTier(tier);
     setErrorMessage(null);
 
@@ -93,11 +93,12 @@ export function SubscriptionModal() {
           await authClient.getSession();
           setIsOpen(false);
           router.refresh();
+          router.push("/dashboard");
         } else {
           throw new Error("Direct upgrade failed");
         }
       } catch (err: any) {
-        setErrorMessage(err.message || "Failed to set Free plan. Please try again.");
+        setErrorMessage(err.message || "Failed to set Basic plan. Please try again.");
       } finally {
         setLoadingTier(null);
       }
@@ -133,6 +134,7 @@ export function SubscriptionModal() {
           await authClient.getSession();
           setIsOpen(false);
           router.refresh();
+          router.push("/dashboard");
         } else {
           throw new Error("Dev fallback upgrade failed");
         }
@@ -145,257 +147,274 @@ export function SubscriptionModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md overflow-y-auto">
-      <div className="relative my-8 w-full max-w-5xl rounded-[32px] bg-white p-6 shadow-2xl md:p-10 text-slate-800">
-        
-        {/* Close Button */}
-        <button
-          onClick={handleClose}
-          disabled={loadingTier !== null}
-          className="absolute right-6 top-6 rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
-          aria-label="Close"
-        >
-          {loadingTier === "cancelling" ? (
-            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-          ) : (
-            <X className="h-5 w-5" />
-          )}
-        </button>
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md overflow-y-auto">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: "spring", duration: 0.5, bounce: 0.15 }}
+            className="relative my-8 w-full max-w-5xl rounded-[32px] border border-zinc-800/80 bg-[#090b0f] p-6 shadow-[0_0_50px_rgba(0,0,0,0.85)] md:p-10 text-white overflow-hidden"
+          >
+            {/* Ambient Background Glows */}
+            <div className="absolute -left-1/4 -top-1/4 h-[350px] w-[350px] rounded-full bg-blue-500/10 blur-[130px] pointer-events-none" />
+            <div className="absolute -right-1/4 -bottom-1/4 h-[350px] w-[350px] rounded-full bg-amber-500/10 blur-[130px] pointer-events-none" />
 
-        {/* Modal Header */}
-        <div className="flex flex-col items-center justify-between gap-6 md:flex-row md:items-start">
-          <div className="flex items-center gap-2">
-            <span className="font-black text-[#1b3a62] text-xl flex items-center gap-1.5 uppercase tracking-tighter">
-              <span className="bg-[#0f7af7] text-white p-1 rounded-lg">P</span>
-              Polokaz
-            </span>
-          </div>
+            {/* Close Button */}
+            <button
+              onClick={handleClose}
+              disabled={loadingTier !== null}
+              className="absolute right-6 top-6 rounded-full p-2 text-zinc-400 hover:bg-zinc-800/50 hover:text-white transition"
+              aria-label="Close"
+            >
+              {loadingTier === "cancelling" ? (
+                <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+              ) : (
+                <X className="h-5 w-5" />
+              )}
+            </button>
 
-          <div className="flex flex-col items-center gap-4 sm:flex-row">
-            {/* Consumer Badge */}
-            <div className="rounded-full border border-blue-100 bg-[#f0f6ff] px-4 py-1 text-xs font-semibold text-[#0f7af7]">
-              Consumer Subscription
-            </div>
-
-            {/* Billing period switcher toggle */}
-            <div className="flex items-center rounded-full bg-slate-100 p-1 border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setBillingPeriod("monthly")}
-                className={`rounded-full px-4 py-1 text-xs font-bold transition-all ${
-                  billingPeriod === "monthly"
-                    ? "bg-[#0f7af7] text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                type="button"
-                onClick={() => setBillingPeriod("yearly")}
-                className={`relative flex items-center gap-1.5 rounded-full px-4 py-1 text-xs font-bold transition-all ${
-                  billingPeriod === "yearly"
-                    ? "bg-[#0f7af7] text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                Yearly
-                <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-extrabold ${
-                  billingPeriod === "yearly"
-                    ? "bg-amber-400 text-slate-900"
-                    : "bg-emerald-100 text-emerald-800"
-                }`}>
-                  Save 30%
+            {/* Modal Header */}
+            <div className="flex flex-col items-center justify-between gap-6 md:flex-row md:items-start relative z-10">
+              <div className="flex items-center gap-2">
+                <span className="font-black text-white text-xl flex items-center gap-1.5 uppercase tracking-tighter">
+                  <span className="bg-[#0f7af7] text-white p-1.5 rounded-lg flex items-center justify-center font-black">P</span>
+                  Polokaz
                 </span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Headline */}
-        <div className="mt-8 text-center">
-          <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
-            Perfect Plan for <span className="text-[#0f7af7] italic underline decoration-[#ef8a23]/65 decoration-wavy decoration-2 underline-offset-4 font-black">Your Needs</span>
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-500">
-            Get access to exclusive deals, special discounts, and premium offers. Pick the subscription that gives you the savings and perks you deserve.
-          </p>
-        </div>
-
-        {/* Error Feedback */}
-        {errorMessage && (
-          <div className="mt-6 flex items-center gap-3 rounded-2xl bg-red-50 p-4 text-sm text-red-700 border border-red-200">
-            <AlertCircle className="h-5 w-5 shrink-0 text-red-500" />
-            <p className="font-semibold">{errorMessage}</p>
-          </div>
-        )}
-
-        {/* Plan Grid */}
-        <div className="mt-8 grid gap-6 md:grid-cols-3">
-          
-          {/* Card 1: Basic Plan (White/Blue Border) */}
-          <div className="flex flex-col justify-between rounded-3xl border border-blue-400 bg-white p-6 shadow-sm relative transition-all duration-300 hover:shadow-md">
-            <div>
-              <h3 className="text-base font-bold text-slate-500">Basic Plan</h3>
-              <div className="mt-4 flex items-baseline text-slate-900">
-                <span className="text-4xl font-extrabold tracking-tight">$0</span>
-                <span className="ml-1 text-sm font-semibold text-slate-400">/ month</span>
               </div>
-              <p className="mt-2 text-xs font-semibold text-slate-400">Free forever - No card needed</p>
+
+              <div className="flex flex-col items-center gap-4 sm:flex-row">
+                {/* Consumer Badge */}
+                <div className="rounded-full border border-blue-500/25 bg-blue-500/10 px-4 py-1 text-xs font-semibold text-blue-400">
+                  Consumer Subscription
+                </div>
+
+                {/* Billing period switcher toggle */}
+                <div className="flex items-center rounded-full bg-zinc-900/90 p-1 border border-zinc-850">
+                  <button
+                    type="button"
+                    onClick={() => setBillingPeriod("monthly")}
+                    className={`rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
+                      billingPeriod === "monthly"
+                        ? "bg-[#0f7af7] text-white shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBillingPeriod("yearly")}
+                    className={`relative flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-all ${
+                      billingPeriod === "yearly"
+                        ? "bg-[#0f7af7] text-white shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >
+                    Yearly
+                    <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-extrabold ${
+                      billingPeriod === "yearly"
+                        ? "bg-amber-400 text-slate-950"
+                        : "bg-amber-400/10 text-amber-300 border border-amber-400/20"
+                    }`}>
+                      Save 30%
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Headline */}
+            <div className="mt-8 text-center relative z-10">
+              <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">
+                Choose Your <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-amber-300 bg-clip-text text-transparent italic underline decoration-amber-500/35 decoration-wavy decoration-2 underline-offset-4 font-black">Polokaz Membership</span>
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                Unlock the ultimate value. Save on book purchases, gain exclusive dealer access, and maximize your referral incentives.
+              </p>
+            </div>
+
+            {/* Error Feedback */}
+            {errorMessage && (
+              <div className="mt-6 flex items-center gap-3 rounded-2xl bg-red-950/40 border border-red-500/30 p-4 text-sm text-red-300 relative z-10">
+                <AlertCircle className="h-5 w-5 shrink-0 text-red-400" />
+                <p className="font-semibold">{errorMessage}</p>
+              </div>
+            )}
+
+            {/* Plan Grid */}
+            <div className="mt-8 grid gap-6 md:grid-cols-3 relative z-10">
               
-              <hr className="my-6 border-slate-100" />
+              {/* Card 1: Basic Plan (Free) */}
+              <div className="flex flex-col justify-between rounded-3xl border border-zinc-800 bg-zinc-900/30 p-6 shadow-sm relative transition-all duration-300 hover:border-zinc-700/60 hover:bg-zinc-900/40">
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Basic Membership</h3>
+                  <div className="mt-4 flex items-baseline text-white">
+                    <span className="text-4xl font-extrabold tracking-tight">$0</span>
+                    <span className="ml-1 text-sm font-semibold text-zinc-500">/ month</span>
+                  </div>
+                  <p className="mt-2 text-xs font-semibold text-zinc-500">Free forever - No card needed</p>
+                  
+                  <hr className="my-6 border-zinc-800" />
 
-              <ul className="space-y-4">
-                {[
-                  "Access to limited deals and coupons",
-                  "Earn small rewards on select offers",
-                  "Get notified about upcoming promotions",
-                  "No payment required - join instantly",
-                ].map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                      <Check className="h-3.5 w-3.5" />
-                    </span>
-                    <span className="text-xs text-slate-600 leading-normal">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                  <ul className="space-y-4">
+                    {[
+                      "Limited catalog access",
+                      "Basic referral participation",
+                      "Save deals to wallet",
+                      "Standard support",
+                    ].map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-800/80 text-zinc-400">
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                        <span className="text-xs text-zinc-400 leading-normal">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-            <div className="mt-8">
-              <button
-                type="button"
-                disabled={loadingTier !== null}
-                onClick={() => handleChoosePlan("free")}
-                className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-[#0f7af7] bg-[#f0f6ff] py-3 text-xs font-bold text-[#0f7af7] transition hover:bg-[#dfeafc] disabled:opacity-60"
-              >
-                {loadingTier === "free" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Get Started Free"
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Card 2: Premium Plan (Blue background, White text) */}
-          <div className="flex flex-col justify-between rounded-3xl bg-[#0f7af7] p-6 text-white shadow-xl relative transition-all duration-300 hover:shadow-2xl">
-            
-            {/* Most Popular badge */}
-            <div className="absolute right-4 top-4">
-              <span className="rounded-full bg-white/20 backdrop-blur px-3 py-1 text-[9px] font-black uppercase tracking-wider text-white">
-                Most Popular
-              </span>
-            </div>
-
-            <div>
-              <h3 className="text-base font-bold text-blue-100">Premium Plan</h3>
-              <div className="mt-4 flex items-baseline text-white">
-                <span className="text-4xl font-extrabold tracking-tight">
-                  {billingPeriod === "monthly" ? "$20" : "$14"}
-                </span>
-                <span className="ml-1 text-sm font-semibold text-blue-200">/ month</span>
+                <div className="mt-8">
+                  <button
+                    type="button"
+                    disabled={loadingTier !== null}
+                    onClick={() => handleChoosePlan("free")}
+                    className="flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-800/50 py-3 text-xs font-bold text-white transition hover:bg-zinc-800 disabled:opacity-60"
+                  >
+                    {loadingTier === "free" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Get Started Free"
+                    )}
+                  </button>
+                </div>
               </div>
-              <p className="mt-2 text-xs font-semibold text-blue-100">
-                {billingPeriod === "monthly" ? "Billed monthly" : "Billed yearly ($168/yr)"} - Cancel anytime
-              </p>
 
-              <hr className="my-6 border-white/10" />
+              {/* Card 2: Regular Plan */}
+              <div className="flex flex-col justify-between rounded-3xl border border-blue-500/25 bg-gradient-to-b from-blue-950/20 to-zinc-950/60 p-6 shadow-xl relative transition-all duration-300 hover:border-blue-500/40 hover:shadow-blue-500/5">
+                
+                {/* Most Popular badge */}
+                <div className="absolute right-4 top-4">
+                  <span className="rounded-full bg-blue-500/10 border border-blue-500/20 px-3 py-1 text-[9px] font-black uppercase tracking-wider text-blue-300">
+                    Most Popular
+                  </span>
+                </div>
 
-              <ul className="space-y-4">
-                {[
-                  "Unlock more deals and higher savings",
-                  "Early access to special discount campaigns",
-                  "Priority customer support for queries",
-                  "Monthly bonus coupons and perks",
-                ].map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
-                      <Check className="h-3.5 w-3.5" />
+                <div>
+                  <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider">Regular Membership</h3>
+                  <div className="mt-4 flex items-baseline text-white">
+                    <span className="text-4xl font-extrabold tracking-tight">
+                      {billingPeriod === "monthly" ? "$5" : "$3.50"}
                     </span>
-                    <span className="text-xs text-blue-50 leading-normal">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                    <span className="ml-1 text-sm font-semibold text-zinc-500">/ month</span>
+                  </div>
+                  <p className="mt-2 text-xs font-semibold text-blue-300/80">
+                    {billingPeriod === "monthly" ? "Billed monthly" : "Billed yearly ($42/yr)"}
+                  </p>
 
-            <div className="mt-8">
-              <button
-                type="button"
-                disabled={loadingTier !== null}
-                onClick={() => handleChoosePlan("basic")}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-white py-3 text-xs font-extrabold text-[#0f7af7] transition hover:bg-blue-50 disabled:opacity-60 shadow-lg"
-              >
-                {loadingTier === "basic" ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-[#0f7af7]" />
-                ) : (
-                  "Purchase Plan"
-                )}
-              </button>
-            </div>
-          </div>
+                  <hr className="my-6 border-zinc-800" />
 
-          {/* Card 3: Exclusive Plan (Black background, Yellow/Orange details) */}
-          <div className="flex flex-col justify-between rounded-3xl bg-[#090b0e] border border-white/5 p-6 text-white shadow-xl relative transition-all duration-300 hover:shadow-2xl">
-            
-            {/* Exclusive Badge */}
-            <div className="absolute right-4 top-4">
-              <span className="rounded-full bg-amber-400 px-3 py-1 text-[9px] font-black uppercase tracking-wider text-slate-900 flex items-center gap-1 shadow-md">
-                <Sparkles className="h-2.5 w-2.5" />
-                Exclusive
-              </span>
-            </div>
+                  <ul className="space-y-4">
+                    {[
+                      "Expanded catalog access",
+                      "Regular referral eligibility",
+                      "Enhanced reward options",
+                      "Priority support",
+                    ].map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-950/50 text-blue-400 border border-blue-800/20">
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                        <span className="text-xs text-zinc-300 leading-normal">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-            <div>
-              <h3 className="text-base font-bold text-amber-200">Exclusive Plan</h3>
-              <div className="mt-4 flex items-baseline text-white">
-                <span className="text-4xl font-extrabold tracking-tight">
-                  {billingPeriod === "monthly" ? "$30" : "$21"}
-                </span>
-                <span className="ml-1 text-sm font-semibold text-slate-400">/ month</span>
+                <div className="mt-8">
+                  <button
+                    type="button"
+                    disabled={loadingTier !== null}
+                    onClick={() => handleChoosePlan("regular")}
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[#0f7af7] py-3 text-xs font-extrabold text-white transition hover:bg-blue-600 disabled:opacity-60 shadow-lg shadow-blue-500/10"
+                  >
+                    {loadingTier === "regular" ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    ) : (
+                      "Subscribe Now"
+                    )}
+                  </button>
+                </div>
               </div>
-              <p className="mt-2 text-xs font-semibold text-slate-400">
-                {billingPeriod === "monthly" ? "Billed monthly" : "Billed yearly ($252/yr)"} - Cancel anytime
-              </p>
 
-              <hr className="my-6 border-white/5" />
+              {/* Card 3: Premium Plan */}
+              <div className="flex flex-col justify-between rounded-3xl border border-amber-500/25 bg-gradient-to-b from-amber-950/20 to-zinc-950/60 p-6 shadow-xl relative transition-all duration-300 hover:border-amber-500/40 hover:shadow-amber-500/5">
+                
+                {/* Premium Badge */}
+                <div className="absolute right-4 top-4">
+                  <span className="rounded-full bg-amber-400 px-3 py-1 text-[9px] font-black uppercase tracking-wider text-zinc-950 flex items-center gap-1 shadow-md">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    Premium VIP
+                  </span>
+                </div>
 
-              <ul className="space-y-4">
-                {[
-                  "VIP-only offers and biggest discounts",
-                  "Access to limited-time and partner deals",
-                  "Personalized recommendations and rewards",
-                  "Premium support and priority updates",
-                ].map((item, idx) => (
-                  <li key={idx} className="flex items-start gap-3">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400/10 text-amber-400">
-                      <Check className="h-3.5 w-3.5" />
+                <div>
+                  <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider">Premium Membership</h3>
+                  <div className="mt-4 flex items-baseline text-white">
+                    <span className="text-4xl font-extrabold tracking-tight">
+                      {billingPeriod === "monthly" ? "$15" : "$10.50"}
                     </span>
-                    <span className="text-xs text-slate-300 leading-normal">{item}</span>
-                  </li>
-                ))}
-              </ul>
+                    <span className="ml-1 text-sm font-semibold text-zinc-500">/ month</span>
+                  </div>
+                  <p className="mt-2 text-xs font-semibold text-amber-300/80">
+                    {billingPeriod === "monthly" ? "Billed monthly" : "Billed yearly ($126/yr)"}
+                  </p>
+                  <p className="text-[10px] text-zinc-500 mt-1 font-semibold">
+                    *Plus $25 activation fee (setup)
+                  </p>
+
+                  <hr className="my-6 border-zinc-800" />
+
+                  <ul className="space-y-4">
+                    {[
+                      "Full catalog access",
+                      "Vendor referral eligibility",
+                      "Advanced incentive opportunities",
+                      "Direct payouts & residual rewards",
+                      "Exclusive performance bonuses",
+                    ].map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-950/50 text-amber-400 border border-amber-800/20">
+                          <Check className="h-3.5 w-3.5" />
+                        </span>
+                        <span className="text-xs text-zinc-300 leading-normal">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-8">
+                  <button
+                    type="button"
+                    disabled={loadingTier !== null}
+                    onClick={() => handleChoosePlan("premium")}
+                    className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 py-3 text-xs font-extrabold text-zinc-950 transition hover:from-amber-300 hover:to-amber-400 disabled:opacity-60 shadow-lg shadow-amber-500/10"
+                  >
+                    {loadingTier === "premium" ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-zinc-950" />
+                    ) : (
+                      "Get Premium"
+                    )}
+                  </button>
+                </div>
+              </div>
+
             </div>
 
-            <div className="mt-8">
-              <button
-                type="button"
-                disabled={loadingTier !== null}
-                onClick={() => handleChoosePlan("gold")}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-amber-400 py-3 text-xs font-extrabold text-slate-950 transition hover:bg-amber-300 disabled:opacity-60 shadow-lg"
-              >
-                {loadingTier === "gold" ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
-                ) : (
-                  "Purchase Plan"
-                )}
-              </button>
-            </div>
-          </div>
-
+          </motion.div>
         </div>
-
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }

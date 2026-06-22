@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!--udkev3--><script>
+		;(function (w, d, s, l, i) {
+			w[l] = w[l] || []
+			w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
+			var f = d.getElementsByTagName(s)[0],
+				j = d.createElement(s),
+				dl = l != 'dataLayer' ? '&l=' + l : ''
+			j.async = true
+			j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl
+			f.parentNode.insertBefore(j, f)
+		})(window, document, 'script', 'dataLayer', 'GTM-TZH6892')
+	</script><!----><!----><!--7gf2tn--><link href="/favicon.ico" rel="icon"/><!----><!--1f26aok--><link crossorigin="" href="https://use.typekit.net/" rel="preconnect"/> <link as="style" href="https://use.typekit.net/hca4fbg.css" rel="preload" onload="this.__e=event"/><!---->
+		<link href="../_app/immutable/assets/ui.XCdJgLIX.css" rel="stylesheet">
+		<link href="../_app/immutable/assets/0.CRzNzeDT.css" rel="stylesheet">
+
+		<script>
+			const APP_ID = 'sut07euy'
+
+			window.intercomSettings = {
+				api_base: 'https://api-iam.intercom.io',
+				app_id: APP_ID,
+				hide_default_launcher: true,
+			}
+			;(function () {
+				var w = window
+				var ic = w.Intercom
+				if (typeof ic === 'function') {
+					ic('update', w.intercomSettings)
+				} else {
+					var d = document
+					var i = function () {
+						i.c(arguments)
+					}
+					i.q = []
+					i.c = function (args) {
+						i.q.push(args)
+					}
+					w.Intercom = i
+					var l = function () {
+						var s = d.createElement('script')
+						s.type = 'text/javascript'
+						s.async = true
+						s.src = 'https://widget.intercom.io/widget/' + APP_ID
+						var x = d.getElementsByTagName('script')[0]
+						x.parentNode.insertBefore(s, x)
+					}
+					if (document.readyState === 'complete') {
+						l()
+					} else if (w.attachEvent) {
+						w.attachEvent('onload', l)
+					} else {
+						w.addEventListener('load', l, false)
+					}
+				}
+			})()
+		</script>
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div id="app" style="display: contents"><!--[--><!--[0--><!--[--><!--[0--><!--]--> <!----> <!----> <!----> <div id="root" style="--color-primary-50: var(--color-blue-50);--color-primary-100: var(--color-blue-100);--color-primary-200: var(--color-blue-200);--color-primary-300: var(--color-blue-300);--color-primary-400: var(--color-blue-400);--color-primary-500: var(--color-blue-500);--color-primary-600: var(--color-blue-600);--color-primary-700: var(--color-blue-700);--color-primary-800: var(--color-blue-800);--color-primary-900: var(--color-blue-900);--color-primary-950: var(--color-blue-950)" class="font-body text-body contents text-base dark:bg-gray-900 dark:text-gray-100"><div class="max-w-form fixed top-0 right-0 z-50 mt-5 mr-5 flex w-full flex-col gap-4"><!--[--><!--]--></div><!----> <!--[0--><div id="ball"><!--[-1--><svg viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg"><path d="M24.21,29.34a64.59,64.59,0,0,1-18.42,0A6,6,0,0,1,.66,24.21a64.59,64.59,0,0,1,0-18.42A6,6,0,0,1,5.79.66a64.59,64.59,0,0,1,18.42,0,6,6,0,0,1,5.13,5.13,64.59,64.59,0,0,1,0,18.42A6,6,0,0,1,24.21,29.34Z" fill="#00b873"></path><path d="M19.65,16.94h-9.3a.72.72,0,0,1-.72-.72V13.78a.72.72,0,0,1,.72-.72h9.3a.72.72,0,0,1,.72.72v2.44A.72.72,0,0,1,19.65,16.94Zm3-6.4V8.1A.72.72,0,0,0,22,7.38H8.05a.72.72,0,0,0-.72.72v2.44a.73.73,0,0,0,.72.73H22A.73.73,0,0,0,22.67,10.54ZM18.07,21.9V19.46a.73.73,0,0,0-.72-.73h-4.7a.73.73,0,0,0-.72.73V21.9a.72.72,0,0,0,.72.72h4.7A.72.72,0,0,0,18.07,21.9Z" fill="#fff"></path></svg><!--]--></div> <style>
+		@keyframes bounce {
+			0% {
+				transform: translateY(0);
+			}
+			100% {
+				transform: translateY(-50px);
+			}
+		}
+
+		#ball {
+			margin: 100px auto 0 auto;
+			width: 40%;
+			max-width: 200px;
+			animation: bounce 0.8s;
+			animation-direction: alternate;
+			animation-iteration-count: infinite;
+		}
+	</style><!--]--><!----> <!--[-1--><!--]--><!----> <!----> <!--[-1--><!--]--><!----></div><!----> <!--[-1--><!--]--><!--]--><!--]--> <!--[-1--><!--]--><!--]-->
+			
+			<script>
+				{
+					const deferred = new Map();
+
+					__sveltekit_hyjcs7 = {
+						base: new URL("..", location).pathname.slice(0, -1),
+						defer: (id) => new Promise((fulfil, reject) => {
+							deferred.set(id, { fulfil, reject });
+						}),
+						resolve: async (id, fn) => {
+							const [data, error] = fn();
+
+							const try_to_resolve = () => {
+								if (!deferred.has(id)) {
+									setTimeout(try_to_resolve, 0);
+									return;
+								}
+								const { fulfil, reject } = deferred.get(id);
+								deferred.delete(id);
+								if (error) reject(error);
+								else fulfil(data);
+							}
+							try_to_resolve();
+						}
+					};
+
+					const element = document.currentScript.parentElement;
+
+					Promise.all([
+						import("../_app/immutable/entry/start.9jRQm-ur.js"),
+						import("../_app/immutable/entry/app.BDaYXyGe.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element, {
+							node_ids: [0, 1],
+							data: [{type:"data",data:{features:__sveltekit_hyjcs7.defer(1),tenantSettings:{lightModeLogoUrl:"https://firebasestorage.googleapis.com/v0/b/trackdesk-com-production-data/o/tenants%2Ftestingpolo%2Fsettings-images%2FlightModeLogo?alt=media&token=f7a980c2-e152-41f4-b38e-169e958f94d2",darkModeLogoUrl:null,faviconUrl:null,termsAndConditionText:null,billingDetails:{name:"",addressLine1:"",city:"",countryCode:"",postalCode:"",addressLine2:null,invoicingEmail:null,vat:null},currencyCode:"USD",registeredAt:"2025-09-24T06:20:43.405512Z",loginEnabled:true,loginAvailable:true,trafficEnabled:true,trafficAvailable:true,timezone:"America/Denver",tenantDetail:{id:"testingpolo",name:"TestingPolo",websiteUrl:"https://polokaz.com"},membershipPlanId:"PLAN_ID_ENTERPRISE",membershipPlatformId:"PLATFORM_ID_STRIPE",fraudSuspicionsVisible:true,referralEnabled:false,adminAccessStatus:"ADMIN_ACCESS_STATUS_ALLOWED_TILL_NEXT_REVENUE_CHECK",colorTheme:null,defaultTheme:"THEME_LIGHT",defaultLanguage:null,affiliatesVatRequired:false,tenantType:"TENANT_TYPE_ECOMMERCE",onboardingStatus:"ONBOARDING_STATUS_SELF_IMPLEMENTATION_APP_UNLOCKED",isAffiliateRateCostBasedOnConversionAmount:false,membershipEndAt:"2026-06-22T22:00:00Z",freeTrialActive:true,marketplaceAccessOverridden:false,advertiserParamsVisibility:{advS1:false,advS2:false,advS3:false,advS4:false,advS5:false,externalId:false,customerId:false,externalCid:false,ipAddress:false,cid:false,adClickId:false},referralConversionSourceAccountVisible:false,smartLinks:{visibleToAffiliates:true,offersVisibleInReports:true},defaultReportFiltering:null,whitelabelEnabled:false,defaultCustomDomain:null,privacyPolicy:{text:null,visible:true}},firebase:{config:{apiKey:"AIzaSyBeOAbDrxeVOgs71TMDegdrvzQ4V4AmoYM",appId:"1:464891913979:web:95e3cdc83864e16fa3b25e",authDomain:"trackdesk-com.firebaseapp.com",measurementId:"",messagingSenderId:"464891913979",projectId:"trackdesk-com-production",storageBucket:"trackdesk-com-production-data"},authEmulatorHost:"",firestoreEmulatorHost:"",storageEmulatorHost:""},environmentDomain:"trackdesk.com",featureIds:["FEATURE_ID_ACTIVE_OFFERS","FEATURE_ID_AVAILABLE_PAYMENT_METHODS","FEATURE_ID_COUPONS","FEATURE_ID_ENABLED_INTERNAL_USERS","FEATURE_ID_MULTI_CURRENCY","FEATURE_ID_PUBLIC_API","FEATURE_ID_AFFILIATE_APP_MESSAGES","FEATURE_ID_AFFILIATES_BULK_UPDATE","FEATURE_ID_AFFILIATES_EXPORT","FEATURE_ID_AFFILIATES_IMPORT","FEATURE_ID_ALBATO","FEATURE_ID_COLOR_THEME","FEATURE_ID_CONVERSIONS_IMPORT","FEATURE_ID_CUSTOM_PRIVACY_POLICY","FEATURE_ID_CUSTOM_TERMS_AND_CONDITIONS","FEATURE_ID_CUSTOM_TIERS","FEATURE_ID_DEFAULT_REPORT_FILTERING","FEATURE_ID_DEFAULT_THEME","FEATURE_ID_EXPORT_REPORTS","FEATURE_ID_LIVE_CHAT_INTERCOM_SUPPORT","FEATURE_ID_NOTIFICATIONS","FEATURE_ID_REFERRALS","FEATURE_ID_UI_TRANSLATIONS","FEATURE_ID_CONFIRMO","FEATURE_ID_CONVERSION_AMOUNT_MODIFICATION","FEATURE_ID_CONVERSIONS_UPDATE_CSV","FEATURE_ID_CUSTOM_AFFILIATE_FORM","FEATURE_ID_CUSTOM_AFFILIATE_REGISTRATION","FEATURE_ID_CUSTOM_CONVERSION_TYPES","FEATURE_ID_CUSTOM_DOMAINS","FEATURE_ID_CUSTOM_MENU_ITEMS","FEATURE_ID_CUSTOM_TIER_TRANSITION_AUTOMATION","FEATURE_ID_DEEP_LINKING","FEATURE_ID_FRAUD_DETECTION","FEATURE_ID_ON_HOLD","FEATURE_ID_PAYOUT_AUTOMATION","FEATURE_ID_PRICING_ADJUSTMENTS","FEATURE_ID_PRICING_SUPER_GROUP_RULES","FEATURE_ID_PRIVATE_OFFERS","FEATURE_ID_REDIRECT","FEATURE_ID_REDIRECT_MODES","FEATURE_ID_REFERRALS_INDIVIDUAL_ACCESS","FEATURE_ID_REPORT_BUILDER_ADVANCED","FEATURE_ID_SHORT_LINKS","FEATURE_ID_ACTIVITY_LOGS","FEATURE_ID_AFFILIATE_CONVERSION_VISIBILITY","FEATURE_ID_AFFILIATE_MANAGERS","FEATURE_ID_AFFILIATE_TICKETING","FEATURE_ID_ALBATO_PREMIUM_INTEGRATIONS","FEATURE_ID_ANURA","FEATURE_ID_APPLY_TO_RUN_OFFERS","FEATURE_ID_CONVERSION_AMOUNT_VISIBILITY","FEATURE_ID_CUSTOM_INTERNAL_PAGES","FEATURE_ID_CUSTOM_REVENUE_VISIBILITY","FEATURE_ID_FULL_WHITE_LABEL","FEATURE_ID_MULTI_FACTOR_AUTHENTICATION","FEATURE_ID_NOTIFICATION_CUSTOM_EVENTS","FEATURE_ID_OFFER_CAPS","FEATURE_ID_PUBLIC_API_PAYMENTS","FEATURE_ID_PUBLIC_API_SETTLEMENTS","FEATURE_ID_REDIRECT_DOMAINS_TYPE","FEATURE_ID_SMART_LINKS","FEATURE_ID_SMTP_EMAILING","FEATURE_ID_SOURCE_PUBLIC_ID_DEFINITION","FEATURE_ID_TRACKING_API_AUTHORIZATION","FEATURE_ID_TRACKING_BLOCKING","FEATURE_ID_TRACKING_QUALITY_CONTROL"],featureLimits:[],membership:{status:"STATUS_TRIALING",planId:"PLAN_ID_ENTERPRISE",startsAt:"2026-06-09T16:47:52.399678Z",endsAt:"2026-06-22T22:00:00Z",trialExpired:false,billingCycle:"BILLING_CYCLE_UNSPECIFIED"},googleCertifiedBaseDomain:"trkdsk.com"},uses:{url:1}}],
+							form: null,
+							error: {message:"Not Found"},
+							status: 404
+						});
+					});
+				}
+			</script>
+		</div>
+
+		<noscript>
+			<iframe
+				height="0"
+				src="https://www.googletagmanager.com/ns.html?id=GTM-TZH6892"
+				style="display: none; visibility: hidden"
+				width="0"
+			></iframe>
+		</noscript>
+	</body>
+</html>
+
+<script>__sveltekit_hyjcs7.resolve(1, () => [["ai-assistant"]])</script>

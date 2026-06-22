@@ -228,12 +228,9 @@ export class TrackdeskService {
    * This wraps your referral URL so Trackdesk can track clicks
    */
   async createTrackingLink(destinationUrl: string, affiliatePublicId?: string): Promise<string | null> {
-    const fallbackUrl = `https://${this.tenantId}.trackdesk.com/click?id=${affiliatePublicId || "test-affiliate"}`;
-    
     if (!affiliatePublicId) {
-      return fallbackUrl;
+      return null;
     }
-
     try {
       logger.info("Creating Trackdesk tracking link", { destinationUrl, affiliatePublicId });
 
@@ -252,15 +249,15 @@ export class TrackdeskService {
       });
 
       if (!listRes.ok) {
-        logger.warn("Failed to fetch affiliate details, using fallback link", { status: listRes.status });
-        return fallbackUrl;
+        logger.warn("Failed to fetch affiliate details, returning null", { status: listRes.status });
+        return null;
       }
 
       const listData = await listRes.json();
       const affiliate = listData?.affiliates?.[0];
       if (!affiliate || !affiliate.sourceId) {
-        logger.warn("Affiliate not found in Trackdesk, using fallback link", { affiliatePublicId });
-        return fallbackUrl;
+        logger.warn("Affiliate not found in Trackdesk, returning null", { affiliatePublicId });
+        return null;
       }
 
       const sourceId = affiliate.sourceId;
@@ -276,15 +273,15 @@ export class TrackdeskService {
       });
 
       if (!offerRes.ok) {
-        logger.warn("Failed to fetch offers, using fallback link", { status: offerRes.status });
-        return fallbackUrl;
+        logger.warn("Failed to fetch offers, returning null", { status: offerRes.status });
+        return null;
       }
 
       const offerData = await offerRes.json();
       const offer = offerData?.offers?.find((o: any) => o.id === this.campaignId);
       if (!offer || !offer.landingPages || offer.landingPages.length === 0) {
-        logger.warn("Offer or landing pages not found, using fallback link", { campaignId: this.campaignId });
-        return fallbackUrl;
+        logger.warn("Offer or landing pages not found, returning null", { campaignId: this.campaignId });
+        return null;
       }
 
       const landingPageId = offer.landingPages[0].id;
@@ -310,12 +307,12 @@ export class TrackdeskService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        // If building failed (e.g. landing page targeting disabled), use direct fallback click link
-        logger.info("Trackdesk link build API returned error, falling back to direct click link", {
+        // If building failed (e.g. landing page targeting disabled), return null so the system falls back to direct link
+        logger.info("Trackdesk link build API returned error, returning null for fallback to direct link", {
           status: response.status,
           error: errorText,
         });
-        return fallbackUrl;
+        return null;
       }
 
       const result = (await response.json()) as any;
@@ -326,11 +323,11 @@ export class TrackdeskService {
 
       return result.linkUrl;
     } catch (error) {
-      logger.error("Error creating Trackdesk tracking link, using fallback link", {
+      logger.error("Error creating Trackdesk tracking link, returning null", {
         error: error instanceof Error ? error.message : String(error),
         destinationUrl,
       });
-      return fallbackUrl;
+      return null;
     }
   }
 

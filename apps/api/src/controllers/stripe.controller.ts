@@ -144,6 +144,9 @@ export async function createCheckoutSession(req: Request, res: Response) {
       success_url: `${appUrl}/plans?checkout=success`,
       cancel_url: `${appUrl}/plans`,
       metadata: { userId: currentUser.id, tier, interval },
+      subscription_data: {
+        metadata: { userId: currentUser.id, tier },
+      },
     });
 
 

@@ -383,7 +383,7 @@ export async function updateUserTier(req: Request, res: Response) {
   if (!session) return;
 
   const userId = req.params.userId || req.params.id;
-  const { tier } = req.body;
+  const tier = req.body.tier || req.body.new_tier;
 
   if (!tier || !["free", "basic", "gold", "merchant", "regular", "premium", "organization", "small_vendor", "premium_vendor"].includes(tier)) {
     return res.status(400).json({ error: "Invalid tier specified" });

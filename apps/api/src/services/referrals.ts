@@ -57,10 +57,30 @@ export class ReferralsService {
         .where(eq(user.id, this.session.user.id))
         .limit(1);
 
+      let affiliateId = dbUserRecord?.trackdeskAffiliateId;
+
+      if (!affiliateId) {
+        try {
+          logger.info("User missing Trackdesk affiliate ID, registering on the fly...", {
+            userId: this.session.user.id,
+          });
+          affiliateId = await trackdeskService.registerAffiliate({
+            id: this.session.user.id,
+            email: this.session.user.email,
+            name: this.session.user.name || "Polokaz User",
+          }) || undefined;
+        } catch (regErr) {
+          logger.error("Failed on-the-fly Trackdesk affiliate registration", {
+            error: regErr instanceof Error ? regErr.message : String(regErr),
+            userId: this.session.user.id,
+          });
+        }
+      }
+
       const trackdeskUrl =
         await trackdeskService.createTrackingLink(
           destinationUrl,
-          dbUserRecord?.trackdeskAffiliateId || undefined
+          affiliateId || undefined
         );
 
       if (trackdeskUrl) {

@@ -44,7 +44,7 @@ export default function EarningsPage() {
 
   const isGoldUser = useMemo(() => {
     const sessionTier = (session.data?.user as { tier?: string | null } | undefined)?.tier;
-    return sessionTier === "gold";
+    return sessionTier === "gold" || sessionTier === "premium";
   }, [session.data?.user]);
 
   useEffect(() => {
@@ -134,7 +134,7 @@ export default function EarningsPage() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.34em] text-cyan-300/80">
-                Gold Earnings
+                Member Earnings
               </p>
               <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
                 Track commissions, conversions, and payout momentum.
@@ -142,7 +142,7 @@ export default function EarningsPage() {
             </div>
 
             <Badge className="w-fit border-amber-300/20 bg-amber-500/14 text-amber-100">
-              Gold Member Dashboard
+              Premium Earnings Dashboard
             </Badge>
           </div>
         </section>
@@ -154,16 +154,16 @@ export default function EarningsPage() {
                 <div className="flex items-center gap-3">
                   <Crown className="size-5 text-amber-200" />
                   <h2 className="text-2xl font-semibold text-white">
-                    Upgrade to Gold to unlock cash commissions
+                    Upgrade to Premium to unlock cash commissions
                   </h2>
                 </div>
                 <p className="mt-2 text-sm text-zinc-300">
-                  Gold members can earn commission payouts from successful referrals and premium conversions.
+                  Premium members can earn commission payouts from successful referrals and premium conversions.
                 </p>
               </div>
 
               <Button asChild className="rounded-full bg-[linear-gradient(135deg,#f5d061_0%,#dca93b_100%)] text-zinc-950 hover:brightness-105">
-                <Link href="/plans">Upgrade to Gold</Link>
+                <Link href="/plans">Upgrade to Premium</Link>
               </Button>
             </CardContent>
           </Card>
@@ -218,7 +218,7 @@ export default function EarningsPage() {
                     <div>
                       <h2 className="text-2xl font-semibold text-white">Monthly Earnings</h2>
                       <p className="mt-2 text-sm text-zinc-400">
-                        Last 6 months of Gold-tier commission performance.
+                        Last 6 months of commission performance.
                       </p>
                     </div>
                   </div>

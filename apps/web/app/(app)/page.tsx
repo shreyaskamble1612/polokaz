@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { Button } from "@/components/ui/button";
 import { getServerSession } from "@/lib/auth/server-session";

@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ShieldCheck, Store, X, Building, Users, Minus, Plus } from "lucide-react";
+import { Check, ShieldCheck, Store, X, Building, Users, Minus, Plus, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 type ConsumerTier = "basic" | "regular" | "premium";
 type MembershipTier =
@@ -31,46 +31,7 @@ type PlanCard = {
   highlighted?: boolean;
 };
 
-const CONSUMER_PLANS: PlanCard[] = [
-  {
-    id: "basic",
-    name: "Basic (Free)",
-    price: "$0/mo",
-    cta: "Current Plan",
-    features: [
-      "Access to core member deals",
-      "Save favorite offers to wallet",
-      "Basic referral rewards",
-      "Monthly points summary",
-    ],
-  },
-  {
-    id: "regular",
-    name: "Regular",
-    price: "$5/mo",
-    cta: "Upgrade to Regular",
-    features: [
-      "Everything in Basic",
-      "Priority access to new drops",
-      "Bonus points on redemptions",
-      "Enhanced referral earning rate",
-    ],
-    highlighted: true,
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    price: "$15/mo",
-    cta: "Upgrade to Premium",
-    features: [
-      "Everything in Regular",
-      "Guaranteed access to all premium offers",
-      "Double points on all activities",
-      "Unlock recurring affiliate payouts",
-      "Requires one-time $25 activation fee",
-    ],
-  },
-];
+// CONSUMER_PLANS static constant removed. Dynamic consumerPlans is declared inside the component.
 
 const COMPARISON_ROWS = [
   {
@@ -141,13 +102,57 @@ function PlanAvailability({
   );
 }
 
-export default function PlansPage() {
+function PlansPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const session = authClient.useSession();
   const [toast, setToast] = useState<string | null>(null);
   const [loadingTier, setLoadingTier] = useState<MembershipTier | null>(null);
   const [premiumLocations, setPremiumLocations] = useState<number>(2);
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "yearly">("monthly");
+
+  const consumerPlans = useMemo(() => [
+    {
+      id: "basic" as ConsumerTier,
+      name: "Basic (Free)",
+      price: "$0/mo",
+      cta: "Current Plan",
+      features: [
+        "Access to limited catalog deals",
+        "Basic referral participation",
+        "Save favorite offers to wallet",
+        "Standard member support",
+      ],
+    },
+    {
+      id: "regular" as ConsumerTier,
+      name: "Regular",
+      price: billingPeriod === "monthly" ? "$5/mo" : "$3.50/mo",
+      periodLabel: billingPeriod === "monthly" ? "Billed monthly" : "Billed yearly ($42/yr)",
+      cta: "Upgrade to Regular",
+      features: [
+        "Everything in Basic",
+        "Expanded catalog access",
+        "Regular referral eligibility",
+        "Enhanced reward points rate",
+      ],
+      highlighted: true,
+    },
+    {
+      id: "premium" as ConsumerTier,
+      name: "Premium",
+      price: billingPeriod === "monthly" ? "$15/mo" : "$10.50/mo",
+      periodLabel: billingPeriod === "monthly" ? "Billed monthly" : "Billed yearly ($126/yr)",
+      cta: "Upgrade to Premium",
+      features: [
+        "Everything in Regular",
+        "Full catalog access",
+        "Vendor referral eligibility",
+        "Advanced incentive opportunities & bonuses",
+        "Plus optional $25 activation fee",
+      ],
+    },
+  ], [billingPeriod]);
 
   const currentTier = useMemo<MembershipTier>(() => {
     const sessionTier = (session.data?.user as { tier?: string | null } | undefined)?.tier;
@@ -180,9 +185,13 @@ export default function PlansPage() {
 
     setToast("Subscription activated!");
 
-    void authClient.getSession();
-    router.refresh();
-    router.replace("/plans");
+    void authClient.getSession().then(() => {
+      router.refresh();
+      // Redirect user to their particular dashboard gateway after brief moment
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1000);
+    });
   }, [router, searchParams]);
 
   const handleUpgrade = async (tier: MembershipTier, locations?: number) => {
@@ -214,8 +223,10 @@ export default function PlansPage() {
 
         if (data.success) {
           setToast(`Successfully switched to Basic (Free)!`);
-          await authClient.getSession();
-          router.refresh();
+          await authClient.getSession().then(() => {
+            router.refresh();
+            router.push("/dashboard");
+          });
         } else {
           throw new Error("Failed to switch tier.");
         }
@@ -233,7 +244,7 @@ export default function PlansPage() {
       // 1. Attempt to create a Stripe checkout session
       const stripeRes = await clientFetch<{ url: string }>("/api/stripe/create-checkout", {
         method: "POST",
-        body: JSON.stringify({ tier, locations }),
+        body: JSON.stringify({ tier, interval: billingPeriod, locations }),
       });
 
       if (stripeRes?.url) {
@@ -255,8 +266,10 @@ export default function PlansPage() {
 
         if (data.success) {
           setToast(`Successfully upgraded to ${planName}!`);
-          await authClient.getSession();
-          router.refresh();
+          await authClient.getSession().then(() => {
+            router.refresh();
+            router.push("/dashboard");
+          });
         } else {
           throw new Error("Failed to upgrade tier.");
         }
@@ -300,9 +313,44 @@ export default function PlansPage() {
 
         <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-8">
+            {/* Billing Toggle Switcher */}
+            <div className="flex justify-center mb-6">
+              <div className="flex items-center rounded-full bg-white/[0.04] p-1 border border-white/10 backdrop-blur-md">
+                <button
+                  type="button"
+                  onClick={() => setBillingPeriod("monthly")}
+                  className={`rounded-full px-5 py-2 text-xs font-bold transition-all duration-200 ${
+                    billingPeriod === "monthly"
+                      ? "bg-cyan-500 text-zinc-950 shadow-sm font-extrabold"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  Monthly billing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBillingPeriod("yearly")}
+                  className={`relative flex items-center gap-1.5 rounded-full px-5 py-2 text-xs font-bold transition-all duration-200 ${
+                    billingPeriod === "yearly"
+                      ? "bg-cyan-500 text-zinc-950 shadow-sm font-extrabold"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  Yearly billing
+                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${
+                    billingPeriod === "yearly"
+                      ? "bg-amber-400 text-zinc-950"
+                      : "bg-amber-400/10 text-amber-300 border border-amber-400/20"
+                  }`}>
+                    Save 30%
+                  </span>
+                </button>
+              </div>
+            </div>
+
             {/* Consumer Plans */}
             <section className="grid gap-5 lg:grid-cols-3">
-              {CONSUMER_PLANS.map((plan) => {
+              {consumerPlans.map((plan) => {
                 const isCurrent = plan.id === "basic"
                   ? (currentTier === "basic" || currentTier === "free")
                   : currentTier === plan.id;
@@ -340,6 +388,11 @@ export default function PlansPage() {
                         <p className="mt-3 text-4xl font-semibold tracking-tight text-white">
                           {plan.price}
                         </p>
+                        {plan.periodLabel && (
+                          <p className="mt-1.5 text-xs text-zinc-400 font-medium">
+                            {plan.periodLabel}
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-3">
@@ -580,5 +633,17 @@ export default function PlansPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PlansPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.12),transparent_24%),linear-gradient(180deg,#09090f_0%,#11111a_48%,#07070b_100%)] flex items-center justify-center text-white">
+        <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+      </div>
+    }>
+      <PlansPageContent />
+    </Suspense>
   );
 }

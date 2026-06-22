@@ -83,11 +83,24 @@ router.post("/", (req: any, res) => {
 
           const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
           const priceId = lineItems.data?.[0]?.price?.id;
-          const tier = mapPriceIdToTier(priceId);
+          const tier = (session.metadata?.tier as MembershipTier) || mapPriceIdToTier(priceId);
+
+          // Get existing user to check role
+          const [existingUser] = await db
+            .select({ role: user.role })
+            .from(user)
+            .where(eq(user.id, userId))
+            .limit(1);
+
+          const isMerchantTier = ["merchant", "small_vendor", "premium_vendor"].includes(tier);
+          const updates: any = { tier, stripeCustomerId, stripeSubscriptionId, hasSelectedPlan: true };
+          if (existingUser && existingUser.role !== "admin" && existingUser.role !== "super_admin") {
+            updates.role = isMerchantTier ? "merchant" : "member";
+          }
 
           await db
             .update(user)
-            .set({ tier, stripeCustomerId, stripeSubscriptionId, hasSelectedPlan: true })
+            .set(updates)
             .where(eq(user.id, userId));
 
           // 1. Check if this user was referred: SELECT * FROM referral_conversions WHERE referredUserId = userId
@@ -195,7 +208,7 @@ router.post("/", (req: any, res) => {
           const subscription = event.data.object as any;
           const stripeSubscriptionId = subscription.id as string | undefined;
           const priceId = subscription.items?.data?.[0]?.price?.id as string | undefined;
-          const tier = mapPriceIdToTier(priceId);
+          const tier = (subscription.metadata?.tier as MembershipTier) || mapPriceIdToTier(priceId);
 
           if (!stripeSubscriptionId) {
             logger.warn("customer.subscription.updated missing subscription id", {
@@ -204,9 +217,22 @@ router.post("/", (req: any, res) => {
             break;
           }
 
+          // Get existing user to check role
+          const [existingUser] = await db
+            .select({ role: user.role, id: user.id })
+            .from(user)
+            .where(eq(user.stripeSubscriptionId, stripeSubscriptionId))
+            .limit(1);
+
+          const isMerchantTier = ["merchant", "small_vendor", "premium_vendor"].includes(tier);
+          const updates: any = { tier };
+          if (existingUser && existingUser.role !== "admin" && existingUser.role !== "super_admin") {
+            updates.role = isMerchantTier ? "merchant" : "member";
+          }
+
           await db
             .update(user)
-            .set({ tier })
+            .set(updates)
             .where(eq(user.stripeSubscriptionId, stripeSubscriptionId));
 
           break;
@@ -223,9 +249,21 @@ router.post("/", (req: any, res) => {
             break;
           }
 
+          // Get existing user to check role
+          const [existingUser] = await db
+            .select({ role: user.role, id: user.id })
+            .from(user)
+            .where(eq(user.stripeSubscriptionId, stripeSubscriptionId))
+            .limit(1);
+
+          const updates: any = { tier: "free", stripeSubscriptionId: null };
+          if (existingUser && existingUser.role !== "admin" && existingUser.role !== "super_admin") {
+            updates.role = "member";
+          }
+
           await db
             .update(user)
-            .set({ tier: "free", stripeSubscriptionId: null })
+            .set(updates)
             .where(eq(user.stripeSubscriptionId, stripeSubscriptionId));
 
           break;

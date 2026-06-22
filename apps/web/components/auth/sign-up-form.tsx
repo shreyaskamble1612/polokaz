@@ -122,8 +122,7 @@ export function SignUpForm({
         }
       }
 
-      router.refresh();
-      router.push(getRoleHomePath(data.user));
+      window.location.href = getRoleHomePath(data.user);
     }
   }
 

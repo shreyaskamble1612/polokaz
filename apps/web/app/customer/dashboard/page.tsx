@@ -217,8 +217,8 @@ export default function Page() {
             redeemedCount: walletRes.redeemedCount,
           });
 
-          // Fetch affiliate stats if gold
-          if (tier === "gold") {
+          // Fetch affiliate stats if gold or premium
+          if (tier === "gold" || tier === "premium") {
             const affiliateRes = await clientFetch<{ totalEarned: number; pending: number }>("/api/me/affiliate-stats").catch(() => ({ totalEarned: 0, pending: 0 }));
             setAffiliateStats({
               totalEarned: affiliateRes.totalEarned,
@@ -498,8 +498,8 @@ export default function Page() {
               { label: "Saved Deals", value: String(walletStats.savedCount) },
               { label: "Redeemed Deals", value: String(walletStats.redeemedCount) },
               {
-                label: userTier === "gold" ? "My Earnings" : "My Points",
-                value: userTier === "gold"
+                label: userTier === "gold" || userTier === "premium" ? "My Earnings" : "My Points",
+                value: userTier === "gold" || userTier === "premium"
                   ? `$${(affiliateStats.totalEarned + affiliateStats.pending).toFixed(2)}`
                   : `${points} pts`,
               },

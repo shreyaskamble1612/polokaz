@@ -245,8 +245,7 @@ export default function Page() {
       return;
     }
 
-    router.refresh();
-    router.push(getRoleHomePath(data.user));
+    window.location.href = getRoleHomePath(data.user);
   };
 
   if (isSuccess) {
