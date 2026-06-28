@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { SubscriptionModal } from "@/components/subscription/SubscriptionModal";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { CookieTracker } from "@/components/CookieTracker";
 
 const geistSans = Inter({
@@ -39,12 +38,8 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('theme');
-                  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                  }
+                  document.documentElement.classList.remove('dark');
+                  localStorage.removeItem('theme');
                 } catch (_) {}
               })();
             `,
@@ -58,7 +53,6 @@ export default function RootLayout({
         <CookieTracker />
         {children}
         <SubscriptionModal />
-        <ThemeToggle />
       </body>
     </html>
   );

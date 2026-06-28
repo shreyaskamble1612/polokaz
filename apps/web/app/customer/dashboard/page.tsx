@@ -141,7 +141,7 @@ function getCategoryTheme(category: string | null) {
 function matchesCategoryHelper(dealCategory: string | null, selected: string | null): boolean {
   if (!selected || selected === "all") return true;
   if (!dealCategory) return false;
-  
+
   const dealLower = dealCategory.toLowerCase();
   const selectedLower = selected.toLowerCase();
 
@@ -359,9 +359,6 @@ export default function Page() {
               >
                 Dashboard
               </Link>
-              <a href="#" className="rounded-full px-4 py-2 transition hover:text-[#0f7af7]">
-                Events
-              </a>
             </nav>
           </div>
 
@@ -510,9 +507,8 @@ export default function Page() {
                 className="min-w-[150px] rounded-2xl border border-white/18 bg-white/8 px-6 py-5 text-center backdrop-blur"
               >
                 <p
-                  className={`text-3xl font-black italic ${
-                    item.accent ? "text-[#ff9a2f]" : "text-white"
-                  }`}
+                  className={`text-3xl font-black italic ${item.accent ? "text-[#ff9a2f]" : "text-white"
+                    }`}
                 >
                   {item.value}
                 </p>
@@ -530,22 +526,20 @@ export default function Page() {
               <button
                 type="button"
                 onClick={() => setActiveTab("coupons")}
-                className={`border-b-2 pb-4 transition ${
-                  activeTab === "coupons"
-                    ? "border-[#0f7af7] text-[#0f7af7]"
-                    : "border-transparent text-[#1e2f46]"
-                }`}
+                className={`border-b-2 pb-4 transition ${activeTab === "coupons"
+                  ? "border-[#0f7af7] text-[#0f7af7]"
+                  : "border-transparent text-[#1e2f46]"
+                  }`}
               >
                 Available Coupons
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab("vouchers")}
-                className={`border-b-2 pb-4 transition ${
-                  activeTab === "vouchers"
-                    ? "border-[#0f7af7] text-[#0f7af7]"
-                    : "border-transparent text-[#1e2f46]"
-                }`}
+                className={`border-b-2 pb-4 transition ${activeTab === "vouchers"
+                  ? "border-[#0f7af7] text-[#0f7af7]"
+                  : "border-transparent text-[#1e2f46]"
+                  }`}
               >
                 Available Vouchers
               </button>
